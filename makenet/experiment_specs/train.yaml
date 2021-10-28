@@ -1,0 +1,7 @@
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-makenet'
+train_config:
+  train_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/train'
+  val_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
+  pretrained_model_path: ''
+  batch_size_per_gpu: 16
+  n_epochs: 20
