@@ -12,6 +12,4 @@ COPY . .
 RUN pip install -r requirements.txt
 
 ENV TF_XLA_FLAGS="--tf_xla_enable_lazy_compilation=false tf_xla_async_io_level=0"
-RUN pip install git+https://github.com/NVIDIA/dllogger
-RUN pip install tensorflow-addons==0.13.0
 ENV PYTHONPATH='/workspace'

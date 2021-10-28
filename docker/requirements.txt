@@ -10,3 +10,6 @@ pycocotools-fix
 hydra-core==1.1.0
 omegaconf==2.1.0
 opencv-python
+numba
+git+https://github.com/NVIDIA/dllogger
+tensorflow-addons==0.13.0

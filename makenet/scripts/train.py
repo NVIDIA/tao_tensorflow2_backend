@@ -83,7 +83,7 @@ def setup_callbacks(model_name, results_dir,
             os.makedirs(save_weights_dir)
         # Save encrypted models
         weight_filename = os.path.join(save_weights_dir,
-                                       '%s_{epoch:03d}.tlt' % model_name)
+                                       '%s_{epoch:03d}.hdf5' % model_name)
         checkpointer = ModelCheckpoint(weight_filename, key, verbose=1)
         callbacks.append(checkpointer)
 
@@ -103,28 +103,11 @@ def setup_callbacks(model_name, results_dir,
     return callbacks
 
 
-def categorical_crossentropy(y_true, y_pred, from_logits=False, label_smoothing=0):
-    """Ported tf.keras categorical_crossentropy."""
-    y_pred = K.constant(y_pred) if not K.is_tensor(y_pred) else y_pred
-    y_true = K.cast(y_true, y_pred.dtype)
-
-    if label_smoothing == 0:
-        smoothing = K.cast_to_floatx(label_smoothing)
-
-        def _smooth_labels():
-            num_classes = K.cast(K.shape(y_true)[1], y_pred.dtype)
-            return y_true * (1.0 - smoothing) + (smoothing / num_classes)
-
-        y_true = K.switch(K.greater(smoothing, 0), _smooth_labels, lambda: y_true)
-    return K.categorical_crossentropy(y_true, y_pred, from_logits=from_logits)
-
-
 def load_data(train_data, val_data, preprocessing_func,
               image_height, image_width, batch_size,
               enable_random_crop=False, enable_center_crop=False,
-              enable_color_augmentation=False,
               interpolation=0, color_mode="rgb",
-              mixup_alpha=0.0, no_horizontal_flip=False):
+              no_horizontal_flip=False):
     """Load training and validation data with default data augmentation.
 
     Args:
@@ -136,11 +119,9 @@ def load_data(train_data, val_data, preprocessing_func,
         batch_size (int): Number of image tensors per batch.
         enable_random_crop (bool): Flag to enable random cropping in load_img.
         enable_center_crop (bool): Flag to enable center cropping for val.
-        enable_color_augmentation(bool): Flag to enable color augmentation.
         interpolation(int): Interpolation method for image resize. 0 means bilinear,
             while 1 means bicubic.
         color_mode (str): Input image read mode as either `rgb` or `grayscale`.
-        mixup_alpha (float): mixup alpha.
         no_horizontal_flip(bool): Flag to disable horizontal flip for
             direction-aware datasets.
     Return:
@@ -160,13 +141,14 @@ def load_data(train_data, val_data, preprocessing_func,
         preprocessing_function=preprocessing_func,
         horizontal_flip=not no_horizontal_flip,
         featurewise_center=False)
-    train_iterator = MixupImageDataGenerator(
-        train_datagen, train_data, batch_size,
-        image_height, image_width,
+    train_iterator = train_datagen.flow_from_directory(
+        val_data,
+        target_size=(image_height, image_width),
         color_mode=color_mode,
-        interpolation=interpolation + ':random' if enable_random_crop else interpolation,
-        alpha=mixup_alpha
-    )
+        batch_size=batch_size,
+        interpolation=interpolation + ':center' if enable_random_crop else interpolation,
+        shuffle=False,
+        class_mode='categorical')
     logger.info('Processing dataset (train): {}'.format(train_data))
 
     # Initializing data generator: Val
@@ -251,12 +233,10 @@ def run_experiment(cfg, results_dir=None,
                           img_mean=None,
                           color_mode=color_mode),
                   image_height, image_width,
-                  cfg['train_config']['batch_size_per_gpu'],
-                  cfg['train_config']['enable_random_crop'],
-                  cfg['train_config']['enable_center_crop'],
-                  cfg['train_config']['enable_color_augmentation'],
+                  batch_size_per_gpu=cfg['train_config']['batch_size_per_gpu'],
+                  enable_random_crop=cfg['train_config']['enable_random_crop'],
+                  enable_center_crop=cfg['train_config']['enable_center_crop'],
                   color_mode=color_mode,
-                  mixup_alpha=cfg['train_config']['mixup_alpha'],
                   no_horizontal_flip=cfg['train_config']['disable_horizontal_flip'])
 
     # TODO: Creating model
@@ -296,9 +276,8 @@ def run_experiment(cfg, results_dir=None,
     # Add Horovod Distributed Optimizer
     opt = hvd.DistributedOptimizer(opt)
     # Compiling model
-    cc = partial(categorical_crossentropy,
-                 label_smoothing=cfg['train_config']['label_smoothing'])
-    cc.__name__ = "categorical_crossentropy"
+    cc = tf.keras.losses.CategoricalCrossentropy(
+        label_smoothing=cfg['train_config']['label_smoothing'])
     final_model.compile(loss=cc, metrics=['accuracy'],
                         optimizer=opt)
 
