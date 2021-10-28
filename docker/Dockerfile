@@ -1,6 +1,8 @@
 ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:21.09-tf2-py3
 FROM ${FROM_IMAGE_NAME}
 
+RUN apt-get update
+RUN apt-get install ffmpeg libsm6 libxext6  -y
 # upgrade pip
 RUN pip install --upgrade pip
 

@@ -29,6 +29,7 @@ from common.utils import SoftStartCosineAnnealingScheduler
 from makenet.model.model_builder import get_model
 from makenet.utils.mixup_generator import MixupImageDataGenerator
 from makenet.utils.preprocess_input import preprocess_input
+from makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
  
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
