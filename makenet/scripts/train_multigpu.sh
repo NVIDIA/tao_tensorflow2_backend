@@ -24,6 +24,6 @@ if [ "$NUM_GPUS" -lt 1 ]; then
 	echo "Usage: -np <num GPUs> [train.py arguments]"
 else
 	# Note: need to execute bazel created train script instead of train.py.
-	mpirun -np $NUM_GPUS --oversubscribe --bind-to none iva/makenet/scripts/train ${PYTHON_ARGS[*]}
+	mpirun -np $NUM_GPUS --oversubscribe --allow-run-as-root --bind-to none /workspace/makenet/scripts/train.py ${PYTHON_ARGS[*]}
 fi
 

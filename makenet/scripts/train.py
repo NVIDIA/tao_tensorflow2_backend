@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
 
 """Makenet training script with protobuf configuration."""
@@ -142,11 +143,11 @@ def load_data(train_data, val_data, preprocessing_func,
         horizontal_flip=not no_horizontal_flip,
         featurewise_center=False)
     train_iterator = train_datagen.flow_from_directory(
-        val_data,
+        train_data,
         target_size=(image_height, image_width),
         color_mode=color_mode,
         batch_size=batch_size,
-        interpolation=interpolation + ':center' if enable_random_crop else interpolation,
+        interpolation=interpolation + ':random' if enable_random_crop else interpolation,
         shuffle=False,
         class_mode='categorical')
     logger.info('Processing dataset (train): {}'.format(train_data))
@@ -194,13 +195,11 @@ def run_experiment(cfg, results_dir=None,
     """
 
     # Horovod: pin GPU to be used to process local rank (one GPU per process)
-    config = tf.compat.v1.ConfigProto()
-    config.gpu_options.allow_growth = True
-    # check if model parallelism is enabled or not
-    world_size = 1
-    gpus = list(range(hvd.local_rank() * world_size, (hvd.local_rank() + 1) * world_size))
-    config.gpu_options.visible_device_list = ','.join([str(x) for x in gpus])
-    K.set_session(tf.compat.v1.Session(config=config))
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+    if gpus:
+        tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
     verbose = 1 if hvd.rank() == 0 else 0
     K.set_image_data_format('channels_first')
     # Configure the logger.
@@ -213,7 +212,8 @@ def run_experiment(cfg, results_dir=None,
     # Configure tf logger verbosity.
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
     # TODO: get channel, height and width of the input image
-    nchannels, image_height, image_width = 3, 224, 224
+
+    nchannels, image_height, image_width = cfg['model_config']['input_image_size']
     assert nchannels in [1, 3], "Invalid input image dimension."
     assert image_height >= 16, "Image height should be greater than 15 pixels."
     assert image_width >= 16, "Image width should be greater than 15 pixels."
@@ -233,29 +233,30 @@ def run_experiment(cfg, results_dir=None,
                           img_mean=None,
                           color_mode=color_mode),
                   image_height, image_width,
-                  batch_size_per_gpu=cfg['train_config']['batch_size_per_gpu'],
+                  batch_size=cfg['train_config']['batch_size_per_gpu'],
                   enable_random_crop=cfg['train_config']['enable_random_crop'],
                   enable_center_crop=cfg['train_config']['enable_center_crop'],
                   color_mode=color_mode,
                   no_horizontal_flip=cfg['train_config']['disable_horizontal_flip'])
 
     # TODO: Creating model
-    ka = dict()
-    ka['nlayers'] =  18
-    ka['use_batch_norm'] = True
-    ka['use_pooling'] = True
-    ka['freeze_bn'] = False
-    ka['use_bias'] = False
-    ka['all_projections'] = False
-    ka['dropout'] = 0.0
-    freeze_blocks = None
+    ka = dict(
+        nlayers=cfg['model_config']['n_layers'],
+        use_batch_norm=cfg['model_config']['use_batch_norm'],
+        use_pooling=cfg['model_config']['use_pooling'],
+        freeze_bn=cfg['model_config']['freeze_bn'],
+        use_bias = cfg['model_config']['use_bias'],
+        all_projections=cfg['model_config']['all_projections'],
+        dropout=cfg['model_config']['dropout']
+    )
+    
     # TODO
-    final_model = get_model(arch='resnet',
+    final_model = get_model(arch=cfg['model_config']['arch'],
                             input_shape=(nchannels, image_height, image_width),
                             data_format='channels_first',
                             nclasses=nclasses,
-                            use_imagenet_head=False,
-                            freeze_blocks=freeze_blocks,
+                            use_imagenet_head=cfg['model_config']['use_imagenet_head'],
+                            freeze_blocks=cfg['model_config']['freeze_blocks'],
                             **ka)
 
     # Printing model summary
@@ -274,15 +275,19 @@ def run_experiment(cfg, results_dir=None,
             nesterov=True
         )
     # Add Horovod Distributed Optimizer
-    opt = hvd.DistributedOptimizer(opt)
+    opt = hvd.DistributedOptimizer(
+        opt, backward_passes_per_step=1, average_aggregated_gradients=True)
     # Compiling model
     cc = tf.keras.losses.CategoricalCrossentropy(
         label_smoothing=cfg['train_config']['label_smoothing'])
-    final_model.compile(loss=cc, metrics=['accuracy'],
-                        optimizer=opt)
+    final_model.compile(
+        loss=tf.losses.CategoricalCrossentropy(),
+        metrics=['accuracy'],
+        optimizer=opt,
+        experimental_run_tf_function=False)
 
     # Setup callbacks
-    callbacks = setup_callbacks('resnet', results_dir,
+    callbacks = setup_callbacks(cfg['model_config']['arch'], results_dir,
                                 init_epoch, len(train_iterator) // hvd.size(),
                                 cfg['train_config']['n_epochs'], key,
                                 hvd)

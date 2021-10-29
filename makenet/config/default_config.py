@@ -28,10 +28,28 @@ class TrainConfig:
 
 
 @dataclass
+class ModelConfig:
+    """Model config."""
+
+    arch: str = 'resnet'
+    input_image_size: List[int] = field(default_factory=lambda: [3, 224, 224])
+    n_layers: int = 18
+    use_batch_norm: bool = True
+    use_bias: bool = False
+    use_pooling: bool = True
+    all_projections: bool = False
+    freeze_bn: bool = False
+    freeze_blocks: List[int] = field(default_factory=lambda: []) # TODO
+    use_imagenet_head: bool = False
+    dropout: float = 0.0
+
+
+@dataclass
 class ExperimentConfig:
     """Experiment config."""
 
     train_config: TrainConfig = TrainConfig()
+    model_config: ModelConfig = ModelConfig()
     results_dir: str = ''
     key: str = ''
     init_epoch: int = 1
