@@ -11,8 +11,8 @@ from omegaconf import MISSING
 class TrainConfig:
     """Train config."""
 
-    train_dataset_path: str = ''
-    val_dataset_path: str = ''
+    train_dataset_path: str = MISSING
+    val_dataset_path: str = MISSING
     pretrained_model_path: str = ''
     batch_size_per_gpu: int = 16
     n_epochs: int = 100
@@ -50,6 +50,6 @@ class ExperimentConfig:
 
     train_config: TrainConfig = TrainConfig()
     model_config: ModelConfig = ModelConfig()
-    results_dir: str = ''
+    results_dir: str = MISSING
     key: str = ''
     init_epoch: int = 1
