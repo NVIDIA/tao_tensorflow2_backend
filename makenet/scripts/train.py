@@ -12,9 +12,7 @@ import json
 import logging
 import os
 
-
 import tensorflow as tf
-from tensorflow.compat.v1.keras import backend as K
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 from PIL import ImageFile
@@ -31,7 +29,7 @@ from makenet.model.model_builder import get_model
 from makenet.utils.mixup_generator import MixupImageDataGenerator
 from makenet.utils.preprocess_input import preprocess_input
 from makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
- 
+from makenet.utils.helper import setup_config
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 verbose = 0
@@ -45,6 +43,15 @@ def eval_str(s):
             return eval(s)
         return None
     return s
+
+
+def initialize():
+    """Initializes backend related initializations."""
+    if tf.config.list_physical_devices('GPU'):
+        data_format = 'channels_first'
+    else:
+        data_format = 'channels_last'
+    tf.keras.backend.set_image_data_format(data_format)
 
 
 def setup_callbacks(model_name, results_dir,
@@ -63,12 +70,12 @@ def setup_callbacks(model_name, results_dir,
         callbacks (list of keras.callbacks): list of callbacks.
     """
     callbacks = [hvd.callbacks.BroadcastGlobalVariablesCallback(0),
-                 hvd.callbacks.MetricAverageCallback()]
+                hvd.callbacks.MetricAverageCallback()]
     max_iterations = iters_per_epoch * max_epoch
     lrscheduler = SoftStartCosineAnnealingScheduler(
         base_lr=0.05 * hvd.size(),
         min_lr_ratio=0.02,
-        soft_start=0.1,
+        soft_start=0.0,
         max_iterations=max_iterations
     )
     init_step = (init_epoch - 1) * iters_per_epoch
@@ -148,7 +155,7 @@ def load_data(train_data, val_data, preprocessing_func,
         color_mode=color_mode,
         batch_size=batch_size,
         interpolation=interpolation + ':random' if enable_random_crop else interpolation,
-        shuffle=False,
+        shuffle=True,
         class_mode='categorical')
     logger.info('Processing dataset (train): {}'.format(train_data))
 
@@ -201,7 +208,6 @@ def run_experiment(cfg, results_dir=None,
     if gpus:
         tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
     verbose = 1 if hvd.rank() == 0 else 0
-    K.set_image_data_format('channels_first')
     # Configure the logger.
     logging.basicConfig(
         format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
@@ -209,9 +215,8 @@ def run_experiment(cfg, results_dir=None,
 
     # Set random seed.
     logger.debug("Random seed is set to {}".format(cfg['train_config']['random_seed']))
-    # Configure tf logger verbosity.
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
-    # TODO: get channel, height and width of the input image
+    
+    initialize()
 
     nchannels, image_height, image_width = cfg['model_config']['input_image_size']
     assert nchannels in [1, 3], "Invalid input image dimension."
@@ -259,6 +264,17 @@ def run_experiment(cfg, results_dir=None,
                             freeze_blocks=cfg['model_config']['freeze_blocks'],
                             **ka)
 
+    # Set up BN and regularizer config
+    bn_config = None
+    reg_config = cfg['train_config']['reg_config']
+    print(reg_config)
+    final_model = setup_config(
+        final_model,
+        reg_config,
+        freeze_bn=cfg['model_config']['freeze_bn'],
+        bn_config=bn_config
+    )
+    
     # Printing model summary
     final_model.summary()
 
@@ -270,19 +286,19 @@ def run_experiment(cfg, results_dir=None,
     else:
         # Defining optimizer
         opt = tf.keras.optimizers.SGD(
-            lr=0.05,
+            learning_rate=0.05,
             momentum=0.9,
-            nesterov=True
+            nesterov=False
         )
     # Add Horovod Distributed Optimizer
     opt = hvd.DistributedOptimizer(
-        opt, backward_passes_per_step=1, average_aggregated_gradients=True)
+        opt, compression=hvd.Compression.fp16) # backward_passes_per_step=1, average_aggregated_gradients=True)
     # Compiling model
     cc = tf.keras.losses.CategoricalCrossentropy(
         label_smoothing=cfg['train_config']['label_smoothing'])
     final_model.compile(
-        loss=tf.losses.CategoricalCrossentropy(),
-        metrics=['accuracy'],
+        loss=tf.keras.losses.CategoricalCrossentropy(),
+        metrics=[tf.keras.metrics.CategoricalAccuracy(name='accuracy')],
         optimizer=opt,
         experimental_run_tf_function=False)
 
@@ -298,14 +314,15 @@ def run_experiment(cfg, results_dir=None,
             json.dump(train_iterator.class_indices, classdump)
 
     # Commencing Training
-    final_model.fit_generator(
+    final_model.fit(
         train_iterator,
         steps_per_epoch=len(train_iterator) // hvd.size(),
         epochs=cfg['train_config']['n_epochs'],
         verbose=verbose,
         workers=cfg['train_config']['n_workers'],
         validation_data=val_iterator,
-        validation_steps=len(val_iterator),
+        validation_steps=len(val_iterator) // hvd.size(),
+        validation_freq=2,
         callbacks=callbacks,
         initial_epoch=init_epoch - 1)
 

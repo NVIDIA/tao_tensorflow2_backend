@@ -8,13 +8,22 @@ from omegaconf import MISSING
 
 
 @dataclass
+class RegConfig:
+    """Regularizer config."""
+
+    type: str = 'L2'
+    scope: List[str] = field(default_factory=lambda: ['conv2d', 'dense'])
+    weight_decay: float = 0.000015
+
+
+@dataclass
 class TrainConfig:
     """Train config."""
 
     train_dataset_path: str = MISSING
     val_dataset_path: str = MISSING
     pretrained_model_path: str = ''
-    batch_size_per_gpu: int = 16
+    batch_size_per_gpu: int = 64
     n_epochs: int = 100
     n_workers: int = 10
     random_seed: int = 42
@@ -22,9 +31,10 @@ class TrainConfig:
     enable_center_crop: bool = True
     enable_color_augmentation: bool = False
     label_smoothing: float = 0.01
-    preprocess_mode: str = 'torch'
+    preprocess_mode: str = 'caffe'
     mixup_alpha: float = 0
     disable_horizontal_flip: bool = False
+    reg_config: RegConfig = RegConfig()
 
 
 @dataclass

@@ -32,7 +32,6 @@ ap_mode_dict = {0: "sample", 1: "integrate"}
 MB = 2 << 20
 
 
-
 def raise_deprecation_warning(task, subtask, args):
     """Raise a deprecation warning based on the module.
 

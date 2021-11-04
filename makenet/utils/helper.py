@@ -14,6 +14,7 @@ from common.utils import (
     SoftStartCosineAnnealingScheduler,
     StepLRScheduler
 )
+from templates.utils_tf import swish
 
 opt_dict = {
     'sgd': keras.optimizers.SGD,
@@ -183,3 +184,75 @@ def color_augmentation(
     # convert back to PIL Image
     x_img *= 255.0
     return Image.fromarray(x_img.astype(np.uint8), "RGB")
+
+
+def setup_config(model, reg_config, freeze_bn=False, bn_config=None):
+    """Wrapper for setting up BN and regularizer.
+
+    Args:
+        model (keras Model): a Keras model
+        reg_config (dict): reg_config dict
+        freeze_bn(bool): Flag to freeze BN layers in this model
+        bn_config (dict): config to override BatchNormalization parameters
+    Return:
+        A new model with overriden config.
+    """
+    # set training=False for BN layers if freeze_bn=True
+    # otherwise the freeze_bn flag in model builder will be ineffective
+    def compose_call(prev_call_method):
+        def call(self, inputs, training=False):
+            return prev_call_method(self, inputs, training)
+
+        return call
+
+    prev_batchnorm_call = keras.layers.BatchNormalization.call
+    if freeze_bn:
+        keras.layers.BatchNormalization.call = compose_call(
+            prev_batchnorm_call
+        )
+    if bn_config is not None:
+        bn_momentum = bn_config['momentum']
+        bn_epsilon = bn_config['epsilon']
+    else:
+        bn_momentum = 0.9
+        bn_epsilon = 1e-5
+    # Obtain the current configuration from model
+    mconfig = model.get_config()
+    # Obtain type and scope of the regularizer
+    reg_type = reg_config['type'].lower()
+    scope_list = reg_config['scope']
+    layer_list = [scope_dict[i.lower()] for i in scope_list if i.lower()
+                  in scope_dict]
+
+    for layer, layer_config in zip(model.layers, mconfig['layers']):
+        # BN settings
+        if type(layer) == keras.layers.BatchNormalization:
+            layer_config['config']['momentum'] = bn_momentum
+            layer_config['config']['epsilon'] = bn_epsilon
+
+        # Regularizer settings
+        if reg_type:
+            if type(layer) in layer_list and \
+               hasattr(layer, 'kernel_regularizer'):
+
+                assert reg_type in ['l1', 'l2', 'none'], \
+                    "Regularizer can only be either L1, L2 or None."
+
+                if reg_type in ['l1', 'l2']:
+                    assert 0 < reg_config['weight_decay'] < 1, \
+                        "Weight decay should be no less than 0 and less than 1"
+                    regularizer = regularizer_dict[reg_type](
+                                        reg_config['weight_decay'])
+                    layer_config['config']['kernel_regularizer'] = \
+                        {'class_name': regularizer.__class__.__name__,
+                         'config': regularizer.get_config()}
+
+                if reg_type == 'none':
+                    layer_config['config']['kernel_regularizer'] = None
+    with keras.utils.CustomObjectScope({'swish': swish}):
+        updated_model = keras.models.Model.from_config(mconfig)
+    updated_model.set_weights(model.get_weights())
+    # restore the BN call method before return
+    if freeze_bn:
+        keras.layers.normalization.BatchNormalization.call = prev_batchnorm_call
+    return updated_model
