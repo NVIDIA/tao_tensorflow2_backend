@@ -5,6 +5,7 @@ import os
 
 import cv2
 from tensorflow import keras
+import tensorflow as tf
 from numba import jit, njit
 import numpy as np
 from PIL import Image
@@ -27,6 +28,15 @@ scope_dict = {'dense': keras.layers.Dense,
 
 regularizer_dict = {'l1': keras.regularizers.l1,
                     'l2': keras.regularizers.l2}
+
+
+def initialize():
+    """Initializes backend related initializations."""
+    if tf.config.list_physical_devices('GPU'):
+        data_format = 'channels_first'
+    else:
+        data_format = 'channels_last'
+    tf.keras.backend.set_image_data_format(data_format)
 
 
 def build_optimizer(optimizer_config):
@@ -94,7 +104,7 @@ def get_input_shape(model):
     """Obtain input shape from a Keras model."""
     data_format = model.layers[1].data_format
     # Computing shape of input tensor
-    image_shape = model.layers[0].input_shape[1:4]
+    image_shape = model.layers[0].input_shape[0][1:4]
     # Setting input shape
     if data_format == "channels_first":
         nchannels, image_height, image_width = image_shape[0:3]

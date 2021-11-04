@@ -34,6 +34,7 @@ class TrainConfig:
     preprocess_mode: str = 'caffe'
     mixup_alpha: float = 0
     disable_horizontal_flip: bool = False
+    image_mean: List[int] = field(default_factory=lambda: [3, 224, 224])
     reg_config: RegConfig = RegConfig()
 
 
@@ -42,7 +43,7 @@ class ModelConfig:
     """Model config."""
 
     arch: str = 'resnet'
-    input_image_size: List[int] = field(default_factory=lambda: [3, 224, 224])
+    input_image_size: List[float] = field(default_factory=lambda: [103.939, 116.779, 123.68])
     n_layers: int = 18
     use_batch_norm: bool = True
     use_bias: bool = False
@@ -52,6 +53,19 @@ class ModelConfig:
     freeze_blocks: List[int] = field(default_factory=lambda: []) # TODO
     use_imagenet_head: bool = False
     dropout: float = 0.0
+    resize_interpolation_method: str = 'bilinear' # or 'bicubic'
+
+
+@dataclass
+class EvalConfig:
+    """Experiment config."""
+
+    eval_dataset_path: str = ''
+    model_path: str = ''
+    batch_size: int = 64
+    n_workers: int = 64
+    enable_center_crop: bool = True
+    top_k: int = 3
 
 
 @dataclass
@@ -60,6 +74,7 @@ class ExperimentConfig:
 
     train_config: TrainConfig = TrainConfig()
     model_config: ModelConfig = ModelConfig()
+    eval_config: EvalConfig = EvalConfig()
     results_dir: str = MISSING
     key: str = ''
     init_epoch: int = 1

@@ -29,29 +29,10 @@ from makenet.model.model_builder import get_model
 from makenet.utils.mixup_generator import MixupImageDataGenerator
 from makenet.utils.preprocess_input import preprocess_input
 from makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
-from makenet.utils.helper import setup_config
+from makenet.utils.helper import initialize, setup_config
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 verbose = 0
-
-
-def eval_str(s):
-    """If s is a string, return the eval results. Else return itself."""
-
-    if isinstance(s, six.string_types):
-        if len(s) > 0:
-            return eval(s)
-        return None
-    return s
-
-
-def initialize():
-    """Initializes backend related initializations."""
-    if tf.config.list_physical_devices('GPU'):
-        data_format = 'channels_first'
-    else:
-        data_format = 'channels_last'
-    tf.keras.backend.set_image_data_format(data_format)
 
 
 def setup_callbacks(model_name, results_dir,
@@ -267,7 +248,6 @@ def run_experiment(cfg, results_dir=None,
     # Set up BN and regularizer config
     bn_config = None
     reg_config = cfg['train_config']['reg_config']
-    print(reg_config)
     final_model = setup_config(
         final_model,
         reg_config,
