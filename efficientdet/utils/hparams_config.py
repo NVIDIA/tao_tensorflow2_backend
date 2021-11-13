@@ -169,8 +169,8 @@ def default_detection_configs():
   h = Config()
 
   # model name.
-  h.name = 'efficientdet-d1'
-
+  h.name = 'efficientdet-d0'
+  h.model_name = 'efficientdet-d0'
   # activation type: see activation_fn in model/activation_builder.py.
   h.act_type = 'swish'
 
@@ -285,6 +285,8 @@ def default_detection_configs():
   h.set_num_threads = 1
   h.use_xla = False
   h.seed = 42
+  # 
+  h.results_dir = None
   return h
 
 

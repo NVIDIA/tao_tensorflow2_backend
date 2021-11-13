@@ -9,7 +9,7 @@ from __future__ import print_function
 import logging
 import os
 import six
-
+from efficientdet.utils import model_utils
 logger = logging.getLogger(__name__)
 
 
@@ -51,7 +51,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         max_instances_per_image=cfg['data_config']['max_instances_per_image'] or 100,
         skip_crowd_during_training=cfg['data_config']['skip_crowd_during_training'],
         # Parse image size in case it is in string format. (H, W)
-        image_size=cfg['data_config']['image_size'],
+        image_size=model_utils.parse_image_size(cfg['data_config']['image_size']),
         # augmentation config
         input_rand_hflip=cfg['augmentation_config']['rand_hflip'],
         train_scale_min=cfg['augmentation_config']['random_crop_min_scale'] or 0.1,
@@ -72,6 +72,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         lr_warmup_epoch=cfg['train_config']['lr_warmup_epoch'] or 5,
         lr_warmup_init=cfg['train_config']['lr_warmup_init'] or 0.00001,
         amp=cfg['train_config']['amp'],
+        mixed_precision=cfg['train_config']['amp'],
         data_format='channels_last',
         l2_weight_decay=cfg['train_config']['l2_weight_decay'],
         l1_weight_decay=cfg['train_config']['l1_weight_decay'],
@@ -82,4 +83,6 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         eval_epoch_cycle=cfg['eval_config']['eval_epoch_cycle'],
         eval_batch_size=cfg['eval_config']['eval_batch_size'],
         eval_samples=cfg['eval_config']['eval_samples'],
+        #
+        results_dir=cfg['results_dir']
     )

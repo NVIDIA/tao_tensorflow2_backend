@@ -107,6 +107,9 @@ def _generate_anchor_boxes(image_size, anchor_scale, anchor_configs):
   Raises:
     ValueError: input size must be the multiple of largest feature stride.
   """
+  print(image_size)
+  print(anchor_scale)
+  print(anchor_configs)
   boxes_all = []
   for _, configs in anchor_configs.items():
     boxes_level = []
@@ -127,10 +130,12 @@ def _generate_anchor_boxes(image_size, anchor_scale, anchor_configs):
                          yv + anchor_size_y_2, xv + anchor_size_x_2))
       boxes = np.swapaxes(boxes, 0, 1)
       boxes_level.append(np.expand_dims(boxes, axis=1))
+    # print(boxes_level)
+    
     # concat anchors on the same level to the reshape NxAx4
     boxes_level = np.concatenate(boxes_level, axis=1)
     boxes_all.append(boxes_level.reshape([-1, 4]))
-
+  # assert 0
   anchor_boxes = np.vstack(boxes_all)
   return anchor_boxes
 
@@ -162,6 +167,7 @@ class Anchors(object):
     self.anchor_scale = anchor_scale
     self.image_size = model_utils.parse_image_size(image_size)
     self.feat_sizes = model_utils.get_feat_sizes(image_size, max_level)
+    print(self.feat_sizes)
     self.config = self._generate_configs()
     self.boxes = self._generate_boxes()
 

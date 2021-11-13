@@ -1,5 +1,5 @@
 results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet'
 data_config:
-  training_file_pattern: '/home/scratch.p3/yuw/datasets/coco/train-*'
+  training_file_pattern: '/home/scratch.p3/yuw/datasets/coco/val-*'
   validation_file_pattern: '/home/scratch.p3/yuw/datasets/coco/val-*'
   validation_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'

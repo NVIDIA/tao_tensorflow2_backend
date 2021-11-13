@@ -13,22 +13,25 @@ class TrainConfig:
 
     momentum: float = 0.9
     iterations_per_loop: int = 100
-    num_examples_per_epoch: int = 14700
-    train_batch_size: int = 16
+    num_examples_per_epoch: int = 50
+    steps_per_epoch: int = 50
+    train_batch_size: int = 8
     num_epochs: int = 100
     checkpoint: int = 10
     tf_random_seed: int = 42
     l1_weight_decay: float = 0.0
     l2_weight_decay: float = 0.00005
-    amp: bool = False
+    amp: bool = True
     lr_warmup_epoch: int = 5
     lr_warmup_init: float = 0.0005
     learning_rate: float = 0.03
     pruned_model_path: str = ''
-    moving_average_decay: float = 0.999
-    clip_gradients_norm: float = 5.0
+    moving_average_decay: float = 0.9999
+    clip_gradients_norm: float = 0.0
     skip_checkpoint_variables: str = ''
-    checkpoint_period: int = 5
+    checkpoint_period: int = 1
+    optimizer: str = 'sgd'
+    loss_scale: float = 10.0
 
 
 @dataclass
@@ -36,7 +39,7 @@ class ModelConfig:
     """Model config."""
 
     model_name: str = 'efficientdet-d0'
-    aspect_ratios: str = ''
+    aspect_ratios: str = '[(1.0, 1.0), (1.4, 0.7), (0.7, 1.4)]'
     anchor_scale: int = 4
     min_level: int = 3
     max_level: int = 7
@@ -56,7 +59,7 @@ class DataConfig:
     max_instances_per_image: int = 200
     skip_crowd_during_training: bool = True
     use_fake_data: bool = False
-    image_size: List[int] = field(default_factory=lambda: [512, 512]) # TODO
+    image_size: str = '512x512' # TODO
 
 
 @dataclass
@@ -65,10 +68,12 @@ class EvalConfig:
 
     eval_batch_size: int = 16
     min_score_thresh: float = 0.3
-    eval_batch_size: int = 16
+    eval_batch_size: int = 8
     eval_epoch_cycle: int = 10
-    eval_samples: int = 5000
+    eval_samples: int = 50
     max_detections_per_image: int = 100
+    label_map: str = ''
+    iou_thresh: float = 0.5
 
 
 @dataclass
@@ -91,3 +96,4 @@ class ExperimentConfig:
     augmentation_config: AugmentationConfig = AugmentationConfig()
     results_dir: str = MISSING
     key: str = ''
+    data_format: str = 'channels_last'
