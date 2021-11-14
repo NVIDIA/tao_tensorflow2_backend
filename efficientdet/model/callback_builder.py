@@ -443,7 +443,7 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
         cocoeval = COCOEvalCallback(
             eval_dataset, 
             eval_freq=params['train_config']['checkpoint_period'], 
-            start_eval_epoch=1, 
+            start_eval_epoch=10, # TODO
             eval_params=params)
         callbacks.append(cocoeval)
 

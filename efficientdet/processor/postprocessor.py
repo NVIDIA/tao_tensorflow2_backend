@@ -65,7 +65,7 @@ class EfficientDetPostprocessor(Postprocessor):
                 nms_scores_bs,
                 nms_classes_bs,
             ]
-        return tf.stack(detections_bs, axis=-1, name='detnections')
+        return tf.stack(detections_bs, axis=-1, name='detections')
 
     def postprocess_per_class(self, cls_outputs, box_outputs, image_scales=None):
         """Post processing with per class NMS.
@@ -145,7 +145,7 @@ class EfficientDetPostprocessor(Postprocessor):
         if image_scales is not None:
             scales = tf.expand_dims(tf.expand_dims(image_scales, -1), -1)
             nms_boxes = nms_boxes * tf.cast(scales, nms_boxes.dtype)
-        return nms_boxes, nms_scores, tf.cast(nms_classes, nms_boxes.dtype), nms_valid_len
+        return nms_boxes, nms_scores, nms_classes, nms_valid_len
 
     def nms(self, boxes: T, scores: T, classes: T,
             padded: bool) -> Tuple[T, T, T, T]:

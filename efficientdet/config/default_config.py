@@ -12,16 +12,16 @@ class TrainConfig:
     """Train config."""
 
     momentum: float = 0.9
-    iterations_per_loop: int = 100
-    num_examples_per_epoch: int = 50
-    steps_per_epoch: int = 50
+    iterations_per_loop: int = 10
+    num_examples_per_epoch: int = 100000
+    steps_per_epoch: int = 100000
     train_batch_size: int = 8
     num_epochs: int = 100
     checkpoint: int = 10
     tf_random_seed: int = 42
     l1_weight_decay: float = 0.0
     l2_weight_decay: float = 0.00005
-    amp: bool = True
+    amp: bool = False
     lr_warmup_epoch: int = 5
     lr_warmup_init: float = 0.0005
     learning_rate: float = 0.03
@@ -29,7 +29,7 @@ class TrainConfig:
     moving_average_decay: float = 0.9999
     clip_gradients_norm: float = 0.0
     skip_checkpoint_variables: str = ''
-    checkpoint_period: int = 1
+    checkpoint_period: int = 10
     optimizer: str = 'sgd'
     loss_scale: float = 10.0
 
@@ -66,11 +66,10 @@ class DataConfig:
 class EvalConfig:
     """Experiment config."""
 
-    eval_batch_size: int = 16
-    min_score_thresh: float = 0.3
     eval_batch_size: int = 8
+    min_score_thresh: float = 0.3
     eval_epoch_cycle: int = 10
-    eval_samples: int = 50
+    eval_samples: int = 5000
     max_detections_per_image: int = 100
     label_map: str = ''
     iou_thresh: float = 0.5
