@@ -16,10 +16,10 @@
 from absl import logging
 import tensorflow as tf
 
-from efficientdet.utils import model_utils
-from efficientdet.model import anchors
-from efficientdet.utils.horovod_utils import get_rank, get_world_size
-from efficientdet.utils.keras_utils import get_mixed_precision_policy
+from byom.retinanet.utils import model_utils
+from byom.retinanet.model import anchors
+from byom.retinanet.utils.horovod_utils import get_rank, get_world_size
+from byom.retinanet.utils.keras_utils import get_mixed_precision_policy
 
 from object_detection import preprocessor
 from object_detection import tf_example_decoder

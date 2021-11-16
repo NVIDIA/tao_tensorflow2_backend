@@ -1,7 +1,7 @@
 from blocks.processor.preprocessor import Preprocessor
 
 
-class EfficientDetPreprocessor(Preprocessor):
+class RetinaNetPreprocessor(Preprocessor):
     def __init__(self, images, output_size):
         pass
 

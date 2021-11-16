@@ -9,10 +9,10 @@ import horovod.tensorflow.keras.callbacks as hvd_callbacks
 from tensorflow_addons.optimizers import MovingAverage
 from typing import Any, List, MutableMapping, Text
 
-from efficientdet.processor.postprocessor import EfficientDetPostprocessor
-from efficientdet.utils import coco_metric
-from efficientdet.utils import label_utils
-from efficientdet.utils.horovod_utils import get_world_size, is_main_process
+from byom.retinanet.processor.postprocessor import RetinaNetPostprocessor
+from byom.retinanet.utils import coco_metric
+from byom.retinanet.utils import label_utils
+from byom.retinanet.utils.horovod_utils import get_world_size, is_main_process
 
 
 class BatchTimestamp(object):
@@ -333,7 +333,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
     @tf.function
     def eval_model_fn(self, images, labels):
         cls_outputs, box_outputs = self.model(images, training=False)
-        postpc = EfficientDetPostprocessor(self.eval_params)
+        postpc = RetinaNetPostprocessor(self.eval_params)
         detections = postpc.generate_detections(
             cls_outputs, box_outputs,
             labels['image_scales'],
