@@ -4,9 +4,7 @@ import os
 from typing import Text, Tuple, Union
 from absl import logging
 import numpy as np
-# import tensorflow.compat.v1 as tf
 import tensorflow as tf
-# pylint: disable=logging-format-interpolation
 
 
 def get_ema_vars():

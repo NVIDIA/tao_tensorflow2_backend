@@ -17,7 +17,7 @@ import collections
 import numpy as np
 import tensorflow as tf
 
-from efficientdet.utils import model_utils
+from byom.retinanet.utils import model_utils
 from object_detection import argmax_matcher
 from object_detection import box_list
 from object_detection import faster_rcnn_box_coder

@@ -1,6 +1,6 @@
 # Copyright (c) 2017-2020, NVIDIA CORPORATION.  All rights reserved.
 
-"""IVA EfficientDet scripts module."""
+"""IVA BYOM scripts module."""
 
 from __future__ import absolute_import
 from __future__ import division

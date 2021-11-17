@@ -1,9 +1,9 @@
-"""EfficientDet losses."""
+"""RetinaNet losses."""
 import numpy as np
 import tensorflow as tf
 import math
 from typing import Union, Text
-from efficientdet.model import anchors
+from byom.retinanet.model import anchors
 FloatType = Union[tf.Tensor, float, np.float32, np.float64]
 
 
