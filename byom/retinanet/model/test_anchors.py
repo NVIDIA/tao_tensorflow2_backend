@@ -257,7 +257,7 @@ class mmdet_anchor_generator():
         return multi_level_anchors
     
 
-def compare_anchors():
+def compare_single_level_anchors():
     s = 16
     base_size = 9
     l = int(math.log(s, 2))
@@ -294,4 +294,4 @@ def compare_anchors():
         [-4.5 11.5  4.5 20.5]
         [11.5 -4.5 20.5  4.5]
         [11.5 11.5 20.5 20.5]]"""
-compare_anchors()
+compare_single_level_anchors()

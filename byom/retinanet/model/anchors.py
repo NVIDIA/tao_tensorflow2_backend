@@ -125,9 +125,11 @@ def _generate_anchor_boxes(image_size, anchor_scale, anchor_configs):
 
       boxes = np.vstack((yv - anchor_size_y_2, xv - anchor_size_x_2,
                          yv + anchor_size_y_2, xv + anchor_size_x_2))
+      # TODO: the following matches with mmdet output; but need to verify
+      # boxes = np.vstack((xv - anchor_size_x_2, yv - anchor_size_y_2,
+      #                    xv + anchor_size_x_2, yv + anchor_size_y_2))
       boxes = np.swapaxes(boxes, 0, 1)
       boxes_level.append(np.expand_dims(boxes, axis=1))
-    # print(boxes_level)
     
     # concat anchors on the same level to the reshape NxAx4
     boxes_level = np.concatenate(boxes_level, axis=1)
