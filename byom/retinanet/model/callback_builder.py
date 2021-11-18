@@ -332,7 +332,9 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
 
     @tf.function
     def eval_model_fn(self, images, labels):
-        cls_outputs, box_outputs = self.model(images, training=False)
+        outputs = self.model(images, training=False)
+        cls_outputs = outputs[0:5]
+        box_outputs = outputs[5:]
         postpc = RetinaNetPostprocessor(self.eval_params)
         detections = postpc.generate_detections(
             cls_outputs, box_outputs,
@@ -443,7 +445,7 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
         cocoeval = COCOEvalCallback(
             eval_dataset, 
             eval_freq=params['train_config']['checkpoint_period'], 
-            start_eval_epoch=10, # TODO
+            start_eval_epoch=1, # TODO
             eval_params=params)
         callbacks.append(cocoeval)
 

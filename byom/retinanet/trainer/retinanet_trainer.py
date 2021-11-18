@@ -103,24 +103,17 @@ class RetinaNetTrainer(Trainer):
         A dict record loss info.
         """
         images, labels = data
-        if len(self.config.heads) == 2:
-            cls_outputs, box_outputs, seg_outputs = self.model(images, training=False)
-        elif 'object_detection' in self.config.heads:
-            cls_outputs, box_outputs = self.model(images, training=False)
-        elif 'segmentation' in self.config.heads:
-            seg_outputs, = self.model(images, training=False)
+        outputs = self.model(images, training=True)
+        cls_outputs = outputs[0:5]
+        box_outputs = outputs[5:]
+        
         reg_l2loss = self._reg_l2_loss(self.config.weight_decay)
         total_loss = reg_l2loss
         loss_vals = {}
-        if 'object_detection' in self.config.heads:
-            det_loss = self._detection_loss(cls_outputs, box_outputs, labels,
-                                            loss_vals)
-            total_loss += det_loss
-        if 'segmentation' in self.config.heads:
-            seg_loss_layer = self.model.loss['seg_loss']
-            seg_loss = seg_loss_layer(labels['image_masks'], seg_outputs)
-            total_loss += seg_loss
-            loss_vals['seg_loss'] = seg_loss
+        det_loss = self._detection_loss(cls_outputs, box_outputs, labels,
+                                        loss_vals)
+        total_loss += det_loss
+
         loss_vals['loss'] = total_loss
         return loss_vals
 

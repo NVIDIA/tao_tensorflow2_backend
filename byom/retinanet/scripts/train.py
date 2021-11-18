@@ -81,7 +81,7 @@ def run_experiment(cfg, results_dir, key):
         input_shape,
         model_path=cfg['model_config']['train_graph'],
         training=True)
-
+    model.summary()
     model.compile(
         optimizer=optimizer_builder.get_optimizer(cfg['train_config']),
         loss={
@@ -106,15 +106,14 @@ def run_experiment(cfg, results_dir, key):
                     reduction=tf.keras.losses.Reduction.NONE)
         })
 
-    # callbacks = callback_builder.get_callbacks(
-    #     cfg, 'traineval', eval_dataset, 
-    #     DLLogger,
-    #     profile=False, 
-    #     time_history=False,
-    #     log_steps=1,
-    #     lr_tb=False,
-    #     benchmark=False)
-    callbacks = None
+    callbacks = callback_builder.get_callbacks(
+        cfg, 'traineval', eval_dataset, 
+        DLLogger,
+        profile=False, 
+        time_history=False,
+        log_steps=1,
+        lr_tb=False,
+        benchmark=False)
 
     # TODO: get RetinaNetTrainer from builder+config
     trainer = RetinaNetTrainer(model, config, callbacks)
