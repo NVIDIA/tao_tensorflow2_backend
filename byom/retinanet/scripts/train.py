@@ -40,7 +40,7 @@ def run_experiment(cfg, results_dir, key):
     # dllogger setup
     backends = []
     if is_main_process():
-        log_path = os.path.join(cfg['results_dir'], 'log.txt')
+        log_path = os.path.join(results_dir, 'log.txt')
         backends += [
             JSONStreamBackend(verbosity=Verbosity.VERBOSE, filename=log_path),
             StdOutBackend(verbosity=Verbosity.DEFAULT)]

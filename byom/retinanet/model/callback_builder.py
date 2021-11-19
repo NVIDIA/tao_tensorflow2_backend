@@ -397,6 +397,8 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
 def get_callbacks(params, mode, eval_dataset, logger, profile=False, 
                   time_history=True, log_steps=1, lr_tb=True, benchmark=False):
     """Get callbacks for given params."""
+    print(params)
+    assert 0
     callbacks = [hvd_callbacks.BroadcastGlobalVariablesCallback(0)]
     if is_main_process():
         # if benchmark == False:
