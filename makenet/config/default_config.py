@@ -19,7 +19,7 @@ class RegConfig:
 @dataclass
 class TrainConfig:
     """Train config."""
-
+    qat: bool = True
     train_dataset_path: str = MISSING
     val_dataset_path: str = MISSING
     pretrained_model_path: str = ''
@@ -34,7 +34,7 @@ class TrainConfig:
     preprocess_mode: str = 'caffe'
     mixup_alpha: float = 0
     disable_horizontal_flip: bool = False
-    image_mean: List[int] = field(default_factory=lambda: [3, 224, 224])
+    image_mean: List[float] = field(default_factory=lambda: [103.939, 116.779, 123.68])
     reg_config: RegConfig = RegConfig()
 
 
@@ -43,7 +43,7 @@ class ModelConfig:
     """Model config."""
 
     arch: str = 'resnet'
-    input_image_size: List[float] = field(default_factory=lambda: [103.939, 116.779, 123.68])
+    input_image_size: List[int] = field(default_factory=lambda: [3, 224, 224])
     n_layers: int = 18
     use_batch_norm: bool = True
     use_bias: bool = False

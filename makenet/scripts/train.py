@@ -22,14 +22,15 @@ import horovod.tensorflow.keras as hvd
 # Horovod: initialize Horovod.
 hvd.init()
 
+from common.utils import SoftStartCosineAnnealingScheduler
 from makenet.config.hydra_runner import hydra_runner
 from makenet.config.default_config import ExperimentConfig
-from common.utils import SoftStartCosineAnnealingScheduler
 from makenet.model.model_builder import get_model
 from makenet.utils.mixup_generator import MixupImageDataGenerator
 from makenet.utils.preprocess_input import preprocess_input
 from makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
 from makenet.utils.helper import initialize, setup_config
+from quantization import quantize_keras_model
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 verbose = 0
@@ -254,7 +255,8 @@ def run_experiment(cfg, results_dir=None,
         freeze_bn=cfg['model_config']['freeze_bn'],
         bn_config=bn_config
     )
-    
+    if cfg['train_config']['qat']:
+        final_model = quantize_keras_model.create_quantized_keras_model(final_model)
     # Printing model summary
     final_model.summary()
 
