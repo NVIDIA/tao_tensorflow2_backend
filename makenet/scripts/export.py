@@ -1,35 +1,32 @@
 # Copyright (c) 2017-2020, NVIDIA CORPORATION.  All rights reserved.
 
 """Export a classification model."""
+import os
+import logging
 
-# import build_command_line_parser as this is needed by entrypoint
-from iva.common.export.app import build_command_line_parser as global_parser # noqa pylint: disable=W0611
-from iva.common.export.app import run_export
-from iva.makenet.export.classification_exporter import ClassificationExporter as Exporter
-
-
-def build_command_line_parser(parser=None):
-    """Simple function to build the command line parser."""
-    args_parser = global_parser(parser=parser)
-    args_parser.add_argument(
-        "--classmap_json",
-        help="UNIX path to classmap.json file generated during classification <train>",
-        default=None,
-        type=str,
-    )
-    return args_parser
+from makenet.config.hydra_runner import hydra_runner
+from makenet.config.default_config import ExperimentConfig
+from makenet.export.classification_exporter import Exporter
+logger = logging.getLogger(__name__)
 
 
-def parse_command_line(args=None):
-    """Parse command line arguments."""
-    parser = build_command_line_parser(parser=None)
-    return vars(parser.parse_known_args(args)[0])
+def run_export(cfg=None):
+    exporter = Exporter()
+    exporter.load_model(cfg.export_config.model_path)
+    exporter.export(cfg.export_config.output_path)
+    logger.info(f"ONNX is saved at {cfg.export_config.output_path}")
 
 
-def main(args=None):
-    """Run export for classification."""
-    args = parse_command_line(args=args)
-    run_export(Exporter, args=args)
+spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+@hydra_runner(
+    config_path=os.path.join(spec_root, "experiment_specs"),
+    config_name="export", schema=ExperimentConfig
+)
+def main(cfg: ExperimentConfig) -> None:
+    """Wrapper function for continuous training of MakeNet application.
+    """
+    run_export(cfg=cfg)
+    logger.info("Export finished successfully.")
 
 
 if __name__ == "__main__":

@@ -69,12 +69,21 @@ class EvalConfig:
 
 
 @dataclass
+class ExportConfig:
+    """Export config."""
+
+    model_path: str = ''
+    output_path: str = ''
+
+
+@dataclass
 class ExperimentConfig:
     """Experiment config."""
 
     train_config: TrainConfig = TrainConfig()
     model_config: ModelConfig = ModelConfig()
     eval_config: EvalConfig = EvalConfig()
+    export_config: ExportConfig = ExportConfig()
     results_dir: str = MISSING
     key: str = ''
     init_epoch: int = 1

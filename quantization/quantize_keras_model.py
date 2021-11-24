@@ -138,6 +138,7 @@ def create_quantized_keras_model(model):
                 layer_config = layer.get_config()
                 layer_config["quantize"] = False
                 layer_config["bitwidth"] = 8
+                layer_config["per_channel"] = None
                 conv_act = layer_config["activation"]
                 if conv_act != "linear":
                     layer_config["activation"] = "linear"

@@ -144,7 +144,7 @@ def _conv2d(
 
         assert assign_min.get_shape() == [], "Unexpected shape for tensor minimum."
         assert assign_max.get_shape() == [], "Unexpected shape for tensor maximum."
-        x = tf.grad_pass_through(tf.quantization.quantize_and_dequantize_v2)(
+        x = tf.quantization.quantize_and_dequantize(
             input=x,
             input_min=assign_min,
             input_max=assign_max,
@@ -155,17 +155,16 @@ def _conv2d(
         )
 
     # Quantizing the weights.
-    print(kernel)
-    input_min = [0.0] * kernel.get_shape()[axis]
-    input_max = [0.0] * kernel.get_shape()[axis]
-    kernel = tf.quantization.quantize_and_dequantize_v2(
+    input_min = [0.0] * kernel.get_shape()[3]
+    input_max = [0.0] * kernel.get_shape()[3]
+    kernel = tf.quantization.quantize_and_dequantize(
         input=kernel,
-        input_min=input_min,
-        input_max=input_max,
+        input_min=0.0, # input_min,
+        input_max=0.0, # input_max,
         range_given=False,
         signed_input=True,
         num_bits=bitwidth,
-        axis=axis,
+        axis=None,
     )
 
     x = tf.nn.convolution(
