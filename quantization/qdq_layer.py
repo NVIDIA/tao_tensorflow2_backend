@@ -78,7 +78,7 @@ class QDQ(Layer):
 
         assert assign_min.get_shape() == [], "Unexpected shape for tensor minimum."
         assert assign_max.get_shape() == [], "Unexpected shape for tensor maximum."
-        x = tf.quantization.quantize_and_dequantize_v2(
+        x = tf.quantization.quantize_and_dequantize(
             input=x,
             input_min=assign_min,
             input_max=assign_max,
