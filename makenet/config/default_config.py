@@ -17,6 +17,59 @@ class RegConfig:
 
 
 @dataclass
+class OptimConfig:
+    """Optimizer config."""
+
+    optimizer: str = 'sgd'
+    momentum: float = 0.99
+    decay: float = 0.0001
+    nesterov: bool = True
+    beta_1: float = 0.99
+    beta_2: float = 0.99
+    epsilon: float = 0.0001
+    rho: float = 0.5
+
+@dataclass
+class Scheduler:
+    learning_rate: float = 0.05
+
+@dataclass
+class StepLRScheduler(Scheduler):
+    learning_rate: float = 0.05
+    gamma: float = 0.000015
+    step_size: int = 10
+
+
+@dataclass
+class MultiGPULearningRateScheduler(Scheduler):
+    learning_rate: float = 0.05
+    soft_start: float = 0.000015
+    annealing_points: List[int] = MISSING
+    annealing_divider: List[int] = MISSING
+
+
+@dataclass
+class SoftStartCosineAnnealingScheduler(Scheduler):
+    learning_rate: float = 0.05
+    min_lr_ratio: float = 0.000015
+    soft_start: int = 10
+
+
+scheduler_dict = {
+    'soft_anneal': MultiGPULearningRateScheduler,
+    'cosine': SoftStartCosineAnnealingScheduler,
+    'step': StepLRScheduler
+}
+
+@dataclass
+class LRConfig:
+    """Learning rate config."""
+
+    scheduler: str = 'soft_anneal'
+    scheduler_config: Scheduler = scheduler_dict[scheduler]()
+
+
+@dataclass
 class TrainConfig:
     """Train config."""
     qat: bool = True

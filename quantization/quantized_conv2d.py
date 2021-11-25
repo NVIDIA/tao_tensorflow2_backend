@@ -155,16 +155,16 @@ def _conv2d(
         )
 
     # Quantizing the weights.
-    input_min = [0.0] * kernel.get_shape()[3]
-    input_max = [0.0] * kernel.get_shape()[3]
+    input_min = [0.0] * kernel.get_shape()[axis]
+    input_max = [0.0] * kernel.get_shape()[axis]
     kernel = tf.quantization.quantize_and_dequantize(
         input=kernel,
-        input_min=0.0, # input_min,
-        input_max=0.0, # input_max,
+        input_min=input_min,
+        input_max=input_max,
         range_given=False,
         signed_input=True,
         num_bits=bitwidth,
-        axis=None,
+        axis=axis,
     )
 
     x = tf.nn.convolution(
@@ -314,7 +314,7 @@ class QuantizedConv2D(Conv2D):
         """Keras layer call."""
         axis = None
         if self.per_channel:
-            axis = 1 if self.data_format == 'channels_first' else 3
+            axis = -1 #1 if self.data_format == 'channels_first' else 3
         outputs = _conv2d(
             inputs,
             self.kernel,

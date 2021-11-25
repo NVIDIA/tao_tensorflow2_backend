@@ -255,6 +255,32 @@ def run_experiment(cfg, results_dir=None,
         freeze_bn=cfg['model_config']['freeze_bn'],
         bn_config=bn_config
     )
+    
+    if cfg['train_config']['pretrained_model_path']:
+        # Decrypt and load pretrained model
+        pretrained_model = tf.keras.models.load_model(cfg['train_config']['pretrained_model_path'])
+
+        strict_mode = True
+        for layer in pretrained_model.layers[1:]:
+            # The layer must match up to prediction layers.
+            if layer.name == 'predictions':
+                strict_mode = False
+            try:
+                l_return = final_model.get_layer(layer.name)
+            except ValueError:
+                # Some layers are not there
+                continue
+            try:
+                l_return.set_weights(layer.get_weights())
+            except ValueError:
+                if strict_mode:
+                    # This is a pruned model
+                    final_model = setup_config(
+                        pretrained_model,
+                        reg_config,
+                        freeze_bn=cfg['model_config']['freeze_bn'],
+                        bn_config=bn_config
+                    )
     if cfg['train_config']['qat']:
         final_model = quantize_keras_model.create_quantized_keras_model(final_model)
     # Printing model summary
@@ -268,7 +294,7 @@ def run_experiment(cfg, results_dir=None,
     else:
         # Defining optimizer
         opt = tf.keras.optimizers.SGD(
-            learning_rate=0.05,
+            learning_rate=0.0005,
             momentum=0.9,
             nesterov=False
         )
