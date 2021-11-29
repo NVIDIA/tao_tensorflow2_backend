@@ -64,13 +64,15 @@ class Exporter:
     def _set_input_shape(self):
         self.input_shape = tuple(self.model.layers[0].input_shape[0][1:4])
 
-    def export_onnx(self, onnx_path):
+    def export_onnx(self, onnx_path) -> None:
+        """Export to ONNX"""
+        # TODO(@yuw): read or infer input shape 
         spec = (tf.TensorSpec((None, 3, 224, 224), tf.float32, name="input_1"),)
         model_proto, _ = tf2onnx.convert.from_keras(self.model, input_signature=spec, opset=13, output_path=onnx_path)
         output_names = [n.name for n in model_proto.graph.output]
         logger.info(f"output names: {output_names}")
     
-    def export_engine(self, onnx_path, engine_path, verbose=True):
+    def export_engine(self, onnx_path, engine_path, save_engine=True, verbose=True) -> None:
         """Parse the model file through TensorRT and build TRT engine
         """
         # Create builder and network
@@ -119,7 +121,12 @@ class Exporter:
                 )
             )
 
-            return builder.build_engine(network, config)  # build_serialized_network
+            trt_engine = builder.build_engine(network, config)  # build_serialized_network
+            if not trt_engine:
+                logger.info("TensorRT engine failed.")
+            if save_engine:
+                with open(engine_path, "wb") as engine_file:
+                    engine_file.write(trt_engine.serialize())
 
         
     def _build_profile(self, builder, network, profile_shapes, default_shape_value=1):

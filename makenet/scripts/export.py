@@ -15,9 +15,9 @@ def run_export(cfg=None):
     exporter.load_model(cfg.export_config.model_path)
     exporter.export_onnx(cfg.export_config.output_path)
     logger.info(f"ONNX is saved at {cfg.export_config.output_path}")
-    trt_engine = exporter.export_engine(cfg.export_config.output_path, cfg.export_config.output_path + '.engine')
-    if not trt_engine:
-        logger.info("TensorRT engine failed.")
+    exporter.export_engine(cfg.export_config.output_path, cfg.export_config.output_path + '.engine')
+    logger.info(f"Engine is saved at {cfg.export_config.output_path + '.engine'}")
+
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 @hydra_runner(
