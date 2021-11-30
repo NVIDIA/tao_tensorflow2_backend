@@ -24,7 +24,7 @@ class Exporter:
 
     def __init__(self,
                  config=None,
-                 data_type="fp32",
+                 dtype="fp32",
                  strict_type=False,
                  classmap_file=None,
                  max_batch_size=1,
@@ -39,7 +39,14 @@ class Exporter:
             strict_type(bool): Apply TensorRT strict_type_constraints or not for INT8 mode.
         """
         self.config = config
-        self.data_type = data_type
+        if dtype == "int8":
+            self._dtype = trt.DataType.INT8
+        elif dtype == "fp16":
+            self._dtype = trt.DataType.HALF
+        elif dtype == "fp32":
+            self._dtype = trt.DataType.FLOAT
+        else:
+            raise ValueError("Unsupported data type: %s" % dtype)
         self.strict_type = strict_type
         self.backend = "onnx"
         self.classmap_file = classmap_file
@@ -104,7 +111,13 @@ class Exporter:
                 config.profiling_verbosity = trt.ProfilingVerbosity.DETAILED
             else:
                 config.profiling_verbosity = trt.ProfilingVerbosity.VERBOSE
-            config.flags = config.flags | 1 << int(trt.BuilderFlag.INT8)
+
+            if self._dtype == trt.DataType.HALF:
+                config.set_flag(trt.BuilderFlag.FP16)
+
+            if self._dtype == trt.DataType.INT8:
+                config.set_flag(trt.BuilderFlag.INT8)
+            # config.flags = config.flags | 1 << int(trt.BuilderFlag.INT8)
             # Setting the (min, opt, max) batch sizes to be (1, 4, 8).
             #   The users need to configure this according to their requirements.
             config.add_optimization_profile(

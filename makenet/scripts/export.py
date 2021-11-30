@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_export(cfg=None):
-    exporter = Exporter()
+    exporter = Exporter(dtype='fp16')
     exporter.load_model(cfg.export_config.model_path)
     exporter.export_onnx(cfg.export_config.output_path)
     logger.info(f"ONNX is saved at {cfg.export_config.output_path}")
