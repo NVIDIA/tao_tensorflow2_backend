@@ -45,8 +45,8 @@ if [ $BUILD_DOCKER = "1" ]; then
 
 elif [ $RUN_DOCKER = "1" ]; then
     echo "Running docker interatively..."
-    docker run --gpus all -v /home/obaba/workspace/tao-tf2:/workspace \
-                          -v /media/scratch.metropolis3:/home/scratch.p3 \
+    docker run --gpus all -v /home/yuw/workspace/tao-tf2:/workspace \
+                          -v /media/scratch.p3:/home/scratch.p3 \
                           -v /media/projects.metropolis2:/home/projects2_metropolis \
                           --net=host --shm-size=30g --ulimit memlock=-1 --ulimit stack=67108864 \
                           --rm -it tao-tf2:v0.1 /bin/bash

@@ -130,6 +130,14 @@ class ExportConfig:
 
 
 @dataclass
+class InferConfig:
+    """Export config."""
+
+    model_path: str = ''
+    image_dir: str = ''
+
+
+@dataclass
 class ExperimentConfig:
     """Experiment config."""
 
@@ -137,6 +145,7 @@ class ExperimentConfig:
     model_config: ModelConfig = ModelConfig()
     eval_config: EvalConfig = EvalConfig()
     export_config: ExportConfig = ExportConfig()
+    infer_config: InferConfig = InferConfig()
     results_dir: str = MISSING
     key: str = ''
     init_epoch: int = 1

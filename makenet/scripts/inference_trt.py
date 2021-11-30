@@ -1,46 +1,47 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
+"""Inference with classification tensorrt engine."""
 
-"""Inference and metrics computation code using a loaded model."""
-
-import logging
 import os
+from functools import partial
+import logging
 
 import numpy as np
-import pandas as pd
+from PIL import ImageFile
 
-from makenet.inferencer.keras_inferencer import KerasInferencer
+from makenet.inferencer.trt_inferencer import TRTInferencer
 from makenet.config.hydra_runner import hydra_runner
 from makenet.config.default_config import ExperimentConfig
-
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 SUPPORTED_IMAGE_FORMAT = ['.jpg', '.png', '.jpeg']
 
 
 def run_inference(cfg):
-    """Inference on an image/directory using a pretrained model file.
+    """Wrapper function to run evaluation of MakeNet model.
 
     Args:
-        args: Dictionary arguments containing parameters defined by command
-              line parameters.
-    Log:
-        Image Mode:
-            print classifier output
-        Directory Mode:
-            write out a .csv file to store all the predictions
+       Dictionary arguments containing parameters parsed in the main function.
     """
+    # Set up logger verbosity.
+    verbosity = 'INFO'
+    # Configure the logger.
+    logging.basicConfig(
+        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+        level=verbosity)
+    # set backend
+    # initialize()
     predictions = []
-    inferencer = KerasInferencer(cfg['infer_config']['model_path'])
+    inferencer = TRTInferencer(cfg['infer_config']['model_path'])
 
-    for img_name in sorted(os.listdir(cfg['infer_config']['image_dir'])):
+    for img_name in os.listdir(cfg['infer_config']['image_dir']):
         _, ext = os.path.splitext(img_name)
         if ext.lower() in SUPPORTED_IMAGE_FORMAT:
             result = inferencer.infer_single(
                 os.path.join(cfg['infer_config']['image_dir'], img_name))
+            # print(result)
             predictions.append(np.argmax(result))
             break
     print(predictions)
-
-
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 @hydra_runner(
@@ -54,5 +55,5 @@ def main(cfg: ExperimentConfig) -> None:
     logger.info("Inference finished successfully.")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

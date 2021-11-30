@@ -1,0 +1,5 @@
+infer_config:
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-makenet/qat/weights/resnet_080.onnx.engine'
+  # model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-makenet/qat/weights/resnet_080.hdf5'
+  # model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-makenet/weights/resnet_044.hdf5'
+  image_dir: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw/n15075141'
