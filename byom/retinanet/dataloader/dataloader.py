@@ -1,4 +1,4 @@
-# Copyright 2020 Google Research. All Rights Reserved.
+# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ from byom.retinanet.model import anchors
 from byom.retinanet.utils.horovod_utils import get_rank, get_world_size
 from byom.retinanet.utils.keras_utils import get_mixed_precision_policy
 
-from object_detection import preprocessor
-from object_detection import tf_example_decoder
+from cv.core import preprocessor
+from cv.core import tf_example_decoder
 
 class InputProcessor:
   """Base class of Input processor."""

@@ -1,4 +1,4 @@
-# Copyright 2020 Google Research. All Rights Reserved.
+# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ import numpy as np
 import tensorflow as tf
 
 from byom.retinanet.utils import model_utils
-from object_detection import argmax_matcher
-from object_detection import box_list
-from object_detection import faster_rcnn_box_coder
-from object_detection import region_similarity_calculator
-from object_detection import target_assigner
+from cv.core import argmax_matcher
+from cv.core import box_list
+from cv.core import faster_rcnn_box_coder
+from cv.core import region_similarity_calculator
+from cv.core import target_assigner
 
 MAX_DETECTION_POINTS = 5000
 
