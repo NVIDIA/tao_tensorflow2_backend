@@ -8,9 +8,9 @@ import logging
 import numpy as np
 from PIL import ImageFile
 
-from makenet.inferencer.trt_inferencer import TRTInferencer
-from makenet.config.hydra_runner import hydra_runner
-from makenet.config.default_config import ExperimentConfig
+from cv.makenet.inferencer.trt_inferencer import TRTInferencer
+from cv.makenet.config.hydra_runner import hydra_runner
+from cv.makenet.config.default_config import ExperimentConfig
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 SUPPORTED_IMAGE_FORMAT = ['.jpg', '.png', '.jpeg']

@@ -5,8 +5,8 @@ from absl import logging
 import tensorflow as tf
 
 from blocks.processor.postprocessor import Postprocessor
-from efficientdet.utils import model_utils
-from efficientdet.model import anchors
+from cv.efficientdet.utils import model_utils
+from cv.efficientdet.model import anchors
 
 T = tf.Tensor  # a shortcut for typing check.
 CLASS_OFFSET = 1

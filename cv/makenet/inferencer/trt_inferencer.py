@@ -4,8 +4,8 @@
 import numpy as np
 import tensorrt as trt
 
-from makenet.inferencer.inferencer import Inferencer
-from makenet.inferencer.engine import allocate_buffers, do_inference, load_engine
+from cv.makenet.inferencer.inferencer import Inferencer
+from cv.makenet.inferencer.engine import allocate_buffers, do_inference, load_engine
 # TensorRT logger singleton
 TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
 TRT_DYNAMIC_DIM = -1

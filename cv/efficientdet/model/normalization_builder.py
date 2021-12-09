@@ -15,7 +15,7 @@
 """Common utils."""
 from typing import Text, Union
 import tensorflow as tf
-from efficientdet.model import activation_builder
+from cv.efficientdet.model import activation_builder
 
 
 class BatchNormalization(tf.keras.layers.BatchNormalization):

@@ -24,17 +24,17 @@ import horovod.tensorflow.keras as hvd
 from dllogger import StdOutBackend, JSONStreamBackend, Verbosity
 import dllogger as DLLogger
 
-from efficientdet.config.hydra_runner import hydra_runner
-from efficientdet.config.default_config import ExperimentConfig
-from efficientdet.dataloader import dataloader
-from efficientdet.losses import losses
-from efficientdet.model.efficientdet import efficientdet
-from efficientdet.model import callback_builder
-from efficientdet.model import optimizer_builder
-from efficientdet.trainer.efficientdet_trainer import EfficientDetTrainer
-from efficientdet.utils.config_utils import generate_params_from_cfg
-from efficientdet.utils import hparams_config
-from efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
+from cv.efficientdet.config.hydra_runner import hydra_runner
+from cv.efficientdet.config.default_config import ExperimentConfig
+from cv.efficientdet.dataloader import dataloader
+from cv.efficientdet.losses import losses
+from cv.efficientdet.model.efficientdet import efficientdet
+from cv.efficientdet.model import callback_builder
+from cv.efficientdet.model import optimizer_builder
+from cv.efficientdet.trainer.efficientdet_trainer import EfficientDetTrainer
+from cv.efficientdet.utils.config_utils import generate_params_from_cfg
+from cv.efficientdet.utils import hparams_config
+from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
 
 
 def run_experiment(cfg, results_dir, key):

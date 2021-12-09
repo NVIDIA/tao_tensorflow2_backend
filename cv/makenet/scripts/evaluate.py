@@ -16,11 +16,11 @@ from tensorflow import keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
 
-from makenet.config.hydra_runner import hydra_runner
-from makenet.config.default_config import ExperimentConfig
-from makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
-from makenet.utils.preprocess_input import preprocess_input
-from makenet.utils.helper import initialize, get_input_shape, setup_config
+from cv.makenet.config.hydra_runner import hydra_runner
+from cv.makenet.config.default_config import ExperimentConfig
+from cv.makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
+from cv.makenet.utils.preprocess_input import preprocess_input
+from cv.makenet.utils.helper import initialize, get_input_shape, setup_config
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 

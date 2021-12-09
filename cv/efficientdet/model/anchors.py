@@ -17,7 +17,7 @@ import collections
 import numpy as np
 import tensorflow as tf
 
-from efficientdet.utils import model_utils
+from cv.efficientdet.utils import model_utils
 from cv.core import argmax_matcher
 from cv.core import box_list
 from cv.core import faster_rcnn_box_coder

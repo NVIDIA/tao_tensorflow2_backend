@@ -9,10 +9,10 @@ import horovod.tensorflow.keras.callbacks as hvd_callbacks
 from tensorflow_addons.optimizers import MovingAverage
 from typing import Any, List, MutableMapping, Text
 
-from efficientdet.processor.postprocessor import EfficientDetPostprocessor
-from efficientdet.utils import coco_metric
-from efficientdet.utils import label_utils
-from efficientdet.utils.horovod_utils import get_world_size, is_main_process
+from cv.efficientdet.processor.postprocessor import EfficientDetPostprocessor
+from cv.efficientdet.utils import coco_metric
+from cv.efficientdet.utils import label_utils
+from cv.efficientdet.utils.horovod_utils import get_world_size, is_main_process
 
 
 class BatchTimestamp(object):

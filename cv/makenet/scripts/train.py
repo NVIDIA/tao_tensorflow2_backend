@@ -23,13 +23,13 @@ import horovod.tensorflow.keras as hvd
 hvd.init()
 
 from common.utils import SoftStartCosineAnnealingScheduler
-from makenet.config.hydra_runner import hydra_runner
-from makenet.config.default_config import ExperimentConfig
-from makenet.model.model_builder import get_model
-from makenet.utils.mixup_generator import MixupImageDataGenerator
-from makenet.utils.preprocess_input import preprocess_input
-from makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
-from makenet.utils.helper import initialize, setup_config
+from cv.makenet.config.hydra_runner import hydra_runner
+from cv.makenet.config.default_config import ExperimentConfig
+from cv.makenet.model.model_builder import get_model
+from cv.makenet.utils.mixup_generator import MixupImageDataGenerator
+from cv.makenet.utils.preprocess_input import preprocess_input
+from cv.makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
+from cv.makenet.utils.helper import initialize, setup_config
 from model_optimization.quantization import quantize_keras_model
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)

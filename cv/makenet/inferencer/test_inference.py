@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 
-from makenet.inferencer.inferencer import Inferencer
+from cv.makenet.inferencer.inferencer import Inferencer
 
 
 class TestInferencer(Inferencer):

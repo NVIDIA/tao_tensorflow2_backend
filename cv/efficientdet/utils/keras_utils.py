@@ -3,7 +3,7 @@
 from typing import Text
 from absl import logging
 import tensorflow as tf
-from efficientdet.model import normalization_builder
+from cv.efficientdet.model import normalization_builder
 
 
 def build_batch_norm(is_training_bn: bool,

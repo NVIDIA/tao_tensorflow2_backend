@@ -4,9 +4,9 @@
 import os
 import logging
 
-from makenet.config.hydra_runner import hydra_runner
-from makenet.config.default_config import ExperimentConfig
-from makenet.export.classification_exporter import Exporter
+from cv.makenet.config.hydra_runner import hydra_runner
+from cv.makenet.config.default_config import ExperimentConfig
+from cv.makenet.export.classification_exporter import Exporter
 logger = logging.getLogger(__name__)
 
 

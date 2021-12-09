@@ -26,7 +26,7 @@ from pycocotools.cocoeval import COCOeval
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
 
-from efficientdet.utils import label_utils
+from cv.efficientdet.utils import label_utils
 
 
 class EvaluationMetric():

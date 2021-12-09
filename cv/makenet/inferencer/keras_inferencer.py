@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 
-from makenet.inferencer.inferencer import Inferencer
+from cv.makenet.inferencer.inferencer import Inferencer
 
 from model_optimization.quantization.qdq_layer import QDQ
 from model_optimization.quantization.quantized_conv2d import QuantizedConv2D

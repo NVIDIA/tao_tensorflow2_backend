@@ -17,10 +17,10 @@ from absl import logging
 import tensorflow as tf
 
 from blocks.dataloader.dataset import Dataset
-from efficientdet.utils import model_utils
-from efficientdet.model import anchors
-from efficientdet.utils.horovod_utils import get_rank, get_world_size
-from efficientdet.utils.keras_utils import get_mixed_precision_policy
+from cv.efficientdet.utils import model_utils
+from cv.efficientdet.model import anchors
+from cv.efficientdet.utils.horovod_utils import get_rank, get_world_size
+from cv.efficientdet.utils.keras_utils import get_mixed_precision_policy
 
 from cv.core import preprocessor
 from cv.core import tf_example_decoder

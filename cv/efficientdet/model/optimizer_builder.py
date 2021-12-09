@@ -17,7 +17,7 @@ from absl import logging
 import tensorflow as tf
 from tensorflow_addons.optimizers import MovingAverage
 
-from efficientdet.model import learning_rate
+from cv.efficientdet.model import learning_rate
 
 
 @tf.keras.utils.register_keras_serializable(package='Custom')

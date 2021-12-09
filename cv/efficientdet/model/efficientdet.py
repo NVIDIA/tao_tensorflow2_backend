@@ -5,13 +5,13 @@ import numpy as np
 import tensorflow as tf
 
 from backbones.efficientnet_tf import EfficientNetB0
-from efficientdet.model import model_builder
-# from efficientdet.model import normalization_builder
-from efficientdet.model import activation_builder
-from efficientdet.model import fpn_configs
-from efficientdet.utils import hparams_config
-from efficientdet.utils import model_utils
-from efficientdet.utils import keras_utils
+from cv.efficientdet.model import model_builder
+# from cv.efficientdet.model import normalization_builder
+from cv.efficientdet.model import activation_builder
+from cv.efficientdet.model import fpn_configs
+from cv.efficientdet.utils import hparams_config
+from cv.efficientdet.utils import model_utils
+from cv.efficientdet.utils import keras_utils
 # pylint: disable=arguments-differ  # fo keras layers.
 
 

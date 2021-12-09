@@ -9,7 +9,7 @@ from __future__ import print_function
 import logging
 import os
 import six
-from efficientdet.utils import model_utils
+from cv.efficientdet.utils import model_utils
 logger = logging.getLogger(__name__)
 
 

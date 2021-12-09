@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from PIL import Image
 
-from makenet.utils.preprocess_input import preprocess_input
+from cv.makenet.utils.preprocess_input import preprocess_input
 
 
 class Inferencer(ABC):

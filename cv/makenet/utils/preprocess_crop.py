@@ -3,7 +3,7 @@
 import random
 import keras_preprocessing.image
 
-from makenet.utils.helper import color_augmentation
+from cv.makenet.utils.helper import color_augmentation
 
 # padding size.
 # We firstly resize to (target_width + CROP_PADDING, target_height + CROP_PADDING)

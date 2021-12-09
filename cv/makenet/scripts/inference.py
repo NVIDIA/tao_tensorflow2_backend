@@ -8,9 +8,9 @@ import os
 import numpy as np
 import pandas as pd
 
-from makenet.inferencer.keras_inferencer import KerasInferencer
-from makenet.config.hydra_runner import hydra_runner
-from makenet.config.default_config import ExperimentConfig
+from cv.makenet.inferencer.keras_inferencer import KerasInferencer
+from cv.makenet.config.hydra_runner import hydra_runner
+from cv.makenet.config.default_config import ExperimentConfig
 
 logger = logging.getLogger(__name__)
 SUPPORTED_IMAGE_FORMAT = ['.jpg', '.png', '.jpeg']
