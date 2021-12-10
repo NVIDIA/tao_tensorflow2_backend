@@ -1,11 +1,11 @@
 """Postprocessing for anchor-based detection."""
 from typing import List, Tuple
-
+import functools
 from absl import logging
 import tensorflow as tf
 
 from blocks.processor.postprocessor import Postprocessor
-from cv.efficientdet.utils import model_utils
+from cv.efficientdet.utils import model_utils, nms_utils
 from cv.efficientdet.model import anchors
 
 T = tf.Tensor  # a shortcut for typing check.
@@ -30,12 +30,39 @@ class EfficientDetPostprocessor(Postprocessor):
         box_outputs,
         image_scales,
         image_ids,
-        flip=False):
+        flip=False,
+        use_pyfunc=True):
 
         """A legacy interface for generating [id, x, y, w, h, score, class]."""
         _, width = model_utils.parse_image_size(self.params['data_config']['image_size'])
 
         original_image_widths = tf.expand_dims(image_scales, -1) * width
+
+        if use_pyfunc:
+            detections_bs = []
+            boxes, scores, classes = self.pre_nms(cls_outputs, box_outputs)
+            for index in range(boxes.shape[0]):
+                # TODO(@yuw): make it configurable
+                nms_configs = {
+                    'method': 'gaussian',
+                    'iou_thresh': None,  # use the default value based on method.
+                    'score_thresh': 0.,
+                    'sigma': None,
+                    'max_nms_inputs': 5000,
+                    'max_output_size': 100,
+                }
+                detections = tf.numpy_function(
+                    functools.partial(nms_utils.per_class_nms, nms_configs=nms_configs), [
+                        boxes[index],
+                        scores[index],
+                        classes[index],
+                        tf.slice(image_ids, [index], [1]),
+                        tf.slice(image_scales, [index], [1]),
+                        self.params['data_config']['num_classes'],
+                        nms_configs['max_output_size'],
+                    ], tf.float32)
+                detections_bs.append(detections)
+            return tf.stack(detections_bs, axis=0, name='detections')
 
         nms_boxes_bs, nms_scores_bs, nms_classes_bs, _ = self.postprocess_per_class(
             cls_outputs, box_outputs, image_scales)

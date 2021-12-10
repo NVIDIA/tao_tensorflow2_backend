@@ -13,21 +13,20 @@ class TrainConfig:
 
     momentum: float = 0.9
     iterations_per_loop: int = 10
-    num_examples_per_epoch: int = 100000
-    steps_per_epoch: int = 100000
+    num_examples_per_epoch: int = 120000
     train_batch_size: int = 8
-    num_epochs: int = 100
+    num_epochs: int = 300
     checkpoint: int = 10
     tf_random_seed: int = 42
     l1_weight_decay: float = 0.0
-    l2_weight_decay: float = 0.00005
+    l2_weight_decay: float = 0.00004
     amp: bool = False
     lr_warmup_epoch: int = 5
-    lr_warmup_init: float = 0.0005
-    learning_rate: float = 0.03
+    lr_warmup_init: float = 0.0001
+    learning_rate: float = 0.7
     pruned_model_path: str = ''
     moving_average_decay: float = 0.9999
-    clip_gradients_norm: float = 0.0
+    clip_gradients_norm: float = 10.0
     skip_checkpoint_variables: str = ''
     checkpoint_period: int = 10
     optimizer: str = 'sgd'
@@ -73,6 +72,7 @@ class EvalConfig:
     max_detections_per_image: int = 100
     label_map: str = ''
     iou_thresh: float = 0.5
+    max_nms_inputs: int = 5000
 
 
 @dataclass

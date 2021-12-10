@@ -57,9 +57,8 @@ class CosineLrSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     }
 
 
-def learning_rate_schedule(params):
+def learning_rate_schedule(params, steps_per_epoch):
   """Learning rate schedule based on global step."""
-  steps_per_epoch = params['steps_per_epoch']
   lr_warmup_step = int(params['lr_warmup_epoch'] * steps_per_epoch)
   total_steps = int(params['num_epochs'] * steps_per_epoch)
   lr_decay_method = 'cosine'  #TODO: params['lr_decay_method']

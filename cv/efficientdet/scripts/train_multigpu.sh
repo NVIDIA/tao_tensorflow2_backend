@@ -24,6 +24,6 @@ if [ "$NUM_GPUS" -lt 1 ]; then
 	echo "Usage: -np <num GPUs> [train.py arguments]"
 else
 	# Note: need to execute bazel created train script instead of train.py.
-	mpirun -np $NUM_GPUS --allow-run-as-root --bind-to none -map-by slot -x LD_LIBRARY_PATH -x PATH -mca pml ob1 -mca btl ^openib /workspace/efficientdet/scripts/train.py ${PYTHON_ARGS[*]}
+	mpirun -np $NUM_GPUS --allow-run-as-root --bind-to none -map-by slot -x LD_LIBRARY_PATH -x PATH -mca pml ob1 -mca btl ^openib python /workspace/cv/efficientdet/scripts/train.py ${PYTHON_ARGS[*]}
 fi
 

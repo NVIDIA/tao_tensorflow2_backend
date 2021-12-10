@@ -319,6 +319,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         self.start_eval_epoch = start_eval_epoch
         self.eval_params = eval_params
         self.ema_opt = None
+        self.postpc = EfficientDetPostprocessor(self.eval_params)
 
         label_map = label_utils.get_label_map(eval_params['eval_config']['label_map'])
         self.evaluator = coco_metric.EvaluationMetric(
@@ -333,8 +334,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
     @tf.function
     def eval_model_fn(self, images, labels):
         cls_outputs, box_outputs = self.model(images, training=False)
-        postpc = EfficientDetPostprocessor(self.eval_params)
-        detections = postpc.generate_detections(
+        detections = self.postpc.generate_detections(
             cls_outputs, box_outputs,
             labels['image_scales'],
             labels['source_ids'])
@@ -443,7 +443,7 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
         cocoeval = COCOEvalCallback(
             eval_dataset, 
             eval_freq=params['train_config']['checkpoint_period'], 
-            start_eval_epoch=10, # TODO
+            start_eval_epoch=1, # TODO
             eval_params=params)
         callbacks.append(cocoeval)
 

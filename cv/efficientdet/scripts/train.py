@@ -1,23 +1,7 @@
 # Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 """The main training script."""
 import os
 import time
-from mpi4py import MPI
-from absl import app
-from absl import flags
 from absl import logging
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
@@ -65,20 +49,20 @@ def run_experiment(cfg, results_dir, key):
             (cfg['train_config']['train_batch_size'] * get_world_size())
 
     # Set up dataloader
-    train_reader = dataloader.CocoDataset(
+    train_dl= dataloader.CocoDataset(
         cfg['data_config']['training_file_pattern'],
         is_training=True,
         use_fake_data=cfg['data_config']['use_fake_data'],
         max_instances_per_image=config.max_instances_per_image)
-    train_dataset = train_reader(
+    train_dataset = train_dl(
         config.as_dict(),
         batch_size=cfg['train_config']['train_batch_size'])
 
-    eval_reader = dataloader.CocoDataset(
+    eval_dl = dataloader.CocoDataset(
         cfg['data_config']['validation_file_pattern'],
         is_training=False,
         max_instances_per_image=config.max_instances_per_image)
-    eval_dataset = eval_reader(
+    eval_dataset = eval_dl(
         config.as_dict(),
         batch_size=cfg['eval_config']['eval_batch_size'])
 
@@ -93,7 +77,7 @@ def run_experiment(cfg, results_dir, key):
     outputs, model = efficientdet(input_shape, training=True, config=config)
 
     model.compile(
-        optimizer=optimizer_builder.get_optimizer(cfg['train_config']),
+        optimizer=optimizer_builder.get_optimizer(cfg['train_config'], steps_per_epoch),
         loss={
             'box_loss':
                 losses.BoxLoss(
@@ -116,8 +100,12 @@ def run_experiment(cfg, results_dir, key):
                     reduction=tf.keras.losses.Reduction.NONE)
         })
 
+    num_samples = (cfg['eval_config']['eval_samples'] + get_world_size() - 1) // get_world_size()
+    num_samples = (num_samples + cfg['eval_config']['eval_batch_size'] - 1) // cfg['eval_config']['eval_batch_size']
+    cfg['eval_config']['eval_samples'] = num_samples
+
     callbacks = callback_builder.get_callbacks(
-        cfg, 'traineval', eval_dataset, 
+        cfg, 'traineval', eval_dataset.shard(get_world_size(), get_rank()).take(num_samples),
         DLLogger,
         profile=False, 
         time_history=False,
@@ -132,7 +120,7 @@ def run_experiment(cfg, results_dir, key):
         config.num_epochs,
         steps_per_epoch,
         initial_epoch=0,
-        validation_steps=500,
+        validation_steps=num_samples // cfg['eval_config']['eval_batch_size'],
         verbose=1 if is_main_process() else 0)
 
 

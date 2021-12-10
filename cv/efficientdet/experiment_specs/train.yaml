@@ -3,3 +3,11 @@ data_config:
   training_file_pattern: '/home/scratch.p3/yuw/datasets/coco/train-*'
   validation_file_pattern: '/home/scratch.p3/yuw/datasets/coco/val-*'
   validation_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'
+train_config:
+  amp: True
+  num_examples_per_epoch: 120000
+  train_batch_size: 16
+  checkpoint_period: 1
+eval_config:
+  eval_batch_size: 16
+  eval_samples: 5000

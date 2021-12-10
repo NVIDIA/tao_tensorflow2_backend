@@ -130,9 +130,9 @@ class HvdMovingAverage(MovingAverage):
     return cls(optimizer, **config)
 
 
-def get_optimizer(params):
+def get_optimizer(params, steps_per_epoch):
   """Get optimizer."""
-  lr = learning_rate.learning_rate_schedule(params)
+  lr = learning_rate.learning_rate_schedule(params, steps_per_epoch)
   if params['optimizer'].lower() == 'sgd':
     logging.info('Use SGD optimizer')
     optimizer = tf.keras.optimizers.SGD(
