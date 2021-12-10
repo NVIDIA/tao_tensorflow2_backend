@@ -3,7 +3,6 @@ from concurrent import futures
 import os
 from mpi4py import MPI
 import time
-import numpy as np
 import tensorflow as tf
 import horovod.tensorflow.keras.callbacks as hvd_callbacks
 from tensorflow_addons.optimizers import MovingAverage

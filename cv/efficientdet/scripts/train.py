@@ -73,6 +73,7 @@ def run_experiment(cfg, results_dir, key):
         config.gamma,
         label_smoothing=config.label_smoothing,
         reduction=tf.keras.losses.Reduction.NONE)
+    # TODO(@yuw): make configurable
     input_shape = [512,512,3]
     outputs, model = efficientdet(input_shape, training=True, config=config)
 
