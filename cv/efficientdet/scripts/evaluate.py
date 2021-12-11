@@ -2,6 +2,7 @@
 """EfficientDet standalone evaluation script."""
 import os
 import time
+from mpi4py import MPI
 from absl import logging
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
@@ -11,27 +12,24 @@ from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.dataloader import dataloader
 from cv.efficientdet.model.efficientdet import efficientdet
 from cv.efficientdet.processor.postprocessor import EfficientDetPostprocessor
-from cv.efficientdet.utils import coco_metric
-from cv.efficientdet.utils import label_utils, keras_utils
-from cv.efficientdet.utils.config_utils import generate_params_from_cfg
+from cv.efficientdet.utils import coco_metric, label_utils, keras_utils
 from cv.efficientdet.utils import hparams_config
-from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
+from cv.efficientdet.utils.config_utils import generate_params_from_cfg
+from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank
 
 
 def run_experiment(cfg, results_dir, key):
-
-    # get e2e training time
-    begin = time.time()
-    logging.info("Training started at: {}".format(time.asctime()))
-
+    """Run evaluation."""
     hvd.init()
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+    if gpus:
+        tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
 
     # Parse and update hparams
     config = hparams_config.get_detection_config(cfg['model_config']['model_name'])
     config.update(generate_params_from_cfg(config, cfg, mode='train'))
-
-    # initialize
-    initialize(config, training=False)
 
     # Set up dataloader
     eval_dl = dataloader.CocoDataset(
@@ -107,6 +105,7 @@ def run_experiment(cfg, results_dir, key):
             for i, cid in enumerate(sorted(label_map.keys())):
                 name = 'AP_/%s' % label_map[cid]
                 metric_dict[name] = metrics[i + len(evaluator.metric_names)]
+    MPI.COMM_WORLD.Barrier()
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

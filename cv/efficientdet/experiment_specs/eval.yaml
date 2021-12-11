@@ -9,6 +9,6 @@ train_config:
   train_batch_size: 16
   checkpoint_period: 1
 eval_config:
-  eval_batch_size: 16
+  eval_batch_size: 8
   eval_samples: 5000
   model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet/ema_weights/emackpt-43'
