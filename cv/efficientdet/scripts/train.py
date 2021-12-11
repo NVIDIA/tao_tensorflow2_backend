@@ -131,7 +131,7 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     config_name="train", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
-    """Wrapper function for continuous training of MakeNet application.
+    """Wrapper function for EfficientDet training.
     """
     run_experiment(cfg=cfg,
                    results_dir=cfg.results_dir,

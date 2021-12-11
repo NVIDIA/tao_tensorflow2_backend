@@ -73,6 +73,7 @@ class EvalConfig:
     label_map: str = ''
     iou_thresh: float = 0.5
     max_nms_inputs: int = 5000
+    model_path: str = ''
 
 
 @dataclass
