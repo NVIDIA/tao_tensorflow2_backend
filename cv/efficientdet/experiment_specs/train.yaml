@@ -1,4 +1,4 @@
-results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet'
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d1'
 data_config:
   training_file_pattern: '/home/scratch.p3/yuw/datasets/coco/train-*'
   validation_file_pattern: '/home/scratch.p3/yuw/datasets/coco/val-*'
