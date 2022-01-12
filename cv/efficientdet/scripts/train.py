@@ -7,6 +7,7 @@ import tensorflow as tf
 import horovod.tensorflow.keras as hvd
 from dllogger import StdOutBackend, JSONStreamBackend, Verbosity
 import dllogger as DLLogger
+from nv_tfqat_wrappers import quantize
 
 from cv.efficientdet.config.hydra_runner import hydra_runner
 from cv.efficientdet.config.default_config import ExperimentConfig
@@ -76,6 +77,7 @@ def run_experiment(cfg, results_dir, key):
     # TODO(@yuw): make configurable
     input_shape = [512,512,3]
     outputs, model = efficientdet(input_shape, training=True, config=config)
+    model = quantize.quantize_model(model, do_quantize_residual_connections=False)
 
     model.compile(
         optimizer=optimizer_builder.get_optimizer(cfg['train_config'], steps_per_epoch),
