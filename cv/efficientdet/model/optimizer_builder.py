@@ -45,11 +45,6 @@ class HvdMovingAverage(MovingAverage):
         var_list ([type]): [description]
     """
     self._optimizer._create_slots(var_list=var_list)
-    for var in var_list:
-      self.add_slot(var, "average", var.read_value())
-
-    self._average_weights = [self.get_slot(var, "average") for var in var_list]
-    self._model_weights = var_list
 
   def apply_gradients(self, grads_and_vars, name=None, experimental_aggregate_gradients=True):
       self._optimizer._iterations = self.iterations

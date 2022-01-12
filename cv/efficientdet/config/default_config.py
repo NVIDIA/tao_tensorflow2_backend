@@ -23,7 +23,7 @@ class TrainConfig:
     amp: bool = False
     lr_warmup_epoch: int = 5
     lr_warmup_init: float = 0.0001
-    learning_rate: float = 0.7
+    learning_rate: float = 0.2
     pruned_model_path: str = ''
     moving_average_decay: float = 0.9999
     clip_gradients_norm: float = 10.0
