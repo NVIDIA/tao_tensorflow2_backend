@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 
 set -eo pipefail
+cd "$( dirname "${BASH_SOURCE[0]}" )"
+
+registry="gitlab-master.nvidia.com:5005"
+repository="tlt/tao-tf2/tao_tf2_base_image"
+
+tag="$USER-$(date +%Y%m%d%H%M)"
+local_tag="$USER"
+
+# Build parameters.
+BUILD_DOCKER="0"
+PUSH_DOCKER="0"
+FORCE="0"
+
 
 # Parse command line.
 while [[ $# -gt 0 ]]
@@ -13,6 +26,14 @@ while [[ $# -gt 0 ]]
         RUN_DOCKER="0"
         shift # past argument
         ;;
+        -p|--push)
+        PUSH_DOCKER="1"
+        shift # past argument
+        ;;
+        -f|--force)
+        FORCE=1
+        shift
+        ;;
         -r|--run)
         RUN_DOCKER="1"
         BUILD_DOCKER="0"
@@ -22,6 +43,7 @@ while [[ $# -gt 0 ]]
         BUILD_DOCKER="0"
         RUN_DOCKER="1"
         FORCE="0"
+        PUSH_DOCKER="0"
         shift # past argument
         ;;
         *)    # unknown option
@@ -40,8 +62,21 @@ if [ $BUILD_DOCKER = "1" ]; then
     else
         NO_CACHE=""
     fi
-    
-    docker build --rm -t tao-tf2:v0.1 . -f Dockerfile
+    docker build --pull -f $NV_TAO_TF2_TOP/docker/Dockerfile -t $registry/$repository:$local_tag $NO_CACHE \
+        --network=host $NV_TAO_TF2_TOP/docker/. \
+        --build-arg EFF_TOKEN_NAME="$EFF_TOKEN_NAME" \
+        --build-arg EFF_TOKEN_PASSWORD="$EFF_TOKEN_PASSWORD"
+
+    if [ $PUSH_DOCKER = "1" ]; then
+        echo "Pusing docker ..."
+        docker tag $registry/$repository:$local_tag $registry/$repository:$tag
+        docker push $registry/$repository:$tag
+        digest=$(docker inspect --format='{{index .RepoDigests 0}}' $registry/$repository:$tag)
+        echo -e "\033[1;33mUpdate the digest in the manifest.json file to:\033[0m"
+        echo $digest
+    else
+        echo "Skip pushing docker ..."
+    fi
 
 elif [ $RUN_DOCKER = "1" ]; then
     echo "Running docker interatively..."
