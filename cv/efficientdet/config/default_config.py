@@ -31,6 +31,7 @@ class TrainConfig:
     checkpoint_period: int = 10
     optimizer: str = 'sgd'
     loss_scale: float = 10.0
+    image_preview: bool = True
 
 
 @dataclass
