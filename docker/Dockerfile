@@ -1,4 +1,4 @@
-ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:21.09-tf2-py3
+ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:21.12-tf2-py3
 FROM ${FROM_IMAGE_NAME}
 
 RUN apt-get update
@@ -11,6 +11,13 @@ WORKDIR /workspace/
 COPY requirements.txt /workspace/
 RUN pip install -r requirements.txt && \
     rm -rf requirements.txt
+
+COPY tensorrt_qat /tmp/tensorrt_qat
+WORKDIR /tmp/tensorrt_qat
+RUN pip install .
+COPY tensorflow-onnx /tmp/tensorflow-onnx
+WORKDIR /tmp/tensorflow-onnx
+RUN pip install .
 
 ENV TF_XLA_FLAGS="--tf_xla_enable_lazy_compilation=false tf_xla_async_io_level=0"
 ENV PYTHONPATH='/workspace/tao-tf2'

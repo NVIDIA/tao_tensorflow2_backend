@@ -1,0 +1,7 @@
+[submodule "docker/tensorrt_qat"]
+	path = docker/tensorrt_qat
+	url = ssh://git@gitlab-master.nvidia.com:12051/sagshelke/tensorrt_qat.git
+[submodule "docker/tensorflow-onnx"]
+	path = docker/tensorflow-onnx
+	url = ssh://git@gitlab-master.nvidia.com:12051/sagshelke/tensorflow-onnx.git
+	branch = qdq_changes

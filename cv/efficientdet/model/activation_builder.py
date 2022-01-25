@@ -17,6 +17,19 @@ from typing import Text
 import tensorflow as tf
 
 
+def swish(x):
+    """Swish activation function.
+
+    # Arguments
+            x: Input tensor.
+    # Returns
+            The Swish activation: `x * sigmoid(x)`.
+    # References
+            [Searching for Activation Functions](https://arxiv.org/abs/1710.05941)
+    """
+    return x * tf.keras.backend.sigmoid(x)
+
+
 def srelu_fn(x):
   """Smooth relu: a smooth version of relu."""
   with tf.name_scope('srelu'):
@@ -29,15 +42,11 @@ def srelu_fn(x):
 def activation_fn(features: tf.Tensor, act_type: Text):
   """Customized non-linear activation type."""
   if act_type in ('silu', 'swish'):
-    return tf.nn.swish(features)
+    return tf.keras.layers.Activation(swish)(features)
   elif act_type == 'swish_native':
-    return features * tf.sigmoid(features)
+    return tf.keras.layers.Activation(swish)(features)
   elif act_type == 'hswish':
     return features * tf.nn.relu6(features + 3) / 6
-  elif act_type == 'relu':
-    return tf.nn.relu(features)
-  elif act_type == 'relu6':
-    return tf.nn.relu6(features)
   elif act_type == 'mish':
     return features * tf.math.tanh(tf.math.softplus(features))
   elif act_type == 'identity':
