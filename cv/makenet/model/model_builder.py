@@ -1,6 +1,6 @@
 # Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
 
-"""IVA MakeNet model construction wrapper functions."""
+"""TAO classification model builder."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -21,12 +21,14 @@ from backbones.efficientnet_tf import (
     EfficientNetB7
 )
 from backbones.resnet_tf import ResNet
+from backbones.mobilenet_tf import MobileNet, MobileNetV2
 
 SUPPORTED_ARCHS = [
     "resnet", "efficientnet_b0", "efficientnet_b1",
     "efficientnet_b2", "efficientnet_b3",
     "efficientnet_b4", "efficientnet_b5",
     "efficientnet_b6", "efficientnet_b7",
+    "mobilenet_v1", "mobilenet_v2"
 ]
 
 
@@ -395,6 +397,79 @@ def get_efficientnet_b7(
     return final_model
 
 
+def get_mobilenet(input_shape=None,
+                  data_format='channels_first',
+                  nclasses=1000,
+                  use_batch_norm=None,
+                  kernel_regularizer=None,
+                  bias_regularizer=None,
+                  use_imagenet_head=False,
+                  use_bias=True,
+                  freeze_bn=False,
+                  freeze_blocks=None,
+                  stride=32):
+    """Wrapper to get MobileNet model from IVA templates."""
+    input_image = Input(shape=input_shape)
+    final_model = MobileNet(inputs=input_image,
+                            input_shape=input_shape,
+                            dropout=0.0,
+                            add_head=use_imagenet_head,
+                            stride=stride,
+                            data_format=data_format,
+                            kernel_regularizer=kernel_regularizer,
+                            bias_regularizer=bias_regularizer,
+                            nclasses=nclasses,
+                            use_batch_norm=use_batch_norm,
+                            use_bias=use_bias,
+                            freeze_bn=freeze_bn,
+                            freeze_blocks=freeze_blocks)
+    if not use_imagenet_head:
+        final_model = add_dense_head(nclasses,
+                                     final_model,
+                                     data_format,
+                                     kernel_regularizer,
+                                     bias_regularizer)
+    return final_model
+
+
+def get_mobilenet_v2(input_shape=None,
+                     data_format='channels_first',
+                     nclasses=1000,
+                     use_batch_norm=None,
+                     kernel_regularizer=None,
+                     bias_regularizer=None,
+                     use_imagenet_head=False,
+                     all_projections=False,
+                     use_bias=True,
+                     freeze_bn=False,
+                     freeze_blocks=None,
+                     stride=32):
+    """Wrapper to get MobileNet V2 model from IVA templates."""
+    input_image = Input(shape=input_shape)
+    final_model = MobileNetV2(inputs=input_image,
+                              input_shape=input_shape,
+                              add_head=use_imagenet_head,
+                              stride=stride,
+                              data_format=data_format,
+                              kernel_regularizer=kernel_regularizer,
+                              bias_regularizer=bias_regularizer,
+                              all_projections=all_projections,
+                              nclasses=nclasses,
+                              use_batch_norm=use_batch_norm,
+                              use_bias=use_bias,
+                              freeze_bn=freeze_bn,
+                              freeze_blocks=freeze_blocks)
+
+    if not use_imagenet_head:
+        final_model = add_dense_head(nclasses,
+                                     final_model,
+                                     data_format,
+                                     kernel_regularizer,
+                                     bias_regularizer)
+
+    return final_model
+
+
 # defining model dictionary
 model_choose = {"resnet": get_resnet,
                 "efficientnet_b0": get_efficientnet_b0,
@@ -404,7 +479,9 @@ model_choose = {"resnet": get_resnet,
                 "efficientnet_b4": get_efficientnet_b4,
                 "efficientnet_b5": get_efficientnet_b5,
                 "efficientnet_b6": get_efficientnet_b6,
-                "efficientnet_b7": get_efficientnet_b7}
+                "efficientnet_b7": get_efficientnet_b7,
+                "mobilenet_v1": get_mobilenet,
+                "mobilenet_v2": get_mobilenet_v2}
 
 
 def get_model(arch="resnet",
@@ -430,6 +507,15 @@ def get_model(arch="resnet",
         kwa['use_bias'] = kwargs['use_bias']
         kwa['freeze_bn'] = kwargs['freeze_bn']
         kwa['activation_type'] = kwargs['activation'].activation_type
+    elif arch == 'mobilenet_v1':
+        kwa['use_batch_norm'] = kwargs['use_batch_norm']
+        kwa['use_bias'] = kwargs['use_bias']
+        kwa['freeze_bn'] = kwargs['freeze_bn']
+    elif arch == 'mobilenet_v2':
+        kwa['use_batch_norm'] = kwargs['use_batch_norm']
+        kwa['use_bias'] = kwargs['use_bias']
+        kwa['freeze_bn'] = kwargs['freeze_bn']
+        kwa['all_projections'] = kwargs['all_projections']
     else:
         raise ValueError('Unsupported architecture: {}'.format(arch))
 

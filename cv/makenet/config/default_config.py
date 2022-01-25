@@ -127,6 +127,8 @@ class ExportConfig:
 
     model_path: str = ''
     output_path: str = ''
+    dtype: str = MISSING
+    save_engine: bool = True
 
 
 @dataclass

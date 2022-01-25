@@ -11,12 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 def run_export(cfg=None):
-    exporter = Exporter(dtype='fp16')
-    exporter.load_model(cfg.export_config.model_path)
-    exporter.export_onnx(cfg.export_config.output_path)
-    logger.info(f"ONNX is saved at {cfg.export_config.output_path}")
-    exporter.export_engine(cfg.export_config.output_path, cfg.export_config.output_path + '.engine')
-    logger.info(f"Engine is saved at {cfg.export_config.output_path + '.engine'}")
+    exporter = Exporter(config=cfg)
+    exporter.export()
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
