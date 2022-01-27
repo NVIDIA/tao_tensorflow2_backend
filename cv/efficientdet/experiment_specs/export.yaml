@@ -1,0 +1,20 @@
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2'
+data_config:
+  training_file_pattern: '/home/scratch.p3/yuw/datasets/coco/train-*'
+  validation_file_pattern: '/home/scratch.p3/yuw/datasets/coco/val-*'
+  validation_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'
+train_config:
+  amp: True
+  num_examples_per_epoch: 120000
+  train_batch_size: 16
+  checkpoint_period: 1
+export_config:
+  max_batch_size: 4
+  output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/export/emackpt-90.onnx'
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/emackpt-90'
+  engine_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/export/emackpt-90.int8.engine"
+  data_type: "int8"
+  cal_image_dir: "/home/scratch.p3/yuw/datasets/coco/raw-data/val2017"
+  cal_cache_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/export/emackpt-90.cal"
+  cal_batch_size: 16
+  cal_batches: 10

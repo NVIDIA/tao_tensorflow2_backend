@@ -18,7 +18,7 @@ from cv.efficientdet.model import callback_builder
 from cv.efficientdet.model import optimizer_builder
 from cv.efficientdet.trainer.efficientdet_trainer import EfficientDetTrainer
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
-from cv.efficientdet.utils import hparams_config
+from cv.efficientdet.utils import hparams_config, keras_utils
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
 
 
@@ -74,9 +74,27 @@ def run_experiment(cfg, results_dir, key):
         config.gamma,
         label_smoothing=config.label_smoothing,
         reduction=tf.keras.losses.Reduction.NONE)
-    # TODO(@yuw): make configurable
-    input_shape = [512,512,3]
+    # TODO(@yuw): verify channels_first training or force last
+    input_shape = list(config.image_size) + [3] \
+        if config.data_format == 'channels_last' else [3] + list(config.image_size)
     outputs, model = efficientdet(input_shape, training=True, config=config)
+
+    if cfg['train_config']['checkpoint'] and not tf.train.latest_checkpoint(cfg['results_dir']):
+        print("Loading pretrained weight....")
+        pretrained_model = tf.keras.models.load_model(cfg['train_config']['checkpoint'])
+        for layer in pretrained_model.layers[1:]:
+            # The layer must match up to prediction layers.
+            try:
+                l_return = model.get_layer(layer.name)
+            except ValueError:
+                # Some layers are not there
+                print(f"Skipping as {layer.name} is not found.")
+            try:
+                l_return.set_weights(layer.get_weights())
+            except ValueError:
+                print(f"Skipping {layer.name} due to shape mismatch.")
+
+    # TODO(@yuw): Enable QAT
     # model = quantize.quantize_model(model, do_quantize_residual_connections=False)
 
     model.compile(
@@ -103,6 +121,19 @@ def run_experiment(cfg, results_dir, key):
                     reduction=tf.keras.losses.Reduction.NONE)
         })
 
+    # resume from checkpoint or load pretrained backbone
+    train_from_epoch = 0
+    # TODO(@yuw): automatically detect with EFF checkpoint
+    if tf.train.latest_checkpoint(cfg['results_dir']):
+        print("Resume training...")
+        train_from_epoch = keras_utils.restore_ckpt(
+            model,
+            cfg['results_dir'], 
+            config.moving_average_decay,
+            steps_per_epoch=steps_per_epoch,
+            expect_partial=False)
+
+    # set up callbacks
     num_samples = (cfg['eval_config']['eval_samples'] + get_world_size() - 1) // get_world_size()
     num_samples = (num_samples + cfg['eval_config']['eval_batch_size'] - 1) // cfg['eval_config']['eval_batch_size']
     cfg['eval_config']['eval_samples'] = num_samples
@@ -122,7 +153,7 @@ def run_experiment(cfg, results_dir, key):
         eval_dataset,
         config.num_epochs,
         steps_per_epoch,
-        initial_epoch=0,
+        initial_epoch=train_from_epoch,
         validation_steps=num_samples // cfg['eval_config']['eval_batch_size'],
         verbose=1 if is_main_process() else 0)
 

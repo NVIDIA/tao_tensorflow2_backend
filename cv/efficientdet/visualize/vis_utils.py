@@ -1163,3 +1163,34 @@ def denormalize_image(image):
   mean = np.array([0.485, 0.456, 0.406])[None][None]
   output = (image * scale + mean) * 255
   return output.astype(np.uint8)
+
+
+def visualize_detections(image_path, output_path, detections, labels):
+    """Visualize detections."""
+    image = Image.open(image_path).convert(mode='RGB')
+    draw = ImageDraw.Draw(image)
+    line_width = 2
+    font = ImageFont.load_default()
+    for d in detections:
+        color = STANDARD_COLORS[d['class'] % len(STANDARD_COLORS)]
+        draw.line([(d['xmin'], d['ymin']), (d['xmin'], d['ymax']),
+                   (d['xmax'], d['ymax']), (d['xmax'], d['ymin']),
+                   (d['xmin'], d['ymin'])], width=line_width, fill=color)
+        label = "Class {}".format(d['class'])
+        if d['class'] < len(labels):
+                label = "{}".format(labels[d['class']])
+        score = d['score']
+        text = "{}: {}%".format(label, int(100 * score))
+        if score < 0:
+            text = label
+        text_width, text_height = font.getsize(text)
+        text_bottom = max(text_height, d['ymin'])
+        text_left = d['xmin']
+        margin = np.ceil(0.05 * text_height)
+        draw.rectangle([(text_left, text_bottom - text_height - 2 * margin),
+                        (text_left + text_width, text_bottom)],
+                       fill=color)
+        draw.text(
+            (text_left + margin, text_bottom - text_height - margin),
+            text, fill='black', font=font)
+    image.save(output_path)

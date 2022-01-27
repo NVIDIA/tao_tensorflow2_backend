@@ -374,9 +374,9 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
                 image = vis_utils.denormalize_image(image)
                 predictions = np.array(detections[bs_index])
                 predictions[:, 1:5] /= scales[bs_index]
-                boxes = predictions[:, 1:5].astype(np.int)
+                boxes = predictions[:, 1:5].astype(np.int32)
                 boxes = boxes[:, [1, 0, 3, 2]]
-                classes = predictions[:, -1].astype(np.int)
+                classes = predictions[:, -1].astype(np.int32)
                 scores = predictions[:, -2]
                 
                 image = vis_utils.visualize_boxes_and_labels_on_image_array(

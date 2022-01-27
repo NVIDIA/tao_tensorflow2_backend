@@ -29,7 +29,7 @@ def run_experiment(cfg, results_dir, key):
 
     # Parse and update hparams
     config = hparams_config.get_detection_config(cfg['model_config']['model_name'])
-    config.update(generate_params_from_cfg(config, cfg, mode='train'))
+    config.update(generate_params_from_cfg(config, cfg, mode='eval'))
 
     # Set up dataloader
     eval_dl = dataloader.CocoDataset(
@@ -47,7 +47,7 @@ def run_experiment(cfg, results_dir, key):
     eval_dataset = eval_dataset.shard(get_world_size(), get_rank()).take(num_samples)
     # TODO(@yuw): make configurable
     input_shape = [512,512,3]
-    outputs, model = efficientdet(input_shape, training=True, config=config)
+    outputs, model = efficientdet(input_shape, training=False, config=config)
 
     # evaluation
     postpc = EfficientDetPostprocessor(cfg)

@@ -19,3 +19,6 @@ scipy==1.5.4
 seaborn==0.7.1
 tf2onnx
 pycuda==2020.1
+onnx==1.9.0 # 1.10.2
+onnxruntime==1.8.1 # 1.10.0
+onnx-graphsurgeon==0.3.14

@@ -1,13 +1,14 @@
-results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-qat'
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d3'
 data_config:
   training_file_pattern: '/home/scratch.p3/yuw/datasets/coco/train-*'
   validation_file_pattern: '/home/scratch.p3/yuw/datasets/coco/val-*'
   validation_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'
 train_config:
-  amp: False
+  amp: True
+  checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_effnet_b0/weights/efficientnet_b0_300"
   num_examples_per_epoch: 120000
-  train_batch_size: 12
-  checkpoint_period: 1
+  train_batch_size: 16
+  checkpoint_period: 5
 eval_config:
   eval_batch_size: 16
   eval_samples: 500
