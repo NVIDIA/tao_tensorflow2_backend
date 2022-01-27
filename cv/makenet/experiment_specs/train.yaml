@@ -1,8 +1,10 @@
-results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-makenet/qat_per_channel'
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-makenet/mb_v2'
 train_config:
   qat: True
   train_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   val_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
-  pretrained_model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-makenet/weights/resnet_044.hdf5'
+  # pretrained_model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-makenet/weights/resnet_044.hdf5'
   batch_size_per_gpu: 64
   n_epochs: 80
+model_config:
+  arch: 'mobilenet_v2'

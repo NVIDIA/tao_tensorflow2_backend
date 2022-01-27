@@ -7,12 +7,10 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
-import tf2onnx
 import tensorrt as trt
 import tensorflow as tf
 
-from model_optimization.quantization.qdq_layer import QDQ
-from model_optimization.quantization.quantized_conv2d import QuantizedConv2D
+from tf2onnx import tf_loader, utils, convert
 
 TRT_VERSION = trt.__version__
 TRT_MAJOR = float(".".join(TRT_VERSION.split(".")[:2]))
@@ -24,8 +22,6 @@ class Exporter:
 
     def __init__(self,
                  config=None,
-                 dtype="fp32",
-                 strict_type=False,
                  classmap_file=None,
                  max_batch_size=1,
                  min_batch_size=1,
@@ -35,34 +31,27 @@ class Exporter:
 
         Args:
             key (str): Key to load the model.
-            data_type (str): Path to the TensorRT backend data type.
-            strict_type(bool): Apply TensorRT strict_type_constraints or not for INT8 mode.
         """
         self.config = config
-        if dtype == "int8":
+        if config.export_config.dtype == "int8":
             self._dtype = trt.DataType.INT8
-        elif dtype == "fp16":
+        elif config.export_config.dtype == "fp16":
             self._dtype = trt.DataType.HALF
-        elif dtype == "fp32":
+        elif config.export_config.dtype == "fp32":
             self._dtype = trt.DataType.FLOAT
         else:
-            raise ValueError("Unsupported data type: %s" % dtype)
-        self.strict_type = strict_type
+            raise ValueError("Unsupported data type: %s" % self._dtype)
         self.backend = "onnx"
-        self.classmap_file = classmap_file
         self.model = None
+        self.input_shape = None
         self.max_batch_size = max_batch_size
         self.min_batch_size = min_batch_size
         self.opt_batch_size = opt_batch_size
-        self.input_shape = None
 
-    def load_model(self, model_path, key=None) -> None:
-        custom_objs = {
-            'QDQ': QDQ,
-            'QuantizedConv2D': QuantizedConv2D,
-        }
-        if not key:
-            self.model = tf.keras.models.load_model(model_path, custom_objects=custom_objs)
+    def load_model(self) -> None:
+        """Load SavedModel."""
+        if not self.config.key:
+            self.model = tf.keras.models.load_model(self.config.export_config.model_path, custom_objects=None)
             self.model.summary()
         else:
             raise NotImplementedError
@@ -71,14 +60,28 @@ class Exporter:
     def _set_input_shape(self):
         self.input_shape = tuple(self.model.layers[0].input_shape[0][1:4])
 
-    def export_onnx(self, onnx_path) -> None:
+    def export_onnx(self) -> None:
         """Export to ONNX"""
-        spec = (tf.TensorSpec((None, ) + self.input_shape, tf.float32, name="input_1"),)
-        model_proto, _ = tf2onnx.convert.from_keras(self.model, input_signature=spec, opset=13, output_path=onnx_path)
-        output_names = [n.name for n in model_proto.graph.output]
-        logger.info(f"output names: {output_names}")
+        graph_def, inputs, outputs = tf_loader.from_saved_model(
+            self.config.export_config.model_path,
+            None,
+            None,
+            "serve",
+            ["serving_default"],
+            disable_constfold=True,)
+        # B. Convert tf2onnx and save onnx file
+        model_proto, _ = convert._convert_common(
+            graph_def,
+            name=self.config.export_config.model_path,
+            opset=13,
+            input_names=inputs,
+            output_names=outputs,
+            output_path=self.config.export_config.output_path,
+        )
+        utils.save_protobuf(self.config.export_config.output_path, model_proto)
+
     
-    def export_engine(self, onnx_path, engine_path, save_engine=True, verbose=True) -> None:
+    def export_engine(self, verbose=True) -> None:
         """Parse the model file through TensorRT and build TRT engine
         """
         # Create builder and network
@@ -95,7 +98,7 @@ class Exporter:
         with trt.Builder(TRT_LOGGER) as builder, builder.create_network(
                 flags=network_flags
         ) as network, trt.OnnxParser(network, TRT_LOGGER) as parser:
-            with open(onnx_path, "rb") as model:
+            with open(self.config.export_config.output_path, "rb") as model:
                 if not parser.parse(model.read()):
                     print("ERROR: Failed to parse the ONNX file.")
                     for error in range(parser.num_errors):
@@ -134,11 +137,19 @@ class Exporter:
             trt_engine = builder.build_engine(network, config)  # build_serialized_network
             if not trt_engine:
                 logger.info("TensorRT engine failed.")
-            if save_engine:
+            if self.config.export_config.save_engine:
+                engine_path = self.config.export_config.output_path + f'.{self.config.export_config.dtype}.engine'
                 with open(engine_path, "wb") as engine_file:
                     engine_file.write(trt_engine.serialize())
 
-        
+    def export(self):
+        """Export to EFF and TensorRT engine."""
+        self.load_model()
+        # TODO(@yuw): encrypt with EFF
+        self.export_onnx()
+        logger.info(f"ONNX is saved at {self.config.export_config.output_path}")
+        self.export_engine()
+
     def _build_profile(self, builder, network, profile_shapes, default_shape_value=1):
         """
         Build optimization profile for the builder and configure the min, opt, max shapes appropriately.

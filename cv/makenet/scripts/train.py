@@ -6,11 +6,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import argparse
 from functools import partial
 import json
 import logging
 import os
+from nv_tfqat_wrappers import quantize
 
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -30,7 +30,6 @@ from cv.makenet.utils.mixup_generator import MixupImageDataGenerator
 from cv.makenet.utils.preprocess_input import preprocess_input
 from cv.makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
 from cv.makenet.utils.helper import initialize, setup_config
-from model_optimization.quantization import quantize_keras_model
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 verbose = 0
@@ -73,7 +72,7 @@ def setup_callbacks(model_name, results_dir,
             os.makedirs(save_weights_dir)
         # Save encrypted models
         weight_filename = os.path.join(save_weights_dir,
-                                       '%s_{epoch:03d}.hdf5' % model_name)
+                                       '%s_{epoch:03d}' % model_name)
         checkpointer = ModelCheckpoint(weight_filename, key, verbose=1)
         callbacks.append(checkpointer)
 
@@ -282,7 +281,7 @@ def run_experiment(cfg, results_dir=None,
                         bn_config=bn_config
                     )
     if cfg['train_config']['qat']:
-        final_model = quantize_keras_model.create_quantized_keras_model(final_model)
+        final_model = quantize.quantize_model(final_model, do_quantize_residual_connections=True)
     # Printing model summary
     final_model.summary()
 

@@ -807,7 +807,7 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters,
 
     """
     channel_axis = get_batchnorm_axis(data_format)
-    in_channels = inputs._keras_shape[channel_axis]
+    in_channels = inputs.shape[channel_axis]
     pointwise_conv_filters = int(filters * alpha)
     pointwise_filters = _make_divisible(pointwise_conv_filters, 8)
     x = inputs
