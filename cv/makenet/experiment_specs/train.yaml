@@ -1,9 +1,13 @@
-results_dir: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_effnet_b0'
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18'
+key: nvidia_tlt
+# init_epoch: 16
 train_config:
-  qat: True
-  train_dataset_path: '/home/scratch.p3/datasets/nv-imagenet-1k'
+  qat: False
+  pretrained_model_path: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18/weights/resnet18_bn_003.eff'
+  train_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   val_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   batch_size_per_gpu: 64
   n_epochs: 300
 model_config:
-  arch: 'efficientnet_b0'
+  arch: 'resnet'
+  n_layers: 18

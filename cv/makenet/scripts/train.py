@@ -14,7 +14,7 @@ from nv_tfqat_wrappers import quantize
 
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
+from tensorflow.keras.callbacks import CSVLogger, TensorBoard
 from PIL import Image, ImageFile
 import six
 
@@ -22,13 +22,19 @@ import horovod.tensorflow.keras as hvd
 # Horovod: initialize Horovod.
 hvd.init()
 
+from cv.makenet.callback.eff_checkpoint import EffCheckpoint
 from cv.makenet.config.hydra_runner import hydra_runner
 from cv.makenet.config.default_config import ExperimentConfig
 from cv.makenet.model.model_builder import get_model
 from cv.makenet.utils.mixup_generator import MixupImageDataGenerator
 from cv.makenet.utils.preprocess_input import preprocess_input
 from cv.makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
-from cv.makenet.utils.helper import build_lr_scheduler, build_optimizer, initialize, setup_config
+from cv.makenet.utils.helper import (
+    build_lr_scheduler,
+    build_optimizer,
+    load_model,
+    initialize,
+    setup_config)
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 Image.MAX_IMAGE_PIXELS = 9000000000
 logger = logging.getLogger(__name__)
@@ -66,9 +72,7 @@ def setup_callbacks(model_name, results_dir, lr_config,
         if not os.path.exists(save_weights_dir):
             os.makedirs(save_weights_dir)
         # Save encrypted models
-        weight_filename = os.path.join(save_weights_dir,
-                                       '%s_{epoch:03d}' % model_name)
-        checkpointer = ModelCheckpoint(weight_filename, key, verbose=1)
+        checkpointer = EffCheckpoint(save_weights_dir, key, verbose=1)
         callbacks.append(checkpointer)
 
         # Set up the custom TensorBoard callback. It will log the loss
@@ -91,7 +95,7 @@ def load_data(train_data, val_data, preprocessing_func,
               image_height, image_width, batch_size,
               enable_random_crop=False, enable_center_crop=False,
               interpolation=0, color_mode="rgb",
-              mixup_alpha=0.0, no_horizontal_flip=False):
+              mixup_alpha=0.0, no_horizontal_flip=False, data_format='channels_first'):
     """Load training and validation data with default data augmentation.
 
     Args:
@@ -125,7 +129,8 @@ def load_data(train_data, val_data, preprocessing_func,
     train_datagen = ImageDataGenerator(
         preprocessing_function=preprocessing_func,
         horizontal_flip=not no_horizontal_flip,
-        featurewise_center=False)
+        featurewise_center=False,
+        data_format=data_format)
 
     train_iterator = MixupImageDataGenerator(
         train_datagen, train_data, batch_size,
@@ -134,13 +139,13 @@ def load_data(train_data, val_data, preprocessing_func,
         interpolation=interpolation + ':random' if enable_random_crop else interpolation,
         alpha=mixup_alpha
     )
-    print(len(train_iterator.next()))
     logger.info('Processing dataset (train): {}'.format(train_data))
 
     # Initializing data generator: Val
     val_datagen = ImageDataGenerator(
         preprocessing_function=preprocessing_func,
-        horizontal_flip=False)
+        horizontal_flip=False,
+        data_format=data_format)
 
     # Initializing data iterator: Val
     val_iterator = val_datagen.flow_from_directory(
@@ -178,7 +183,6 @@ def run_experiment(cfg, results_dir=None,
         If the folder does not already exist, it will be created.
         init_epoch (int): The number of epoch to resume training.
     """
-
     # Horovod: pin GPU to be used to process local rank (one GPU per process)
     gpus = tf.config.experimental.list_physical_devices('GPU')
     for gpu in gpus:
@@ -213,7 +217,7 @@ def run_experiment(cfg, results_dir=None,
                   partial(preprocess_input,
                           data_format=cfg['data_format'],
                           mode=cfg['train_config']['preprocess_mode'],
-                          img_mean=None,
+                          img_mean=list(cfg['train_config']['image_mean']),
                           color_mode=color_mode),
                   image_height, image_width,
                   batch_size=cfg['train_config']['batch_size_per_gpu'],
@@ -221,9 +225,9 @@ def run_experiment(cfg, results_dir=None,
                   enable_center_crop=cfg['train_config']['enable_center_crop'],
                   color_mode=color_mode,
                   mixup_alpha=cfg['train_config']['mixup_alpha'],
-                  no_horizontal_flip=cfg['train_config']['disable_horizontal_flip'])
+                  no_horizontal_flip=cfg['train_config']['disable_horizontal_flip'],
+                  data_format=cfg['data_format'])
 
-    # TODO: Creating model
     ka = dict(
         nlayers=cfg['model_config']['n_layers'],
         use_batch_norm=cfg['model_config']['use_batch_norm'],
@@ -235,7 +239,7 @@ def run_experiment(cfg, results_dir=None,
     )
     input_shape = (nchannels, image_height, image_width) \
         if cfg['data_format'] == 'channels_first' else (image_height, image_width, nchannels)
-    # TODO
+
     final_model = get_model(
         arch=cfg['model_config']['arch'],
         input_shape=input_shape,
@@ -256,7 +260,9 @@ def run_experiment(cfg, results_dir=None,
     
     if cfg['train_config']['pretrained_model_path']:
         # Decrypt and load pretrained model
-        pretrained_model = tf.keras.models.load_model(cfg['train_config']['pretrained_model_path'])
+        pretrained_model = load_model(
+            cfg['train_config']['pretrained_model_path'],
+            passphrase=cfg['key'])
 
         strict_mode = True
         for layer in pretrained_model.layers[1:]:
@@ -276,11 +282,10 @@ def run_experiment(cfg, results_dir=None,
                     final_model = setup_config(
                         pretrained_model,
                         reg_config,
-                        freeze_bn=cfg['model_config']['freeze_bn'],
                         bn_config=bn_config
                     )
     if cfg['train_config']['qat']:
-        final_model = quantize.quantize_model(final_model, quantize_residual_connections=True)
+        final_model = quantize.quantize_model(final_model, quantize_residual_connections=False)
     # Printing model summary
     final_model.summary()
 

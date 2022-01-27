@@ -14,7 +14,7 @@ import numpy as np
 from tensorflow import keras
 
 from backbones.utils_tf import swish
-from common.decorators.decorators import override, subclass
+from common.decorators import override, subclass
 
 
 """Logger for pruning APIs."""
