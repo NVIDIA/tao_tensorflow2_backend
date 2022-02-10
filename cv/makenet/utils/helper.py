@@ -197,30 +197,17 @@ def color_augmentation(
     return Image.fromarray(x_img.astype(np.uint8), "RGB")
 
 
-def setup_config(model, reg_config, freeze_bn=False, bn_config=None):
+def setup_config(model, reg_config, bn_config=None):
     """Wrapper for setting up BN and regularizer.
 
     Args:
         model (keras Model): a Keras model
         reg_config (dict): reg_config dict
-        freeze_bn(bool): Flag to freeze BN layers in this model
         bn_config (dict): config to override BatchNormalization parameters
     Return:
-        A new model with overriden config.
+        A new model with overridden config.
     """
-    # set training=False for BN layers if freeze_bn=True
-    # otherwise the freeze_bn flag in model builder will be ineffective
-    def compose_call(prev_call_method):
-        def call(self, inputs, training=False):
-            return prev_call_method(self, inputs, training)
 
-        return call
-
-    prev_batchnorm_call = keras.layers.BatchNormalization.call
-    if freeze_bn:
-        keras.layers.BatchNormalization.call = compose_call(
-            prev_batchnorm_call
-        )
     if bn_config is not None:
         bn_momentum = bn_config['momentum']
         bn_epsilon = bn_config['epsilon']
@@ -263,7 +250,5 @@ def setup_config(model, reg_config, freeze_bn=False, bn_config=None):
     with keras.utils.CustomObjectScope({'swish': swish}):
         updated_model = keras.models.Model.from_config(mconfig)
     updated_model.set_weights(model.get_weights())
-    # restore the BN call method before return
-    if freeze_bn:
-        keras.layers.normalization.BatchNormalization.call = prev_batchnorm_call
+
     return updated_model
