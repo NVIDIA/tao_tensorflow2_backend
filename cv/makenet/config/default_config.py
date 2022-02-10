@@ -15,58 +15,32 @@ class RegConfig:
     scope: List[str] = field(default_factory=lambda: ['conv2d', 'dense'])
     weight_decay: float = 0.000015
 
-
 @dataclass
 class OptimConfig:
-    """Optimizer config."""
+    """Learning rate config."""
 
     optimizer: str = 'sgd'
-    momentum: float = 0.99
+    lr: float = 0.05
     decay: float = 0.0001
-    nesterov: bool = True
-    beta_1: float = 0.99
-    beta_2: float = 0.99
     epsilon: float = 0.0001
     rho: float = 0.5
-
-@dataclass
-class Scheduler:
-    learning_rate: float = 0.05
-
-@dataclass
-class StepLRScheduler(Scheduler):
-    learning_rate: float = 0.05
-    gamma: float = 0.000015
-    step_size: int = 10
-
-
-@dataclass
-class MultiGPULearningRateScheduler(Scheduler):
-    learning_rate: float = 0.05
-    soft_start: float = 0.000015
-    annealing_points: List[int] = MISSING
-    annealing_divider: List[int] = MISSING
-
-
-@dataclass
-class SoftStartCosineAnnealingScheduler(Scheduler):
-    learning_rate: float = 0.05
-    min_lr_ratio: float = 0.000015
-    soft_start: int = 10
-
-
-scheduler_dict = {
-    'soft_anneal': MultiGPULearningRateScheduler,
-    'cosine': SoftStartCosineAnnealingScheduler,
-    'step': StepLRScheduler
-}
+    beta_1: float = 0.99
+    beta_2: float = 0.99
+    momentum: float = 0.99
+    nesterov: bool = True
 
 @dataclass
 class LRConfig:
     """Learning rate config."""
 
-    scheduler: str = 'soft_anneal'
-    scheduler_config: Scheduler = scheduler_dict[scheduler]()
+    scheduler: str = 'cosine'
+    learning_rate: float = 0.05
+    soft_start: float = 0.05
+    annealing_points: List[int] = MISSING
+    annealing_divider: List[int] = MISSING
+    min_lr_ratio: float = 0.000015
+    gamma: float = 0.000015
+    step_size: int = 10
 
 
 @dataclass
@@ -89,6 +63,8 @@ class TrainConfig:
     disable_horizontal_flip: bool = False
     image_mean: List[float] = field(default_factory=lambda: [103.939, 116.779, 123.68])
     reg_config: RegConfig = RegConfig()
+    lr_config: LRConfig = LRConfig()
+    optim_config: OptimConfig = OptimConfig()
 
 
 @dataclass
@@ -151,3 +127,4 @@ class ExperimentConfig:
     results_dir: str = MISSING
     key: str = ''
     init_epoch: int = 1
+    data_format: str = 'channels_last'

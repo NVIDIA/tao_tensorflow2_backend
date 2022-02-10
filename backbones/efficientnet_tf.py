@@ -114,7 +114,6 @@ def EfficientNet(width_coefficient,
     if activation_fn in [None, ""]:
         activation_fn = swish
     # old_data_format = K.image_data_format()
-    assert data_format == 'channels_last'
     K.set_image_data_format(data_format)
     if freeze_blocks is None:
         freeze_blocks = []
