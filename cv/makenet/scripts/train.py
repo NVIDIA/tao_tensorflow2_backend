@@ -15,27 +15,27 @@ from nv_tfqat_wrappers import quantize
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
-from PIL import ImageFile
+from PIL import Image, ImageFile
 import six
 
 import horovod.tensorflow.keras as hvd
 # Horovod: initialize Horovod.
 hvd.init()
 
-from common.utils import SoftStartCosineAnnealingScheduler
 from cv.makenet.config.hydra_runner import hydra_runner
 from cv.makenet.config.default_config import ExperimentConfig
 from cv.makenet.model.model_builder import get_model
 from cv.makenet.utils.mixup_generator import MixupImageDataGenerator
 from cv.makenet.utils.preprocess_input import preprocess_input
 from cv.makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
-from cv.makenet.utils.helper import initialize, setup_config
+from cv.makenet.utils.helper import build_lr_scheduler, build_optimizer, initialize, setup_config
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+Image.MAX_IMAGE_PIXELS = 9000000000
 logger = logging.getLogger(__name__)
 verbose = 0
 
 
-def setup_callbacks(model_name, results_dir,
+def setup_callbacks(model_name, results_dir, lr_config,
                     init_epoch, iters_per_epoch, max_epoch, key,
                     hvd):
     """Setup callbacks: tensorboard, checkpointer, lrscheduler, csvlogger.
@@ -53,12 +53,7 @@ def setup_callbacks(model_name, results_dir,
     callbacks = [hvd.callbacks.BroadcastGlobalVariablesCallback(0),
                 hvd.callbacks.MetricAverageCallback()]
     max_iterations = iters_per_epoch * max_epoch
-    lrscheduler = SoftStartCosineAnnealingScheduler(
-        base_lr=0.05 * hvd.size(),
-        min_lr_ratio=0.02,
-        soft_start=0.0,
-        max_iterations=max_iterations
-    )
+    lrscheduler = build_lr_scheduler(lr_config, hvd.size(), max_iterations)
     init_step = (init_epoch - 1) * iters_per_epoch
     lrscheduler.reset(init_step)
     callbacks.append(lrscheduler)
@@ -96,7 +91,7 @@ def load_data(train_data, val_data, preprocessing_func,
               image_height, image_width, batch_size,
               enable_random_crop=False, enable_center_crop=False,
               interpolation=0, color_mode="rgb",
-              no_horizontal_flip=False):
+              mixup_alpha=0.0, no_horizontal_flip=False):
     """Load training and validation data with default data augmentation.
 
     Args:
@@ -111,6 +106,7 @@ def load_data(train_data, val_data, preprocessing_func,
         interpolation(int): Interpolation method for image resize. 0 means bilinear,
             while 1 means bicubic.
         color_mode (str): Input image read mode as either `rgb` or `grayscale`.
+        mixup_alpha (float): mixup alpha.
         no_horizontal_flip(bool): Flag to disable horizontal flip for
             direction-aware datasets.
     Return:
@@ -130,14 +126,15 @@ def load_data(train_data, val_data, preprocessing_func,
         preprocessing_function=preprocessing_func,
         horizontal_flip=not no_horizontal_flip,
         featurewise_center=False)
-    train_iterator = train_datagen.flow_from_directory(
-        train_data,
-        target_size=(image_height, image_width),
+
+    train_iterator = MixupImageDataGenerator(
+        train_datagen, train_data, batch_size,
+        image_height, image_width,
         color_mode=color_mode,
-        batch_size=batch_size,
         interpolation=interpolation + ':random' if enable_random_crop else interpolation,
-        shuffle=True,
-        class_mode='categorical')
+        alpha=mixup_alpha
+    )
+    print(len(train_iterator.next()))
     logger.info('Processing dataset (train): {}'.format(train_data))
 
     # Initializing data generator: Val
@@ -214,7 +211,7 @@ def run_experiment(cfg, results_dir=None,
         load_data(cfg['train_config']['train_dataset_path'],
                   cfg['train_config']['val_dataset_path'],
                   partial(preprocess_input,
-                          data_format='channels_first',
+                          data_format=cfg['data_format'],
                           mode=cfg['train_config']['preprocess_mode'],
                           img_mean=None,
                           color_mode=color_mode),
@@ -223,6 +220,7 @@ def run_experiment(cfg, results_dir=None,
                   enable_random_crop=cfg['train_config']['enable_random_crop'],
                   enable_center_crop=cfg['train_config']['enable_center_crop'],
                   color_mode=color_mode,
+                  mixup_alpha=cfg['train_config']['mixup_alpha'],
                   no_horizontal_flip=cfg['train_config']['disable_horizontal_flip'])
 
     # TODO: Creating model
@@ -235,15 +233,17 @@ def run_experiment(cfg, results_dir=None,
         all_projections=cfg['model_config']['all_projections'],
         dropout=cfg['model_config']['dropout']
     )
-    
+    input_shape = (nchannels, image_height, image_width) \
+        if cfg['data_format'] == 'channels_first' else (image_height, image_width, nchannels)
     # TODO
-    final_model = get_model(arch=cfg['model_config']['arch'],
-                            input_shape=(nchannels, image_height, image_width),
-                            data_format='channels_first',
-                            nclasses=nclasses,
-                            use_imagenet_head=cfg['model_config']['use_imagenet_head'],
-                            freeze_blocks=cfg['model_config']['freeze_blocks'],
-                            **ka)
+    final_model = get_model(
+        arch=cfg['model_config']['arch'],
+        input_shape=input_shape,
+        data_format=cfg['data_format'],
+        nclasses=nclasses,
+        use_imagenet_head=cfg['model_config']['use_imagenet_head'],
+        freeze_blocks=cfg['model_config']['freeze_blocks'],
+        **ka)
 
     # Set up BN and regularizer config
     bn_config = None
@@ -281,7 +281,7 @@ def run_experiment(cfg, results_dir=None,
                         bn_config=bn_config
                     )
     if cfg['train_config']['qat']:
-        final_model = quantize.quantize_model(final_model, do_quantize_residual_connections=True)
+        final_model = quantize.quantize_model(final_model, quantize_residual_connections=True)
     # Printing model summary
     final_model.summary()
 
@@ -289,14 +289,10 @@ def run_experiment(cfg, results_dir=None,
         raise ValueError("Make sure to load the correct model when setting initial epoch > 1.")
 
     if cfg['train_config']['pretrained_model_path'] and cfg['init_epoch'] > 1:
-        raise NotImplementedError
+        opt = pretrained_model.optimizer
     else:
         # Defining optimizer
-        opt = tf.keras.optimizers.SGD(
-            learning_rate=0.0005,
-            momentum=0.9,
-            nesterov=False
-        )
+        opt = build_optimizer(cfg['train_config']['optim_config'])
     # Add Horovod Distributed Optimizer
     opt = hvd.DistributedOptimizer(
         opt, compression=hvd.Compression.fp16) # backward_passes_per_step=1, average_aggregated_gradients=True)
@@ -304,13 +300,14 @@ def run_experiment(cfg, results_dir=None,
     cc = tf.keras.losses.CategoricalCrossentropy(
         label_smoothing=cfg['train_config']['label_smoothing'])
     final_model.compile(
-        loss=tf.keras.losses.CategoricalCrossentropy(),
+        loss=cc, # tf.keras.losses.CategoricalCrossentropy()
         metrics=[tf.keras.metrics.CategoricalAccuracy(name='accuracy')],
         optimizer=opt,
         experimental_run_tf_function=False)
 
     # Setup callbacks
     callbacks = setup_callbacks(cfg['model_config']['arch'], results_dir,
+                                cfg['train_config']['lr_config'],
                                 init_epoch, len(train_iterator) // hvd.size(),
                                 cfg['train_config']['n_epochs'], key,
                                 hvd)

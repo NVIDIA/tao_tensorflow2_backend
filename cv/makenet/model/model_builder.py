@@ -506,7 +506,7 @@ def get_model(arch="resnet",
     elif 'efficientnet_b' in arch:
         kwa['use_bias'] = kwargs['use_bias']
         kwa['freeze_bn'] = kwargs['freeze_bn']
-        kwa['activation_type'] = kwargs['activation'].activation_type
+        kwa['activation_type'] = None # TODO(@yuw): kwargs['activation'].activation_type
     elif arch == 'mobilenet_v1':
         kwa['use_batch_norm'] = kwargs['use_batch_norm']
         kwa['use_bias'] = kwargs['use_bias']

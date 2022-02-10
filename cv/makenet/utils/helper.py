@@ -41,61 +41,62 @@ def initialize():
 
 def build_optimizer(optimizer_config):
     """build optimizer with the optimizer config."""
-    if optimizer_config.WhichOneof("optim") == "sgd":
+
+    if optimizer_config.optimizer == "sgd":
         return opt_dict["sgd"](
-            lr=optimizer_config.sgd.lr,
-            momentum=optimizer_config.sgd.momentum,
-            decay=optimizer_config.sgd.decay,
-            nesterov=optimizer_config.sgd.nesterov
+            learning_rate=optimizer_config.lr,
+            momentum=optimizer_config.momentum,
+            decay=optimizer_config.decay,
+            nesterov=optimizer_config.nesterov
         )
-    if optimizer_config.WhichOneof("optim") == "adam":
+    if optimizer_config.optimizer == "adam":
         return opt_dict["adam"](
-            lr=optimizer_config.adam.lr,
-            beta_1=optimizer_config.adam.beta_1,
-            beta_2=optimizer_config.adam.beta_2,
-            epsilon=optimizer_config.adam.epsilon,
-            decay=optimizer_config.adam.decay
+            learning_rate=optimizer_config.lr,
+            beta_1=optimizer_config.beta_1,
+            beta_2=optimizer_config.beta_2,
+            epsilon=optimizer_config.epsilon,
+            decay=optimizer_config.decay
         )
-    if optimizer_config.WhichOneof("optim") == "rmsprop":
+    if optimizer_config.optimizer == "rmsprop":
         return opt_dict["rmsprop"](
-            lr=optimizer_config.rmsprop.lr,
-            rho=optimizer_config.rmsprop.rho,
-            epsilon=optimizer_config.rmsprop.epsilon,
-            decay=optimizer_config.rmsprop.decay
+            learning_rate=optimizer_config.lr,
+            rho=optimizer_config.rho,
+            epsilon=optimizer_config.epsilon,
+            decay=optimizer_config.decay
         )
-    raise ValueError("Unsupported Optimizer: {}".format(optimizer_config.WhichOneof("optim")))
+    raise ValueError("Unsupported Optimizer: {}".format(optimizer_config.optimizer))
 
 
 def build_lr_scheduler(lr_config, hvd_size, max_iterations):
     """Build a learning rate scheduler from config."""
     # Set up the learning rate callback. It will modulate learning rate
     # based on iteration progress to reach max_iterations.
-    if lr_config.WhichOneof("lr_scheduler") == 'step':
+    if lr_config.scheduler == 'step':
         lrscheduler = StepLRScheduler(
-            base_lr=lr_config.step.learning_rate * hvd_size,
-            gamma=lr_config.step.gamma,
-            step_size=lr_config.step.step_size,
+            base_lr=lr_config.learning_rate * hvd_size,
+            gamma=lr_config.gamma,
+            step_size=lr_config.step_size,
             max_iterations=max_iterations
         )
-    elif lr_config.WhichOneof("lr_scheduler") == 'soft_anneal':
+    elif lr_config.scheduler == 'soft_anneal':
         lrscheduler = MultiGPULearningRateScheduler(
-            base_lr=lr_config.soft_anneal.learning_rate * hvd_size,
-            soft_start=lr_config.soft_anneal.soft_start,
-            annealing_points=lr_config.soft_anneal.annealing_points,
-            annealing_divider=lr_config.soft_anneal.annealing_divider,
+            base_lr=lr_config.learning_rate * hvd_size,
+            soft_start=lr_config.soft_start,
+            annealing_points=lr_config.annealing_points,
+            annealing_divider=lr_config.annealing_divider,
             max_iterations=max_iterations
         )
-    elif lr_config.WhichOneof("lr_scheduler") == 'cosine':
+    elif lr_config.scheduler == 'cosine':
         lrscheduler = SoftStartCosineAnnealingScheduler(
-            base_lr=lr_config.cosine.learning_rate * hvd_size,
-            min_lr_ratio=lr_config.cosine.min_lr_ratio,
-            soft_start=lr_config.cosine.soft_start,
+            base_lr=lr_config.learning_rate * hvd_size,
+            min_lr_ratio=lr_config.min_lr_ratio,
+            soft_start=lr_config.soft_start,
             max_iterations=max_iterations
         )
     else:
         raise ValueError(
-            "Only `step`, `cosine` and `soft_anneal` ",
-            "LR scheduler are supported."
+            f"Only `step`, `cosine` and `soft_anneal` ",
+            "LR scheduler are supported, but {lr_config.scheduler} is specified."
         )
     return lrscheduler
 

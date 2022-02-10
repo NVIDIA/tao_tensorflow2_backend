@@ -97,6 +97,9 @@ class MixupImageDataGenerator():
 
     def __iter__(self):
         """iterator."""
+        return self
+
+    def next(self):
         while True:
             return next(self)
 
