@@ -145,7 +145,7 @@ def EfficientNet(width_coefficient,
         name='stem_conv'
     )(x)
     if freeze_bn:
-        x = BatchNormalization(axis=bn_axis, name='stem_bn')(x, training=False)
+        x = BatchNormalization(axis=bn_axis, name='stem_bn', trainable=False)(x)
     else:
         x = BatchNormalization(axis=bn_axis, name='stem_bn', **bn_opt)(x)
     x = Activation(activation_fn, name='stem_activation')(x)
@@ -194,7 +194,7 @@ def EfficientNet(width_coefficient,
         name='top_conv'
     )(x)
     if freeze_bn:
-        x = BatchNormalization(axis=bn_axis, name='top_bn')(x, training=False)
+        x = BatchNormalization(axis=bn_axis, name='top_bn', trainable=False)(x)
     else:
         x = BatchNormalization(axis=bn_axis, name='top_bn', **bn_opt)(x)
     x = Activation(activation_fn, name='top_activation')(x)

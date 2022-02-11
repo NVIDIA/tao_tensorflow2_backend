@@ -339,7 +339,7 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x1 = layer(x1, training=False)
+                x1 = layer(trainable=False)(x1)
             else:
                 x1 = layer(x1)
         x1 = keras.layers.Activation(self.activation_type)(x1)
@@ -366,7 +366,7 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x2 = layer(x2, training=False)
+                x2 = layer(trainable=False)(x2)
             else:
                 x2 = layer(x2)
         x2 = keras.layers.Activation(self.activation_type)(x2)
@@ -393,7 +393,7 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x2 = layer(x2, training=False)
+                x2 = layer(trainable=False)(x2)
             else:
                 x2 = layer(x2)
         x2 = keras.layers.Activation(self.activation_type)(x2)
@@ -420,7 +420,7 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x3 = layer(x3, training=False)
+                x3 = layer(trainable=False)(x3)
             else:
                 x3 = layer(x3)
         x3 = keras.layers.Activation(self.activation_type)(x3)
@@ -447,7 +447,7 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x3 = layer(x3, training=False)
+                x3 = layer(trainable=False)(x3)
             else:
                 x3 = layer(x3)
         x3 = keras.layers.Activation(self.activation_type)(x3)
@@ -484,7 +484,7 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x4 = layer(x4, training=False)
+                x4 = layer(trainable=False)(x4)
             else:
                 x4 = layer(x4)
         x4 = keras.layers.Activation(self.activation_type)(x4)
@@ -603,8 +603,10 @@ def _conv_block(inputs, filters, alpha, kernel=(3, 3),
 
     if use_batch_norm:
         if freeze_bn:
-            x = keras.layers.BatchNormalization(axis=channel_axis,
-                                                name='conv1_bn')(x, training=False)
+            x = keras.layers.BatchNormalization(
+                axis=channel_axis, 
+                trainable=False,
+                name='conv1_bn')(x)
         else:
             x = keras.layers.BatchNormalization(axis=channel_axis, name='conv1_bn')(x)
     if activation_type == 'relu6':
@@ -665,7 +667,8 @@ def _depthwise_conv_block(inputs, pointwise_conv_filters, alpha,
         if freeze_bn:
             x = keras.layers.BatchNormalization(
                 axis=channel_axis,
-                name='conv_dw_%d_bn' % block_id)(x, training=False)
+                trainable=False,
+                name='conv_dw_%d_bn' % block_id)(x)
         else:
             x = keras.layers.BatchNormalization(axis=channel_axis,
                                                 name='conv_dw_%d_bn' % block_id)(x)
@@ -690,7 +693,8 @@ def _depthwise_conv_block(inputs, pointwise_conv_filters, alpha,
         if freeze_bn:
             x = keras.layers.BatchNormalization(
                 axis=channel_axis,
-                name='conv_pw_%d_bn' % block_id)(x, training=False)
+                trainable=False,
+                name='conv_pw_%d_bn' % block_id)(x)
         else:
             x = keras.layers.BatchNormalization(
                 axis=channel_axis,
@@ -757,7 +761,7 @@ def _leaky_conv(inputs, filters, alpha=0.1, kernel=(3, 3),
         if use_td:
             _layer = keras.layers.TimeDistributed(_layer)
         if freeze_bn:
-            x = _layer(x, training=False)
+            x = _layer(trainable=False)(x)
         else:
             x = _layer(x)
     x = keras.layers.LeakyReLU(alpha=alpha, name=name+'_lrelu')(x)
@@ -832,7 +836,8 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters,
                     epsilon=1e-3,
                     axis=channel_axis,
                     momentum=0.999,
-                    name=prefix + 'expand_bn')(x, training=False)
+                    trainable=False,
+                    name=prefix + 'expand_bn')(x)
             else:
                 x = keras.layers.BatchNormalization(
                     epsilon=1e-3,
@@ -865,7 +870,8 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters,
                 epsilon=1e-3,
                 axis=channel_axis,
                 momentum=0.999,
-                name=prefix + 'depthwise_bn')(x, training=False)
+                trainable=False,
+                name=prefix + 'depthwise_bn')(x)
         else:
             x = keras.layers.BatchNormalization(
                     epsilon=1e-3,
@@ -894,7 +900,8 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters,
                 axis=channel_axis,
                 epsilon=1e-3,
                 momentum=0.999,
-                name=prefix + 'project_bn')(x, training=False)
+                trainable=False,
+                name=prefix + 'project_bn')(x)
         else:
             x = keras.layers.BatchNormalization(
                 axis=channel_axis,
@@ -1108,7 +1115,8 @@ class CNNBlock(object):
                 if self.freeze_bn:
                     x = keras.layers.BatchNormalization(
                         axis=bn_axis,
-                        name='%sbn_%d' % (name_prefix, i + 1))(x, training=False)
+                        trainable=False,
+                        name='%sbn_%d' % (name_prefix, i + 1))(x)
                 else:
                     x = keras.layers.BatchNormalization(
                         axis=bn_axis, name='%sbn_%d' % (name_prefix, i + 1))(x)
@@ -1135,7 +1143,8 @@ class CNNBlock(object):
                         _name = '%sbn_shortcut' % name_prefix
                         shortcut = keras.layers.BatchNormalization(
                             axis=bn_axis,
-                            name=_name)(shortcut, training=False)
+                            trainable=False,
+                            name=_name)(shortcut)
                     else:
                         shortcut = keras.layers.BatchNormalization(
                             axis=bn_axis, name='%sbn_shortcut' % name_prefix)(shortcut)
@@ -1155,8 +1164,9 @@ class CNNBlock(object):
                     if self.use_batch_norm:
                         if self.freeze_bn:
                             shortcut = keras.layers.BatchNormalization(
-                                axis=bn_axis, name='%sbn_shortcut' % name_prefix)(shortcut,
-                                                                                  training=False)
+                                axis=bn_axis,
+                                trainable=False,
+                                name='%sbn_shortcut' % name_prefix)(shortcut)
                         else:
                             shortcut = keras.layers.BatchNormalization(
                                 axis=bn_axis, name='%sbn_shortcut' % name_prefix)(shortcut)
@@ -1375,7 +1385,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
         if use_td:
             layer = keras.layers.TimeDistributed(layer)
         if freeze_bn:
-            x = layer(x, training=False)
+            x = layer(trainable=False)(x)
         else:
             x = layer(x)
         x = keras.layers.Activation(activation_fn, name=name + 'expand_activation')(x)
@@ -1415,7 +1425,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
     if use_td:
         layer = keras.layers.TimeDistributed(layer)
     if freeze_bn:
-        x = layer(x, training=False)
+        x = layer(trainable=False)(x)
     else:
         x = layer(x)
     x = keras.layers.Activation(activation_fn, name=name + 'activation')(x)
@@ -1507,7 +1517,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
     if use_td:
         layer = keras.layers.TimeDistributed(layer)
     if freeze_bn:
-        x = layer(x, training=False)
+        x = layer(trainable=False)(x)
     else:
         x = layer(x)
     if (id_skip is True and strides == 1 and filters_in == filters_out):

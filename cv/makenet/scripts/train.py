@@ -251,7 +251,6 @@ def run_experiment(cfg, results_dir=None,
     final_model = setup_config(
         final_model,
         reg_config,
-        freeze_bn=cfg['model_config']['freeze_bn'],
         bn_config=bn_config
     )
     

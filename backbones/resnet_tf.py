@@ -101,7 +101,8 @@ def ResNet(nlayers,
     if use_batch_norm:
         if freeze_bn:
             x = keras.layers.BatchNormalization(axis=get_batchnorm_axis(data_format),
-                                                name='bn_conv1')(x, training=False)
+                                                trainable=False,
+                                                name='bn_conv1')(x)
         else:
             x = keras.layers.BatchNormalization(axis=get_batchnorm_axis(data_format),
                                                 name='bn_conv1')(x)

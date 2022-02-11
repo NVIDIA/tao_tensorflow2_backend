@@ -227,7 +227,8 @@ def MobileNetV2(inputs,
             x = layers.BatchNormalization(axis=channel_axis,
                                           epsilon=1e-3,
                                           momentum=0.999,
-                                          name='bn_conv1')(x, training=False)
+                                          trainable=False,
+                                          name='bn_conv1')(x)
         else:
             x = layers.BatchNormalization(axis=channel_axis,
                                           epsilon=1e-3,
@@ -327,7 +328,8 @@ def MobileNetV2(inputs,
                     x = layers.BatchNormalization(epsilon=1e-3,
                                                   axis=channel_axis,
                                                   momentum=0.999,
-                                                  name='conv_1_bn')(x, training=False)
+                                                  trainable=False,
+                                                  name='conv_1_bn')(x)
                 else:
                     x = layers.BatchNormalization(epsilon=1e-3,
                                                   axis=channel_axis,
