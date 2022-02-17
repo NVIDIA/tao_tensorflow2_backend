@@ -9,5 +9,5 @@ train_config:
   train_batch_size: 12
   checkpoint_period: 1
 eval_config:
-  eval_batch_size: 12
-  eval_samples: 5000
+  eval_batch_size: 16
+  eval_samples: 500

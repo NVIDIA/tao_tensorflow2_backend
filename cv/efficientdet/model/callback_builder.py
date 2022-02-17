@@ -2,6 +2,7 @@
 from concurrent import futures
 import os
 from mpi4py import MPI
+import numpy as np
 import time
 import tensorflow as tf
 import horovod.tensorflow.keras.callbacks as hvd_callbacks
@@ -12,6 +13,7 @@ from cv.efficientdet.processor.postprocessor import EfficientDetPostprocessor
 from cv.efficientdet.utils import coco_metric
 from cv.efficientdet.utils import label_utils
 from cv.efficientdet.utils.horovod_utils import get_world_size, is_main_process
+from cv.efficientdet.visualize import vis_utils
 
 
 class BatchTimestamp(object):
@@ -216,8 +218,8 @@ class MovingAverageCallback(tf.keras.callbacks.Callback):
     """
 
     def __init__(self,
-                             overwrite_weights_on_train_end: bool = False,
-                             **kwargs):
+                 overwrite_weights_on_train_end: bool = False,
+                 **kwargs):
         super(MovingAverageCallback, self).__init__(**kwargs)
         self.overwrite_weights_on_train_end = overwrite_weights_on_train_end
         self.ema_opt = None
@@ -253,27 +255,26 @@ class AverageModelCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         See `tf.keras.callbacks.ModelCheckpoint` for the other args.
     """
 
-    def __init__(
-            self,
-            update_weights: bool,
-            filepath: str,
-            monitor: str = 'val_loss',
-            verbose: int = 0,
-            save_best_only: bool = False,
-            save_weights_only: bool = False,
-            mode: str = 'auto',
-            save_freq: str = 'epoch',
-            **kwargs):
+    def __init__(self,
+                 update_weights: bool,
+                 filepath: str,
+                 monitor: str = 'val_loss',
+                 verbose: int = 0,
+                 save_best_only: bool = False,
+                 save_weights_only: bool = False,
+                 mode: str = 'auto',
+                 save_freq: str = 'epoch',
+                 **kwargs):
 
         super().__init__(
-                filepath,
-                monitor,
-                verbose,
-                save_best_only,
-                save_weights_only,
-                mode,
-                save_freq,
-                **kwargs)
+            filepath,
+            monitor,
+            verbose,
+            save_best_only,
+            save_weights_only,
+            mode,
+            save_freq,
+            **kwargs)
         self.update_weights = update_weights
         self.ema_opt = None
 
@@ -319,7 +320,8 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         self.eval_params = eval_params
         self.ema_opt = None
         self.postpc = EfficientDetPostprocessor(self.eval_params)
-
+        log_dir = os.path.join(eval_params['results_dir'], 'eval')
+        self.file_writer = tf.summary.create_file_writer(log_dir)
         label_map = label_utils.get_label_map(eval_params['eval_config']['label_map'])
         self.evaluator = coco_metric.EvaluationMetric(
             filename=eval_params['data_config']['validation_json_file'], label_map=label_map)
@@ -339,7 +341,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
             labels['source_ids'])
 
         def transform_detections(detections):
-            """A transforms detections in [id, x1, y1, x2, y2, score, class] 
+            """A transforms detections in [id, x1, y1, x2, y2, score, class]
                form to [id, x, y, w, h, score, class]."""
             return tf.stack([
                 detections[:, :, 0],
@@ -354,6 +356,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         tf.numpy_function(
             self.evaluator.update_state,
             [labels['groundtruth_data'], transform_detections(detections)], [])
+        return detections, labels['image_scales']
 
     def evaluate(self, epoch):
         if self.eval_params['train_config']['moving_average_decay'] > 0:
@@ -362,7 +365,32 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         self.evaluator.reset_states()
         # evaluate all images.
         for i, (images, labels) in enumerate(self.dataset):
-            self.eval_model_fn(images, labels)
+            detections, scales = self.eval_model_fn(images, labels)
+            # [id, x1, y1, x2, y2, score, class]
+            if self.eval_params['train_config']['image_preview'] and i == 0:
+                bs_index = 0
+                image = np.copy(images[bs_index])
+                # decode image
+                image = vis_utils.denormalize_image(image)
+                predictions = np.array(detections[bs_index])
+                predictions[:, 1:5] /= scales[bs_index]
+                boxes = predictions[:, 1:5].astype(np.int)
+                boxes = boxes[:, [1, 0, 3, 2]]
+                classes = predictions[:, -1].astype(np.int)
+                scores = predictions[:, -2]
+                
+                image = vis_utils.visualize_boxes_and_labels_on_image_array(
+                    image,
+                    boxes,
+                    classes,
+                    scores,
+                    {},
+                    min_score_thresh=0.2,
+                    max_boxes_to_draw=100,
+                    line_thickness=2)
+                with self.file_writer.as_default():
+                    tf.summary.image(f'Image Preview', tf.expand_dims(image, axis=0), step=epoch)
+            # draw detections
             if is_main_process():
                 self.pbar.update(i)
 
@@ -373,8 +401,10 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         if is_main_process():
             metrics = self.evaluator.result()
             metric_dict = {}
-            for i, name in enumerate(self.evaluator.metric_names):
-                metric_dict[name] = metrics[i]
+            with self.file_writer.as_default(), tf.summary.record_if(True):
+                for i, name in enumerate(self.evaluator.metric_names):
+                    tf.summary.scalar(name, metrics[i], step=epoch)
+                    metric_dict[name] = metrics[i]
 
             # csv format
             csv_metrics = ['AP','AP50','AP75','APs','APm','APl']
@@ -397,9 +427,9 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
     callbacks = [hvd_callbacks.BroadcastGlobalVariablesCallback(0)]
     if is_main_process():
         # if benchmark == False:
-        #     tb_callback = tf.keras.callbacks.TensorBoard(
-        #         log_dir=params['results_dir'], profile_batch='103,106' if profile else 0, histogram_freq = 1)
-        #     callbacks.append(tb_callback)
+        tb_callback = tf.keras.callbacks.TensorBoard(
+            log_dir=params['results_dir'], profile_batch='103,106' if profile else 0, histogram_freq = 1)
+        callbacks.append(tb_callback)
 
         if params['train_config']['moving_average_decay']:
             emackpt_callback = AverageModelCheckpoint(

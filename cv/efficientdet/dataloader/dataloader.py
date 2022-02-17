@@ -60,7 +60,7 @@ class InputProcessor:
     offset = tf.expand_dims(offset, axis=0)
     self._image -= offset
 
-    scale = tf.constant([0.229, 0.224, 0.225])
+    scale = tf.constant([0.229, 0.224, 0.225]) # TODO(@yuw): change all to 0.224
     scale = tf.expand_dims(scale, axis=0)
     scale = tf.expand_dims(scale, axis=0)
     self._image /= scale

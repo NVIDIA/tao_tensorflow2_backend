@@ -11,4 +11,4 @@ train_config:
 eval_config:
   eval_batch_size: 16
   eval_samples: 5000
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d1/ema_weights/emackpt-72'
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d1/ema_weights/emackpt-290'
