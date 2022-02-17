@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -eo pipefail
-cd "$( dirname "${BASH_SOURCE[0]}" )"
+# cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 registry="gitlab-master.nvidia.com:5005"
 repository="tlt/tao-tf2/tao_tf2_base_image"
@@ -63,7 +63,7 @@ if [ $BUILD_DOCKER = "1" ]; then
         NO_CACHE=""
     fi
     docker build --pull -f $NV_TAO_TF2_TOP/docker/Dockerfile -t $registry/$repository:$local_tag $NO_CACHE \
-        --network=host $NV_TAO_TF2_TOP/docker/. \
+        --network=host $NV_TAO_TF2_TOP/. \
         --build-arg EFF_TOKEN_NAME="$EFF_TOKEN_NAME" \
         --build-arg EFF_TOKEN_PASSWORD="$EFF_TOKEN_PASSWORD"
 

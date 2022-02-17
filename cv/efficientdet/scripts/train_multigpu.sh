@@ -3,6 +3,8 @@
 # Parse args to find "-np <num GPUs>".
 NUM_GPUS=0
 PYTHON_ARGS=()
+CURDIR=$(pwd)
+BASEDIR=$(dirname "$0")
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -24,6 +26,6 @@ if [ "$NUM_GPUS" -lt 1 ]; then
 	echo "Usage: -np <num GPUs> [train.py arguments]"
 else
 	# Note: need to execute bazel created train script instead of train.py.
-	mpirun -np $NUM_GPUS --allow-run-as-root --bind-to none -map-by slot -x LD_LIBRARY_PATH -x PATH -mca pml ob1 -mca btl ^openib python train.py ${PYTHON_ARGS[*]}
+	mpirun -np $NUM_GPUS --allow-run-as-root --bind-to none -map-by slot -x LD_LIBRARY_PATH -x PATH -mca pml ob1 -mca btl ^openib python /workspace/tao-tf2/cv/efficientdet/scripts/train.py ${PYTHON_ARGS[*]}
 fi
 
