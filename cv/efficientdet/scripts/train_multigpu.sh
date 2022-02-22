@@ -3,6 +3,8 @@
 # Parse args to find "-np <num GPUs>".
 NUM_GPUS=0
 PYTHON_ARGS=()
+CURDIR=$(pwd)
+BASEDIR=$(dirname "$0")
 while [[ $# -gt 0 ]]
 do
 key="$1"

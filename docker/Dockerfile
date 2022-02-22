@@ -6,16 +6,18 @@ RUN apt-get install ffmpeg libsm6 libxext6  -y
 # upgrade pip
 RUN pip install --upgrade pip
 
-# Copy detectron code and build
+# Copy requirement and install
 WORKDIR /workspace/
-COPY requirements.txt /workspace/
+COPY docker/requirements.txt /workspace/
 RUN pip install -r requirements.txt && \
     rm -rf requirements.txt
 
-COPY tensorrt_qat /tmp/tensorrt_qat
+COPY . /workspace/tao-tf2
+
+COPY docker/tensorrt_qat /tmp/tensorrt_qat
 WORKDIR /tmp/tensorrt_qat
 RUN pip install .
-COPY tensorflow-onnx /tmp/tensorflow-onnx
+COPY docker/tensorflow-onnx /tmp/tensorflow-onnx
 WORKDIR /tmp/tensorflow-onnx
 RUN pip install .
 
@@ -31,3 +33,4 @@ ARG groups=developer:1000
 ARG home=/home/developer
 RUN echo "ALL   ALL = (ALL) NOPASSWD: ALL" > /etc/sudoers \
     && mkdir -p "$(dirname $home)"
+WORKDIR /workspace/tao-tf2
