@@ -10,4 +10,4 @@ if str(os.getenv('SUPPRES_VERBOSE_LOGGING', '0')) == '1':
     import logging
     logging.getLogger('tensorflow').disabled = True
     import tensorflow as tf
-    tf.logging.set_verbosity(tf.logging.FATAL)
+    tf.get_logger().setLevel('ERROR')

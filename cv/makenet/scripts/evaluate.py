@@ -1,13 +1,13 @@
 # Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
-"""Perform Makenet Evaluation on IVA car make dataset."""
+"""Perform classification evaluation."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import argparse
 import os
 from functools import partial
 import logging
+import zipfile
 
 import numpy as np
 from PIL import ImageFile
@@ -16,11 +16,13 @@ from tensorflow import keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
 
+from eff.core import Archive
+
 from cv.makenet.config.hydra_runner import hydra_runner
 from cv.makenet.config.default_config import ExperimentConfig
 from cv.makenet.utils import preprocess_crop  # noqa pylint: disable=unused-import
 from cv.makenet.utils.preprocess_input import preprocess_input
-from cv.makenet.utils.helper import initialize, get_input_shape, setup_config
+from cv.makenet.utils.helper import initialize, get_input_shape, load_model
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 
@@ -39,20 +41,11 @@ def run_evaluate(cfg):
         level=verbosity)
     # set backend
     initialize()
-    # TODO: Decrypt EFF
-    final_model = keras.models.load_model(str(cfg['eval_config']['model_path']), compile=False)
-    # TODO: override BN config
-    bn_config = None
-    reg_config = cfg['train_config']['reg_config']
-    # reg_config and freeze_bn are actually not useful, just use bn_config
-    # so the BN layer's output produces correct result.
-    # of course, only the BN epsilon matters in evaluation.
-    final_model = setup_config(
-        final_model,
-        reg_config,
-        freeze_bn=cfg['model_config']['freeze_bn'],
-        bn_config=bn_config
-    )
+    # Decrypt EFF
+    final_model = load_model(
+        str(cfg['eval_config']['model_path']),
+        cfg['key'])
+
     # Defining optimizer
     opt = keras.optimizers.SGD(lr=0, decay=1e-6, momentum=0.9, nesterov=False)
     # Define precision/recall and F score metrics
@@ -69,6 +62,7 @@ def run_evaluate(cfg):
 
     # Get input shape
     image_height, image_width, nchannels = get_input_shape(final_model)
+    print(image_height, image_width, nchannels)
 
     assert nchannels in [1, 3], (
         "Unsupported channel count {} for evaluation".format(nchannels)
@@ -80,16 +74,15 @@ def run_evaluate(cfg):
     if cfg['eval_config']['enable_center_crop']:
         interpolation += ":center"
 
-    #  TODO: enable image_mean
-
     # Initializing data generator
     target_datagen = ImageDataGenerator(
         preprocessing_function=partial(preprocess_input,
-                                       data_format='channels_first',
+                                       data_format=cfg['data_format'],
                                        mode=cfg['train_config']['preprocess_mode'],
-                                       img_mean=None,
+                                       img_mean=list(cfg['train_config']['image_mean']),
                                        color_mode=color_mode),
-        horizontal_flip=False)
+        horizontal_flip=False,
+        data_format=cfg['data_format'])
     # Initializing data iterator
     target_iterator = target_datagen.flow_from_directory(
         cfg['eval_config']['eval_dataset_path'],

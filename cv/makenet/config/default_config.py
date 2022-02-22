@@ -125,6 +125,6 @@ class ExperimentConfig:
     export_config: ExportConfig = ExportConfig()
     infer_config: InferConfig = InferConfig()
     results_dir: str = MISSING
-    key: str = ''
+    key: str = 'nvidia_tlt'
     init_epoch: int = 1
     data_format: str = 'channels_last'

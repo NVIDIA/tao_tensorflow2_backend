@@ -8,7 +8,9 @@ train_config:
 
 eval_config:
   eval_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-makenet/weights/resnet_044.hdf5'
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18/weights/resnet18_bn_001.eff'
   top_k: 1
   batch_size: 64
   n_workers: 10
+key: 'nvidia_tlt'
+data_format: 'channels_last'
