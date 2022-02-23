@@ -16,7 +16,7 @@ class TrainConfig:
     num_examples_per_epoch: int = 120000
     train_batch_size: int = 8
     num_epochs: int = 300
-    checkpoint: int = 10
+    checkpoint: str = ""
     tf_random_seed: int = 42
     l1_weight_decay: float = 0.0
     l2_weight_decay: float = 0.00004
@@ -32,6 +32,7 @@ class TrainConfig:
     optimizer: str = 'sgd'
     loss_scale: float = 10.0
     image_preview: bool = True
+    resume_training: bool = False # TODO(@yuw): remove this!
 
 
 @dataclass
@@ -85,6 +86,31 @@ class AugmentationConfig:
     random_crop_min_scale: float = 0.1
     random_crop_max_scale: float = 2
 
+@dataclass
+class ExportConfig:
+    """Experiment config."""
+
+    max_batch_size: int = 8
+    model_path: str = MISSING
+    output_path: str = MISSING
+    engine_file: str = ""
+    data_type: str = "fp32"
+    max_workspace_size: int = 2 # G
+    cal_image_dir: str = ""
+    cal_cache_file: str = ""
+    cal_batch_size: int = 16
+    cal_batches: int = 10
+    verbose: bool = True
+
+@dataclass
+class InferenceConfig:
+    """Experiment config."""
+    
+    model_path: str = MISSING
+    image_dir: str = MISSING
+    output_dir: str = MISSING
+    dump_label: bool = False
+    batch_size: int = 1
 
 @dataclass
 class ExperimentConfig:
@@ -95,6 +121,8 @@ class ExperimentConfig:
     eval_config: EvalConfig = EvalConfig()
     data_config: DataConfig = DataConfig()
     augmentation_config: AugmentationConfig = AugmentationConfig()
+    export_config: ExportConfig = ExportConfig()
+    inference_config: InferenceConfig = InferenceConfig()
     results_dir: str = MISSING
     key: str = ''
     data_format: str = 'channels_last'

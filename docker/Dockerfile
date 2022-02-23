@@ -9,6 +9,7 @@ RUN pip install --upgrade pip
 # Copy requirement and install
 WORKDIR /workspace/
 COPY docker/requirements.txt /workspace/
+RUN pip install nvidia-pyindex
 RUN pip install -r requirements.txt && \
     rm -rf requirements.txt
 
@@ -20,6 +21,23 @@ RUN pip install .
 COPY docker/tensorflow-onnx /tmp/tensorflow-onnx
 WORKDIR /tmp/tensorflow-onnx
 RUN pip install .
+
+RUN cd /opt
+RUN mkdir trt_oss_src && \
+   cd trt_oss_src && \
+   echo "$PWD Building TRT OSS..." && \
+   git clone -b 22.02 https://github.com/nvidia/TensorRT TensorRT && \
+   cd TensorRT && \
+   git submodule update --init --recursive && \
+   mkdir -p build && cd build  && \
+   cmake .. -DGPU_ARCHS="35 52 53 60 61 70 75 80 86" -DTRT_LIB_DIR=/usr/lib/x86_64-linux-gnu -DTRT_BIN_DIR=`pwd`/out -DCUDA_VERSION=11.4 -DCUDNN_VERSION=8.2 && \
+   make -j8 && \
+   cp libnvinfer_plugin.so.8.2.* /usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so.8.2.3 && \
+   cp libnvinfer_plugin_static.a /usr/lib/x86_64-linux-gnu/libnvinfer_plugin_static.a && \
+   cp libnvonnxparser.so.8.2.* /usr/lib/x86_64-linux-gnu/libnvonnxparser.so.8.2.3 && \
+   cp trtexec /usr/local/bin/ && \
+   cd ../../../ && \
+   rm -rf trt_oss_src
 
 RUN pip install https://urm.nvidia.com/artifactory/sw-eff-pypi-local/nvidia-eff/0.5.5/nvidia_eff-0.5.5-cp38-cp38-linux_x86_64.whl
 

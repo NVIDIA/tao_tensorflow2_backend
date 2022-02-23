@@ -85,6 +85,7 @@ def batch_norm_act(inputs,
       center=True,
       scale=True,
       training=is_training_bn,
+      trainable=is_training_bn,
       gamma_initializer=gamma_initializer,
       name=name)
 

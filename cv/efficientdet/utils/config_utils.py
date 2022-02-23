@@ -63,6 +63,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         checkpoint=cfg['train_config']['checkpoint'],
         ckpt=None,
         mode=mode,
+        is_training_bn=mode=='train',
         checkpoint_period=cfg['train_config']['checkpoint_period'],
         train_batch_size=cfg['train_config']['train_batch_size'],
         learning_rate=cfg['train_config']['learning_rate'],
