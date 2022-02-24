@@ -17,8 +17,9 @@ from cv.efficientdet.model.efficientdet import efficientdet
 from cv.efficientdet.model import callback_builder
 from cv.efficientdet.model import optimizer_builder
 from cv.efficientdet.trainer.efficientdet_trainer import EfficientDetTrainer
-from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils import hparams_config, keras_utils
+from cv.efficientdet.utils.config_utils import generate_params_from_cfg
+from cv.efficientdet.utils.helper import dump_json
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
 
 
@@ -77,8 +78,12 @@ def run_experiment(cfg, results_dir, key):
     # TODO(@yuw): verify channels_first training or force last
     input_shape = list(config.image_size) + [3] \
         if config.data_format == 'channels_last' else [3] + list(config.image_size)
-    outputs, model = efficientdet(input_shape, training=True, config=config)
-
+    _, model = efficientdet(input_shape, training=True, config=config)
+    
+    # TODO(@yuw): save to another eff file?
+    if is_main_process():
+        dump_json(model, os.path.join(cfg['results_dir'], 'model_graph.json'))
+    assert 0
     if cfg['train_config']['checkpoint'] and not tf.train.latest_checkpoint(cfg['results_dir']):
         print("Loading pretrained weight....")
         pretrained_model = tf.keras.models.load_model(cfg['train_config']['checkpoint'])

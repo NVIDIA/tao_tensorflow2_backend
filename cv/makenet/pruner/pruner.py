@@ -19,7 +19,8 @@ class ClassificationPruner(Pruner):
     
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.excluded_layers = ['predictions']
 
     def _load_model(self):
         self.model = load_model(self.model_path, self.key)
+        self.excluded_layers = self.model.output_names
+        self.model.summary()

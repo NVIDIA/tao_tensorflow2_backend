@@ -3,7 +3,6 @@
 """Collection of helper functions."""
 import os
 
-import tensorflow import keras
 import tensorflow as tf
 import numpy as np
 import tempfile
@@ -11,6 +10,14 @@ import zipfile
 
 from eff.core import Archive, File
 from eff.callbacks import BinaryContentCallback
+
+from cv.efficientdet.layers.image_resize_layer import ImageResizeLayer
+from cv.efficientdet.layers.weighted_fusion_layer import WeightedFusion
+from cv.efficientdet.utils import keras_utils
+
+CUSTOM_OBJS = {
+    'ImageResizeLayer': ImageResizeLayer,
+    'WeightedFusion': WeightedFusion}
 
 
 def decode_eff(eff_model_path, passphrase=None):
@@ -38,22 +45,48 @@ def decode_eff(eff_model_path, passphrase=None):
     return saved_model_path
 
 
-def load_model(model_path, passphrase=None):
+def load_model(model_path, cfg):
     """Load hdf5 or EFF model.
 
     Args:
-        model_path (str): Path to hdf5 model or eff model
+        model_path (str): Path to EfficientDet checkpoint
         passphrase (str, optional): Encryption key. Defaults to None.
 
     Returns:
         Keras model: Loaded model
     """
-    assert os.path.exists(model_path), "Pretrained model not found at {}".format(model_path)
-    assert os.path.splitext(model_path)[-1] in ['.hdf5', '.eff'], \
-        "Only .hdf5 and .tlt are supported."
-    if model_path.endswith('.eff'):
-        model_path = decode_eff(model_path, passphrase)
-    return tf.keras.models.load_model(model_path)
+    is_pruned = False
+    if is_pruned:
+        raise NotImplementedError
+    else:
+        # model_path is saved_model
+        model = load_json_model(os.path.join(cfg['results_dir'], 'model_graph.json'))
+        train_from_epoch = keras_utils.restore_ckpt(
+            model,
+            model_path, 
+            cfg.train_config.moving_average_decay,
+            steps_per_epoch=0,
+            expect_partial=False)
+        # TODO(@yuw): verify train_from_epoch
+        return model
+            
+
+
+def load_json_model(json_path, new_objs=None):
+    """Helper function to load keras model from json file."""
+    new_objs = new_objs or {}
+    with open(json_path, 'r') as jf:
+        model_json = jf.read()
+    loaded_model = tf.keras.models.model_from_json(
+        model_json,
+        custom_objects={**CUSTOM_OBJS, **new_objs})
+    return loaded_model
+
+
+def dump_json(model, out_path):
+    """Model to json."""
+    with open(out_path, "w") as jf:
+        jf.write(model.to_json())
 
 
 def zipdir(src, zip_path):

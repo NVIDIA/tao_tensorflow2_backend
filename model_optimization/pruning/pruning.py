@@ -16,6 +16,8 @@ from tensorflow import keras
 from backbones.utils_tf import swish
 from common.decorators import override, subclass
 
+from cv.efficientdet.layers.image_resize_layer import ImageResizeLayer
+from cv.efficientdet.layers.weighted_fusion_layer import WeightedFusion
 
 """Logger for pruning APIs."""
 logger = logging.getLogger(__name__)
@@ -40,7 +42,8 @@ TRAVERSABLE_LAYERS = [
     keras.layers.LeakyReLU,
     keras.layers.UpSampling2D,
     keras.layers.Conv2D,
-    keras.layers.SeparableConv2D
+    keras.layers.SeparableConv2D,
+    ImageResizeLayer, WeightedFusion,
 ]
 
 
@@ -974,7 +977,8 @@ class PruneMinWeight(Prune):
                 keras.layers.UpSampling2D,
                 keras.layers.Cropping2D,
                 keras.models.Model,
-                keras.layers.SeparableConv2D
+                keras.layers.SeparableConv2D,
+                ImageResizeLayer
             ]:
                 # These layers are just pass-throughs.
                 pass
@@ -1001,6 +1005,7 @@ class PruneMinWeight(Prune):
                 keras.layers.Multiply,
                 keras.layers.Average,
                 keras.layers.Maximum,
+                WeightedFusion
             ]:
                 # For eltwise layers check if all the inbound layers have been explored first.
                 elmtwise_inputs = [
@@ -1200,7 +1205,9 @@ class PruneMinWeight(Prune):
                     keras.layers.Maximum,
                     keras.layers.UpSampling2D,
                     keras.layers.Cropping2D,
-                    keras.layers.SeparableConv2D,
+                    keras.layers.SeparableConv2D, # TODO(@yuw): workaround
+                    ImageResizeLayer,
+                    WeightedFusion
                 ]:
                     # These layers have no weights associated with them. Hence no transformation
                     # but, propogate retained indices from the previous layer.
