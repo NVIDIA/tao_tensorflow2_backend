@@ -20,6 +20,22 @@ CUSTOM_OBJS = {
     'WeightedFusion': WeightedFusion}
 
 
+def fetch_optimizer(model,opt_type) -> tf.keras.optimizers.Optimizer:
+    """Get the base optimizer used by the current model."""
+    
+    # this is the case where our target optimizer is not wrapped by any other optimizer(s)
+    if isinstance(model.optimizer,opt_type):
+        return model.optimizer
+    
+    # Dive into nested optimizer object until we reach the target opt
+    opt = model.optimizer
+    while hasattr(opt, '_optimizer'):
+        opt = opt._optimizer
+        if isinstance(opt,opt_type):
+            return opt 
+    raise TypeError(f'Failed to find {opt_type} in the nested optimizer object')
+
+
 def decode_eff(eff_model_path, passphrase=None):
     """Decode EFF to saved_model directory.
 
