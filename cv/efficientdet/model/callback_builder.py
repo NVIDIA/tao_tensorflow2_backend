@@ -1,20 +1,16 @@
 """Callback related utils."""
-from concurrent import futures
 import os
-from mpi4py import MPI
-import numpy as np
-import time
 import tensorflow as tf
 import horovod.tensorflow.keras.callbacks as hvd_callbacks
-from tensorflow_addons.optimizers import MovingAverage
-from typing import Any, List, MutableMapping, Text
 
-from cv.efficientdet.processor.postprocessor import EfficientDetPostprocessor
-from cv.efficientdet.utils import coco_metric
-from cv.efficientdet.utils import label_utils
-from cv.efficientdet.utils.helper import fetch_optimizer
+from cv.efficientdet.callback.average_model_checkpoint import AverageModelCheckpoint
+from cv.efficientdet.callback.eval_callback import COCOEvalCallback
+# from cv.efficientdet.callback.logging_callback import LoggingCallback
+from cv.efficientdet.callback.lr_tensorboard import LRTensorBoard
+from cv.efficientdet.callback.moving_average_callback import MovingAverageCallback
+from cv.efficientdet.callback.time_history import TimeHistory
 from cv.efficientdet.utils.horovod_utils import get_world_size, is_main_process
-from cv.efficientdet.visualize import vis_utils
+
 
 
 def get_callbacks(params, mode, eval_dataset, logger, profile=False, 

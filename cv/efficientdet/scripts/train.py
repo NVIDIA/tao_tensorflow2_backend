@@ -80,10 +80,11 @@ def run_experiment(cfg, results_dir, key):
         if config.data_format == 'channels_last' else [3] + list(config.image_size)
     _, model = efficientdet(input_shape, training=True, config=config)
     
+    # TODO(@yuw): check and enable nms_config?
     # TODO(@yuw): save to another eff file?
     if is_main_process():
         dump_json(model, os.path.join(cfg['results_dir'], 'model_graph.json'))
-    assert 0
+
     if cfg['train_config']['checkpoint'] and not tf.train.latest_checkpoint(cfg['results_dir']):
         print("Loading pretrained weight....")
         pretrained_model = tf.keras.models.load_model(cfg['train_config']['checkpoint'])
