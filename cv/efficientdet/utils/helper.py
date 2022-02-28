@@ -147,3 +147,4 @@ def encode_eff(filepath, eff_model_path, passphrase):
     )
     Archive.save_artifact(
         save_path=eff_model_path, artifact=zip_art, passphrase=passphrase)
+    return temp_zip_file

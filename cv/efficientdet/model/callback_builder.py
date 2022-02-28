@@ -4,6 +4,7 @@ import tensorflow as tf
 import horovod.tensorflow.keras.callbacks as hvd_callbacks
 
 from cv.efficientdet.callback.average_model_checkpoint import AverageModelCheckpoint
+from cv.efficientdet.callback.eff_checkpoint import EffCheckpoint
 from cv.efficientdet.callback.eval_callback import COCOEvalCallback
 # from cv.efficientdet.callback.logging_callback import LoggingCallback
 from cv.efficientdet.callback.lr_tensorboard import LRTensorBoard
@@ -24,8 +25,17 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
         callbacks.append(tb_callback)
 
         if params['train_config']['moving_average_decay']:
-            emackpt_callback = AverageModelCheckpoint(
-                filepath=os.path.join(params['results_dir'], 'ema_weights', 'emackpt-{epoch:02d}'),
+            # emackpt_callback = AverageModelCheckpoint(
+            #     filepath=os.path.join(params['results_dir'], 'ema_weights', 'emackpt-{epoch:02d}'),
+            #     update_weights=False,
+            #     amp=params['train_config']['amp'],
+            #     verbose=1,
+            #     save_freq='epoch',
+            #     save_weights_only=True,
+            #     period=params['train_config']['checkpoint_period'])
+            emackpt_callback = EffCheckpoint(
+                eff_dir=os.path.join(params['results_dir'], 'ema_weights'),
+                key=params['key'],
                 update_weights=False,
                 amp=params['train_config']['amp'],
                 verbose=1,
@@ -33,12 +43,12 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
                 save_weights_only=True,
                 period=params['train_config']['checkpoint_period'])
             callbacks.append(emackpt_callback)
-
+        model_name = params['model_config']['model_name']
         ckpt_callback = tf.keras.callbacks.ModelCheckpoint(
-            os.path.join(params['results_dir'], 'ckpt'),
+            os.path.join(params['results_dir'], 'weights', f'{model_name}-'+'{epoch:02d}'), #'ckpt'
             verbose=1,
             save_freq='epoch',
-            save_weights_only=True,
+            # save_weights_only=True,
             period=params['train_config']['checkpoint_period'])
         callbacks.append(ckpt_callback)
 

@@ -583,7 +583,7 @@ class FPNCell:
         return feats
 
 
-def efficientdet(input_shape, inputs=None, training=True, model_name=None, config=None, name='EffDet'):
+def efficientdet(input_shape, inputs=None, training=True, model_name=None, config=None):
 
         config = config or hparams_config.get_efficientdet_config(model_name)
         if inputs is None:
@@ -670,6 +670,6 @@ def efficientdet(input_shape, inputs=None, training=True, model_name=None, confi
             seg_outputs = seg_head(fpn_feats, training)
             outputs.append(seg_outputs)
 
-        final_model = tf.keras.Model(inputs=inputs, outputs=outputs, name=name)
+        final_model = tf.keras.Model(inputs=inputs, outputs=outputs, name=config.name)
         final_model.summary()
         return tuple(outputs), final_model
