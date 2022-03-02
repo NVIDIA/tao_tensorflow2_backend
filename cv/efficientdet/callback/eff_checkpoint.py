@@ -4,32 +4,20 @@ import shutil
 import tempfile
 
 import tensorflow as tf
-from tensorflow_addons.optimizers import MovingAverage
-
-from cv.efficientdet.utils.helper import fetch_optimizer
 from cv.efficientdet.utils.helper import encode_eff
 
 
 class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
     """Saves and, optionally, assigns the averaged weights.
 
-    Taken from tfa.callbacks.AverageModelCheckpoint [original class].
-    NOTE1: The original class has a type check decorator, which prevents passing non-string save_freq (fix: removed)
-    NOTE2: The original class may not properly handle layered (nested) optimizer objects (fix: use fetch_optimizer)
-
     Attributes:
-        update_weights: If True, assign the moving average weights
-            to the model, and save them. If False, keep the old
-            non-averaged weights, but the saved model uses the
-            average weights.
         See `tf.keras.callbacks.ModelCheckpoint` for the other args.
     """
 
     def __init__(self,
                  eff_dir: str,
                  key: str,
-                 update_weights: bool,
-                #  filepath: str,
+                 graph_only: bool = False,
                  monitor: str = 'val_loss',
                  verbose: int = 0,
                  save_best_only: bool = False,
@@ -47,55 +35,31 @@ class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
             mode=mode,
             save_freq=save_freq,
             **kwargs)
-        self.update_weights = update_weights
-        self.ema_opt = None
         self.eff_dir = eff_dir
         self.passphrase = key
-
-    def set_model(self, model):
-        self.ema_opt = fetch_optimizer(model, MovingAverage)
-        return  super().set_model(model)
-
-    def _save_model(self, epoch, batch, logs):
-        assert isinstance(self.ema_opt, MovingAverage)
-
-        if self.update_weights:
-            self.ema_opt.assign_average_vars(self.model.variables)
-            return super()._save_model(epoch, batch, logs)
-        else:
-            # Note: `model.get_weights()` gives us the weights (non-ref)
-            # whereas `model.variables` returns references to the variables.
-            non_avg_weights = self.model.get_weights()
-            self.ema_opt.assign_average_vars(self.model.variables)
-            # result is currently None, since `super._save_model` doesn't
-            # return anything, but this may change in the future.
-            result = super()._save_model(epoch, batch, logs)
-            self.model.set_weights(non_avg_weights)
-            return result
+        self.graph_only = graph_only
 
     def _remove_tmp_files(self):
         """Remove temporary zip file and directory."""
-        print("####")
-        print(self.filepath)
-        print("####")
-        # shutil.rmtree(self.filepath)
+        shutil.rmtree(os.path.dirname(self.filepath))
         os.remove(self.temp_zip_file)
 
     def on_epoch_end(self, epoch, logs=None):
         """Override on_epoch_end."""
         self.epochs_since_last_save += 1
         epoch += 1 # eff name started with 001
-        self.filepath = os.path.join(tempfile.mkdtemp(), f'emackpt-{epoch:02d}') # override filepath
+        self.filepath = os.path.join(tempfile.mkdtemp(), f'ckpt-{epoch:03d}') # override filepath
 
         # pylint: disable=protected-access
-        if self.save_freq == 'epoch':
+        if self.save_freq == 'epoch' and self.epochs_since_last_save >= self.period:
             self._save_model(epoch=epoch, batch=None, logs=logs) # To self.filepath
-            eff_filename = f'{self.model.name}_{epoch:03d}.eff'
+            if self.graph_only:
+                eff_filename = f"{self.model.name}.resume"
+            else:
+                eff_filename = f'{self.model.name}_{epoch:03d}.eff'
             eff_model_path = os.path.join(self.eff_dir, eff_filename)
             # convert content in self.filepath to EFF
             self.temp_zip_file = encode_eff(
                 os.path.dirname(self.filepath),
                 eff_model_path, self.passphrase)
             self._remove_tmp_files()
-        else:
-            raise NotImplementedError

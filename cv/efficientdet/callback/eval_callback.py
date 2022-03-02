@@ -13,12 +13,14 @@ from cv.efficientdet.utils import label_utils
 from cv.efficientdet.utils.helper import fetch_optimizer
 from cv.efficientdet.utils.horovod_utils import is_main_process
 from cv.efficientdet.visualize import vis_utils
+from cv.efficientdet.utils.helper import dump_json
 
 
 class COCOEvalCallback(tf.keras.callbacks.Callback):
-    def __init__(self, eval_dataset, eval_freq, start_eval_epoch, eval_params, **kwargs):
+    def __init__(self, eval_dataset, eval_model, eval_freq, start_eval_epoch, eval_params, **kwargs):
         super(COCOEvalCallback, self).__init__(**kwargs)
         self.dataset = eval_dataset
+        self.eval_model = eval_model
         self.eval_freq = eval_freq
         self.start_eval_epoch = start_eval_epoch
         self.eval_params = eval_params
@@ -29,7 +31,6 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         label_map = label_utils.get_label_map(eval_params['eval_config']['label_map'])
         self.evaluator = coco_metric.EvaluationMetric(
             filename=eval_params['data_config']['validation_json_file'], label_map=label_map)
-
         self.pbar = tf.keras.utils.Progbar(eval_params['eval_config']['eval_samples'])
 
     def set_model(self, model):
@@ -38,7 +39,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
 
     @tf.function
     def eval_model_fn(self, images, labels):
-        cls_outputs, box_outputs = self.model(images, training=False)
+        cls_outputs, box_outputs = self.eval_model(images, training=False)
         detections = self.postpc.generate_detections(
             cls_outputs, box_outputs,
             labels['image_scales'],
@@ -65,7 +66,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
     def evaluate(self, epoch):
         if self.eval_params['train_config']['moving_average_decay'] > 0:
             self.ema_opt.swap_weights() # get ema weights
-
+        self.eval_model.set_weights(self.model.get_weights())
         self.evaluator.reset_states()
         # evaluate all images.
         for i, (images, labels) in enumerate(self.dataset):

@@ -32,7 +32,7 @@ class TrainConfig:
     optimizer: str = 'sgd'
     loss_scale: float = 10.0
     image_preview: bool = True
-    resume_training: bool = False # TODO(@yuw): remove this!
+    qat: bool = False
 
 
 @dataclass

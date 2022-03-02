@@ -1,4 +1,4 @@
-results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d1'
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4'
 data_config:
   training_file_pattern: '/home/scratch.p3/yuw/datasets/coco/train-*'
   validation_file_pattern: '/home/scratch.p3/yuw/datasets/coco/val-*'
@@ -11,4 +11,5 @@ train_config:
 eval_config:
   eval_batch_size: 16
   eval_samples: 500
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/emackpt-90'
+  # model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/emackpt-90'
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4/weights/efficientdet-d0_009.eff'

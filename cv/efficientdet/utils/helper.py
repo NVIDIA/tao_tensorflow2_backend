@@ -2,8 +2,9 @@
 
 """Collection of helper functions."""
 import os
-
 import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.utils import CustomObjectScope
 import numpy as np
 import tempfile
 import zipfile
@@ -54,14 +55,21 @@ def decode_eff(eff_model_path, passphrase=None):
         passphrase=passphrase)
     zip_path = eff_art.get_handle()
     # Unzip
-    saved_model_path = os.path.dirname(zip_path)
+    ckpt_path = os.path.dirname(zip_path)
     # TODO(@yuw): try catch? 
     with zipfile.ZipFile(zip_path, "r") as zip_file:
-        zip_file.extractall(saved_model_path)
-    return saved_model_path
+        zip_file.extractall(ckpt_path)
+    extracted_files = os.listdir(ckpt_path)
+    ckpt_name = None
+    for f in extracted_files:
+         if 'ckpt' in f:
+             ckpt_name = f.split('.')[0]
+    if not ckpt_name:
+        raise IOError(f"{eff_model_path} was not saved properly.")
+    return ckpt_path, ckpt_name
 
 
-def load_model(model_path, cfg):
+def load_model(eff_model_path, cfg, mode='train'):
     """Load hdf5 or EFF model.
 
     Args:
@@ -71,21 +79,19 @@ def load_model(model_path, cfg):
     Returns:
         Keras model: Loaded model
     """
-    is_pruned = False
-    if is_pruned:
-        raise NotImplementedError
-    else:
-        # model_path is saved_model
-        model = load_json_model(os.path.join(cfg['results_dir'], 'model_graph.json'))
-        train_from_epoch = keras_utils.restore_ckpt(
-            model,
-            model_path, 
-            cfg.train_config.moving_average_decay,
-            steps_per_epoch=0,
-            expect_partial=False)
-        # TODO(@yuw): verify train_from_epoch
-        return model
-            
+    ckpt_path, ckpt_name = decode_eff(eff_model_path, cfg.key)
+    if mode != 'train':
+        mode = 'eval'
+    model = load_json_model(
+        os.path.join(cfg.results_dir, f'{mode}_graph.json'))
+    keras_utils.restore_ckpt(
+        model,
+        os.path.join(ckpt_path, ckpt_name), 
+        cfg.train_config.moving_average_decay,
+        steps_per_epoch=0,
+        expect_partial=True)
+    # TODO(@yuw): verify train_from_epoch
+    return model
 
 
 def load_json_model(json_path, new_objs=None):
@@ -131,8 +137,11 @@ def encode_eff(filepath, eff_model_path, passphrase):
     Args:
         filepath (str): Path to saved_model
         eff_model_path (str): Path to the output EFF file
-        passphrase (str): Encrytion key
+        passphrase (str): Encryption key
     """
+    # always overwrite
+    if os.path.exists(eff_model_path):
+        os.remove(eff_model_path)
     os_handle, temp_zip_file = tempfile.mkstemp()
     os.close(os_handle)
     # create zipfile from saved_model directory

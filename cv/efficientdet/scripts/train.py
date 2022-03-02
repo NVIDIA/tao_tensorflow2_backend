@@ -19,7 +19,7 @@ from cv.efficientdet.model import optimizer_builder
 from cv.efficientdet.trainer.efficientdet_trainer import EfficientDetTrainer
 from cv.efficientdet.utils import hparams_config, keras_utils
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
-from cv.efficientdet.utils.helper import dump_json
+from cv.efficientdet.utils.helper import dump_json, decode_eff
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
 
 
@@ -68,24 +68,22 @@ def run_experiment(cfg, results_dir, key):
         config.as_dict(),
         batch_size=cfg['eval_config']['eval_batch_size'])
 
-    # Compile model
-    # pick focal loss implementation
-    focal_loss = losses.StableFocalLoss(
-        config.alpha,
-        config.gamma,
-        label_smoothing=config.label_smoothing,
-        reduction=tf.keras.losses.Reduction.NONE)
     # TODO(@yuw): verify channels_first training or force last
     input_shape = list(config.image_size) + [3] \
         if config.data_format == 'channels_last' else [3] + list(config.image_size)
-    _, model = efficientdet(input_shape, training=True, config=config)
-    
+    original_learning_phase = tf.keras.backend.learning_phase()
+    model = efficientdet(input_shape, training=True, config=config)
+    tf.keras.backend.set_learning_phase(0)
+    eval_model = efficientdet(input_shape, training=False, config=config)
+    tf.keras.backend.set_learning_phase(original_learning_phase)
     # TODO(@yuw): check and enable nms_config?
     # TODO(@yuw): save to another eff file?
     if is_main_process():
-        dump_json(model, os.path.join(cfg['results_dir'], 'model_graph.json'))
+        dump_json(model, os.path.join(cfg['results_dir'], 'train_graph.json'))
+        dump_json(eval_model, os.path.join(cfg['results_dir'], 'eval_graph.json'))
 
-    if cfg['train_config']['checkpoint'] and not tf.train.latest_checkpoint(cfg['results_dir']):
+    resume_ckpt_path = os.path.join(cfg['results_dir'], f'{config.name}.resume')
+    if cfg['train_config']['checkpoint'] and not os.path.exists(resume_ckpt_path):
         print("Loading pretrained weight....")
         pretrained_model = tf.keras.models.load_model(cfg['train_config']['checkpoint'])
         for layer in pretrained_model.layers[1:]:
@@ -101,8 +99,15 @@ def run_experiment(cfg, results_dir, key):
                 print(f"Skipping {layer.name} due to shape mismatch.")
 
     # TODO(@yuw): Enable QAT
-    # model = quantize.quantize_model(model, do_quantize_residual_connections=False)
-
+    if cfg['train_config']['qat']:
+        model = quantize.quantize_model(model, do_quantize_residual_connections=True)
+    # Compile model
+    # pick focal loss implementation
+    focal_loss = losses.StableFocalLoss(
+        config.alpha,
+        config.gamma,
+        label_smoothing=config.label_smoothing,
+        reduction=tf.keras.losses.Reduction.NONE)
     model.compile(
         optimizer=optimizer_builder.get_optimizer(cfg['train_config'], steps_per_epoch),
         loss={
@@ -129,15 +134,16 @@ def run_experiment(cfg, results_dir, key):
 
     # resume from checkpoint or load pretrained backbone
     train_from_epoch = 0
-    # TODO(@yuw): automatically detect with EFF checkpoint
-    if tf.train.latest_checkpoint(cfg['results_dir']):
+    if os.path.exists(resume_ckpt_path) and is_main_process():
         print("Resume training...")
+        ckpt_path, _ = decode_eff(resume_ckpt_path, cfg.key)
         train_from_epoch = keras_utils.restore_ckpt(
             model,
-            cfg['results_dir'], 
+            ckpt_path, 
             config.moving_average_decay,
             steps_per_epoch=steps_per_epoch,
             expect_partial=False)
+        # TODO(@yuw): remove ckpt_path
 
     # set up callbacks
     num_samples = (cfg['eval_config']['eval_samples'] + get_world_size() - 1) // get_world_size()
@@ -151,7 +157,8 @@ def run_experiment(cfg, results_dir, key):
         time_history=False,
         log_steps=1,
         lr_tb=False,
-        benchmark=False)
+        benchmark=False,
+        eval_model=eval_model)
 
     trainer = EfficientDetTrainer(model, config, callbacks)
     trainer.fit(
