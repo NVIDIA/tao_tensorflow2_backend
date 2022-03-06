@@ -79,11 +79,14 @@ def run_experiment(cfg, results_dir, key):
         eval_model = efficientdet(input_shape, training=False, config=config)
         tf.keras.backend.set_learning_phase(original_learning_phase)
     else:
+        print("Building pruned graph...")
         original_learning_phase = tf.keras.backend.learning_phase()
         model = load_model(cfg['train_config']['pruned_model_path'], cfg, mode='train')
         tf.keras.backend.set_learning_phase(0)
         eval_model = load_model(cfg['train_config']['pruned_model_path'], cfg, mode='eval')
         tf.keras.backend.set_learning_phase(original_learning_phase)
+
+    model.summary()
     # TODO(@yuw): check and enable nms_config?
     # TODO(@yuw): save to another eff file?
     if is_main_process():
@@ -91,10 +94,14 @@ def run_experiment(cfg, results_dir, key):
         dump_json(eval_model, os.path.join(cfg['results_dir'], 'eval_graph.json'))
 
     resume_ckpt_path = os.path.join(cfg['results_dir'], f'{config.name}.resume')
-    if cfg['train_config']['checkpoint'] and not os.path.exists(resume_ckpt_path):
+    if str(cfg['train_config']['checkpoint']).endswith(".eff"):
+        pretrained_ckpt_path, _ = decode_eff(cfg['train_config']['checkpoint'], cfg.key)
+    else:
+        pretrained_ckpt_path = cfg['train_config']['checkpoint']
+    if pretrained_ckpt_path and not os.path.exists(resume_ckpt_path):
         if not cfg['train_config']['pruned_model_path']:
             print("Loading pretrained weight....")
-            pretrained_model = tf.keras.models.load_model(cfg['train_config']['checkpoint'])
+            pretrained_model = tf.keras.models.load_model(pretrained_ckpt_path)
             for layer in pretrained_model.layers[1:]:
                 # The layer must match up to prediction layers.
                 try:

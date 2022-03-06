@@ -12,4 +12,4 @@ eval_config:
   eval_batch_size: 16
   eval_samples: 500
   # model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/emackpt-90'
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4/weights/efficientdet-d0_009.eff'
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4/p1/weights/efficientdet-d0_047.eff'

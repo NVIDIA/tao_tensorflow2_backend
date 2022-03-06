@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow_addons.optimizers import MovingAverage
 
 from cv.efficientdet.utils.helper import fetch_optimizer
-from cv.efficientdet.utils.helper import dump_json, encode_eff
+from cv.efficientdet.utils.helper import dump_json, dump_eval_json, encode_eff
 
 
 class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
@@ -76,6 +76,7 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
     def _remove_tmp_files(self):
         """Remove temporary zip file and directory."""
         # shutil.rmtree(os.path.dirname(self.filepath))
+        print(os.path.dirname(self.filepath))
         os.remove(self.temp_zip_file)
 
     def on_epoch_end(self, epoch, logs=None):
@@ -88,10 +89,13 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         # pylint: disable=protected-access
         if self.save_freq == 'epoch' and self.epochs_since_last_save >= self.period:
             self._save_model(epoch=epoch, batch=None, logs=logs) # To self.filepath
+            # save train/eval graph json to checkpoint_dir
+            dump_json(self.model, os.path.join(checkpoint_dir, 'train_graph.json'))
+            dump_eval_json(checkpoint_dir, eval_graph='eval_graph.json')
             # convert content in self.filepath to EFF
             eff_filename = f'{self.model.name}_{epoch:03d}.eff'
             eff_model_path = os.path.join(self.eff_dir, eff_filename)
             self.temp_zip_file = encode_eff(
-                os.path.dirname(self.filepath),
+                checkpoint_dir,
                 eff_model_path, self.passphrase)
             self._remove_tmp_files()

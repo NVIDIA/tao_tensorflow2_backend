@@ -4,7 +4,7 @@ import shutil
 import tempfile
 
 import tensorflow as tf
-from cv.efficientdet.utils.helper import encode_eff
+from cv.efficientdet.utils.helper import dump_json, dump_eval_json, encode_eff
 
 
 class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
@@ -48,7 +48,8 @@ class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         """Override on_epoch_end."""
         self.epochs_since_last_save += 1
         epoch += 1 # eff name started with 001
-        self.filepath = os.path.join(tempfile.mkdtemp(), f'ckpt-{epoch:03d}') # override filepath
+        checkpoint_dir = tempfile.mkdtemp()
+        self.filepath = os.path.join(checkpoint_dir, f'ckpt-{epoch:03d}') # override filepath
 
         # pylint: disable=protected-access
         if self.save_freq == 'epoch' and self.epochs_since_last_save >= self.period:
@@ -57,6 +58,9 @@ class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
                 eff_filename = f"{self.model.name}.resume"
             else:
                 eff_filename = f'{self.model.name}_{epoch:03d}.eff'
+            # save train/eval graph json to checkpoint_dir
+            dump_json(self.model, os.path.join(checkpoint_dir, 'train_graph.json'))
+            dump_eval_json(checkpoint_dir, eval_graph='eval_graph.json')
             eff_model_path = os.path.join(self.eff_dir, eff_filename)
             # convert content in self.filepath to EFF
             self.temp_zip_file = encode_eff(

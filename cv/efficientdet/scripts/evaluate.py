@@ -10,9 +10,8 @@ import horovod.tensorflow.keras as hvd
 from cv.efficientdet.config.hydra_runner import hydra_runner
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.dataloader import dataloader
-from cv.efficientdet.model.efficientdet import efficientdet
 from cv.efficientdet.processor.postprocessor import EfficientDetPostprocessor
-from cv.efficientdet.utils import coco_metric, label_utils, keras_utils
+from cv.efficientdet.utils import coco_metric, label_utils
 from cv.efficientdet.utils import helper, hparams_config
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank

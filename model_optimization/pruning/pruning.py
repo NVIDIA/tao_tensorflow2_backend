@@ -1304,7 +1304,14 @@ class PruneMinWeight(Prune):
             else:
                 continue
         # Create new keras model object from pruned specifications.
-        model_outputs = [model_outputs[l.name] for l in model.outputs if l.name in model_outputs]
+        # Patch for duplicate outputs
+        output_names = []
+        for l in model.outputs:
+            if l.name in model_outputs:
+                if l.name not in output_names:
+                    output_names.append(l.name)
+        model_outputs = [model_outputs[name] for name in output_names]
+        # model_outputs = [model_outputs[l.name] for l in model.outputs if l.name in model_outputs]
         new_model = keras.models.Model(
             inputs=model.inputs, outputs=model_outputs, name=model.name
         )
