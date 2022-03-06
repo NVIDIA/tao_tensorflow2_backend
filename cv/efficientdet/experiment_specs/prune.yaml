@@ -1,6 +1,7 @@
-results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d3'
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4'
 prune_config:
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d3/ema_weights/emackpt-70'
-  output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d3/pruned_model'
-  pruning_threshold: 0.3
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4/weights/efficientdet-d0_060.eff'
+  output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4/pruned_model.eff'
+  pruning_threshold: 0.0
+  verbose: False
 

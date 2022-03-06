@@ -23,4 +23,4 @@ class EfficientDetPruner(Pruner):
     def _load_model(self):
         self.model = load_model(self.model_path, self.cfg)
         self.excluded_layers = self.model.output_names
-        self.model.summary()
+        # self.model.summary()

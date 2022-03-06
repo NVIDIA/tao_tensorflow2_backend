@@ -7,14 +7,15 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
+import json
 import os
 import tempfile
 import tensorflow as tf
 
-# from cv.makenet.utils.helper import encode_eff
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.config.hydra_runner import hydra_runner
 from cv.efficientdet.pruner.pruner import EfficientDetPruner
+from cv.efficientdet.utils.helper import dump_eval_json, dump_json, encode_eff
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.get_logger().setLevel('ERROR')
 logger = logging.getLogger(__name__)
@@ -40,12 +41,18 @@ def run_pruning(cfg):
     pruned_model = pruner.prune(
         threshold=cfg.prune_config.pruning_threshold,
         excluded_layers=list(cfg.prune_config.excluded_layers))
+    # pruned_model.summary()
 
-    pruned_model.save(cfg.prune_config.output_path)
     # Save the encrypted pruned model
-    # tmp_saved_model = tempfile.mkdtemp()
-    # pruned_model.save(tmp_saved_model)
-    # encode_eff(tmp_saved_model, args.output_file, args.key)
+    tmp_dir = tempfile.mkdtemp()
+    dump_json(pruned_model, os.path.join(tmp_dir, 'train_graph.json'))
+    dump_eval_json(tmp_dir, eval_graph='eval_graph.json')
+    pruned_model.save_weights(os.path.join(tmp_dir, 'prunedckpt'))
+    # Convert to EFF
+    encode_eff(tmp_dir, cfg.prune_config.output_path, cfg.key, is_pruned=True)
+    pruning_ratio = pruned_model.count_params() / pruner.model.count_params()
+    logger.info(
+        f"Pruning ratio (pruned model / original model): {pruning_ratio}")
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

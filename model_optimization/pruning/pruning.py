@@ -1252,7 +1252,12 @@ class PruneMinWeight(Prune):
                         # For some reason, tf.keras does not always put things in a list.
                         if not isinstance(inbound_layers, list):
                             inbound_layers = [inbound_layers]
-                        node_indices = [0] * len(inbound_layers)
+                        node_indices = []
+                        for node_i in range(len(node.keras_inputs)):
+                            node_indices.append(
+                                node.keras_inputs[node_i]._keras_history.node_index)
+                        if len(node_indices) == 0:
+                            node_indices = 0
                         # for idx, l in enumerate(node.inbound_layers):
                         for idx, l in enumerate(inbound_layers):
 
@@ -1287,23 +1292,10 @@ class PruneMinWeight(Prune):
                 outbound_nodes = layer._outbound_nodes
                 if not outbound_nodes:
                     model_outputs[layer.output.name] = outputs
-                # Patch for Faster-RCNN RPN outputs.
-                # It's an output layer, but still has outbound_nodes
-                if 'rpn_out' in layer.name:
-                    model_outputs[layer.output.name] = outputs
                 # Option to specify intermediate output layers that have
                 # have `outbound_nodes`
                 if layer.name in output_layers_with_outbound_nodes:
                     model_outputs[layer.output.name] = outputs
-                layer_keys = [
-                    'permute', 'post_hoc', 'p6', 'proposal_assignment',
-                    'foreground_selector_for_mask', 'gpu_detections']
-                if any(lk in layer.name for lk in layer_keys):
-                    if isinstance(layer.output, (tuple, list)):
-                        for i, out_i in enumerate(layer.output):
-                            model_outputs[out_i.name] = outputs[i]
-                    else:
-                        model_outputs[layer.output.name] = outputs
 
                 layers_to_explore.extend([node.outbound_layer for node in outbound_nodes])
                 # Mark current layer as visited and assign output nodes to the layer.

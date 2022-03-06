@@ -2,6 +2,7 @@
 
 """Collection of helper functions."""
 import os
+import json
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.utils import CustomObjectScope
@@ -83,7 +84,7 @@ def load_model(eff_model_path, cfg, mode='train'):
     if mode != 'train':
         mode = 'eval'
     model = load_json_model(
-        os.path.join(cfg.results_dir, f'{mode}_graph.json'))
+        os.path.join(cfg.results_dir, f'{mode}_graph.json')) # cfg.results_dir for unpruned
     keras_utils.restore_ckpt(
         model,
         os.path.join(ckpt_path, ckpt_name), 
@@ -111,6 +112,22 @@ def dump_json(model, out_path):
         jf.write(model.to_json())
 
 
+def dump_eval_json(graph_dir, train_graph="train_graph.json", eval_graph='eval_graph.json'):
+    """Generate and save the evaluation graph by modifying train graph.
+    Args:
+        graph_dir (str): Directory where the train graph resides in.
+    """
+    # generate eval graph for exporting. (time saving hack)
+    with open(os.path.join(graph_dir, train_graph), 'r') as f:
+        pruned_json = json.load(f)
+        for layer in pruned_json['config']['layers']:
+            if layer['class_name'] == 'BatchNormalization':
+                if layer['inbound_nodes'][0][0][-1]:
+                    layer['inbound_nodes'][0][0][-1]['training'] = False
+    with open(os.path.join(graph_dir, eval_graph), 'w') as jf:
+        json.dump(pruned_json, jf)
+
+
 def zipdir(src, zip_path):
     """Function creates zip archive from src in dst location.
     
@@ -131,7 +148,7 @@ def zipdir(src, zip_path):
                     filename))
 
 
-def encode_eff(filepath, eff_model_path, passphrase):
+def encode_eff(filepath, eff_model_path, passphrase, is_pruned=False):
     """Encode saved_model directory into a .eff file.
 
     Args:
@@ -150,6 +167,7 @@ def encode_eff(filepath, eff_model_path, passphrase):
     eff_filename = os.path.basename(eff_model_path)
     zip_art = File(
         name=eff_filename,
+        is_pruned=is_pruned,
         description="Artifact from checkpoint",
         filepath=temp_zip_file,
         content_callback=BinaryContentCallback,
