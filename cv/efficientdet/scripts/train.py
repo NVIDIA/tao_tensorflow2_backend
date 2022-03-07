@@ -86,12 +86,8 @@ def run_experiment(cfg, results_dir, key):
         eval_model = load_model(cfg['train_config']['pruned_model_path'], cfg, mode='eval')
         tf.keras.backend.set_learning_phase(original_learning_phase)
 
-    model.summary()
-    # TODO(@yuw): check and enable nms_config?
-    # TODO(@yuw): save to another eff file?
     if is_main_process():
-        dump_json(model, os.path.join(cfg['results_dir'], 'train_graph.json'))
-        dump_json(eval_model, os.path.join(cfg['results_dir'], 'eval_graph.json'))
+        model.summary()
 
     resume_ckpt_path = os.path.join(cfg['results_dir'], f'{config.name}.resume')
     if str(cfg['train_config']['checkpoint']).endswith(".eff"):

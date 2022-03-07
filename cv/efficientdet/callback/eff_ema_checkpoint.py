@@ -75,9 +75,9 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
 
     def _remove_tmp_files(self):
         """Remove temporary zip file and directory."""
-        # shutil.rmtree(os.path.dirname(self.filepath))
-        print(os.path.dirname(self.filepath))
+        # TODO(@yuw): try catch?
         os.remove(self.temp_zip_file)
+        shutil.rmtree(os.path.dirname(self.filepath))
 
     def on_epoch_end(self, epoch, logs=None):
         """Override on_epoch_end."""

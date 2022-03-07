@@ -84,7 +84,7 @@ def load_model(eff_model_path, cfg, mode='train'):
     if mode != 'train':
         mode = 'eval'
     model = load_json_model(
-        os.path.join(ckpt_path, f'{mode}_graph.json')) # cfg.results_dir for unpruned
+        os.path.join(ckpt_path, f'{mode}_graph.json'))
     keras_utils.restore_ckpt(
         model,
         os.path.join(ckpt_path, ckpt_name), 
