@@ -10,10 +10,11 @@ train_config:
   checkpoint_period: 1
 export_config:
   max_batch_size: 4
-  output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/export/emackpt-90.onnx'
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/emackpt-90'
-  engine_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/export/emackpt-90.int8.engine"
-  data_type: "int8"
+  output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4/weights/export/efficientdet-d0_070.onnx'
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4/weights/efficientdet-d0_070.eff'
+  # model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/emackpt-90'
+  engine_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4/weights/export/efficientdet-d0_070.fp32.engine"
+  data_type: "fp16"
   cal_image_dir: "/home/scratch.p3/yuw/datasets/coco/raw-data/val2017"
   cal_cache_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/export/emackpt-90.cal"
   cal_batch_size: 16

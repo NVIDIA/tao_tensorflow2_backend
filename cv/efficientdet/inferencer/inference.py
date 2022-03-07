@@ -65,7 +65,7 @@ def image_preprocess(image, image_size: Union[int, Tuple[int, int]]):
     """Preprocess image for inference.
 
     Args:
-        image: input image, can be a tensor or a numpy arary.
+        image: input image, can be a tensor or a numpy array.
         image_size: single integer of image size for square image or tuple of two
             integers, in the format of (image_height, image_width).
 
@@ -167,6 +167,10 @@ def det_post_process_combined(params, cls_outputs, box_outputs, scales,
             tf.reshape(box_outputs[level], [batch_size, -1, 4]))
     cls_outputs_all = tf.concat(cls_outputs_all, 1)
     box_outputs_all = tf.concat(box_outputs_all, 1)
+
+    # cast to float32
+    cls_outputs_all = tf.cast(cls_outputs_all, dtype=tf.float32)
+    box_outputs_all = tf.cast(box_outputs_all, dtype=tf.float32)
 
     # Create anchor_label for picking top-k predictions.
     eval_anchors = anchors.Anchors(params['min_level'], params['max_level'],
@@ -348,6 +352,8 @@ class InferenceModel(tf.Module):
                 prediction,
                 disable_pyfun=self.disable_pyfun,
                 label_id_mapping=self.label_id_mapping,
+                min_score_thresh=self.min_score_thresh,
+                max_boxes_to_draw=self.max_boxes_to_draw,
                 **kwargs)
             output_image_path = os.path.join(output_dir, os.path.basename(fnames[i]))
             Image.fromarray(img).save(output_image_path)

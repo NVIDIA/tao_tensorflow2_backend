@@ -393,7 +393,7 @@ def _generate_detections_tf(cls_outputs,
         boxes = detections[:, :4]
 
     image_size = model_utils.parse_image_size(image_size)
-    print(image_size)
+
     detections = tf.stack([
         tf.cast(tf.tile(image_id, tf.shape(top_detection_idx)), tf.float32),
         tf.clip_by_value(boxes[:, 0], 0, image_size[0]) * image_scale,
