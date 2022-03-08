@@ -82,7 +82,7 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
     def on_epoch_end(self, epoch, logs=None):
         """Override on_epoch_end."""
         self.epochs_since_last_save += 1
-        epoch += 1 # eff name started with 001
+        eff_epoch = epoch + 1 # eff name started with 001
         checkpoint_dir = tempfile.mkdtemp()
         self.filepath = os.path.join(checkpoint_dir, f'emackpt-{epoch:03d}') # override filepath
 
@@ -93,7 +93,7 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
             dump_json(self.model, os.path.join(checkpoint_dir, 'train_graph.json'))
             dump_eval_json(checkpoint_dir, eval_graph='eval_graph.json')
             # convert content in self.filepath to EFF
-            eff_filename = f'{self.model.name}_{epoch:03d}.eff'
+            eff_filename = f'{self.model.name}_{eff_epoch:03d}.eff'
             eff_model_path = os.path.join(self.eff_dir, eff_filename)
             self.temp_zip_file = encode_eff(
                 checkpoint_dir,
