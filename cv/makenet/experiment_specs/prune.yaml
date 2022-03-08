@@ -1,0 +1,6 @@
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18'
+key: nvidia_tlt
+prune_config:
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18/weights/resnet18_bn_001.eff'
+  output_path: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18/weights/resnet18_bn_001_pruned.eff'
+  pruning_threshold: 0.3

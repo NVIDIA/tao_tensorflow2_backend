@@ -32,7 +32,7 @@ class TrainConfig:
     optimizer: str = 'sgd'
     loss_scale: float = 10.0
     image_preview: bool = True
-    resume_training: bool = False # TODO(@yuw): remove this!
+    qat: bool = False
 
 
 @dataclass
@@ -113,6 +113,20 @@ class InferenceConfig:
     batch_size: int = 1
 
 @dataclass
+class PruneConfig:
+    """Pruning config."""
+    
+    model_path: str = MISSING
+    normalizer: str = 'max'
+    output_path: str = MISSING
+    equalization_criterion: str = 'union'
+    pruning_granularity: int = 8
+    pruning_threshold: float = MISSING
+    min_num_filters: int = 16
+    excluded_layers: List[str] = field(default_factory=lambda: [])
+    verbose: bool = True
+
+@dataclass
 class ExperimentConfig:
     """Experiment config."""
 
@@ -123,6 +137,7 @@ class ExperimentConfig:
     augmentation_config: AugmentationConfig = AugmentationConfig()
     export_config: ExportConfig = ExportConfig()
     inference_config: InferenceConfig = InferenceConfig()
+    prune_config: PruneConfig = PruneConfig()
     results_dir: str = MISSING
     key: str = ''
     data_format: str = 'channels_last'

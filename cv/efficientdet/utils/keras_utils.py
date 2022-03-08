@@ -147,7 +147,7 @@ def restore_ckpt(model,
   if steps_per_epoch > 0:
     last_iteration = model.optimizer.iterations
     ckpt_epoch = last_iteration // steps_per_epoch
-    logging.info("Restored checkpoint at epoch: {}".format(ckpt_epoch + 1))
+    logging.info("Restored checkpoint at epoch: {}".format(ckpt_epoch))
     return ckpt_epoch
 
 

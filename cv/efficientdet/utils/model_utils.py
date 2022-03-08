@@ -361,7 +361,7 @@ def build_model_with_precision(pp, mm, ii, tt, *args, **kwargs):
 
   Args:
     pp: A string, precision policy name, such as "mixed_float16".
-    mm: A function, for rmodel builder.
+    mm: A function, for model builder.
     ii: A tensor, for model inputs.
     tt: A bool, If true, it is for training; otherwise, it is for eval.
     *args: A list of model arguments.

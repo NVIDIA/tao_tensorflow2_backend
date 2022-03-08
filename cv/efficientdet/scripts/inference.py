@@ -7,11 +7,8 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
+from multiprocessing.sharedctypes import Value
 import os
-import numpy as np
-from PIL import Image
-
-from numba import cuda
 
 import tensorflow as tf
 # from tensorflow.python.framework.ops import disable_eager_execution
@@ -19,13 +16,10 @@ from tensorflow.python.util import deprecation
 
 from cv.efficientdet.config.hydra_runner import hydra_runner
 from cv.efficientdet.config.default_config import ExperimentConfig
-from cv.efficientdet.exporter.image_batcher import ImageBatcher
 from cv.efficientdet.inferencer import inference, inference_trt
-from cv.efficientdet.model.efficientdet import efficientdet
-from cv.efficientdet.utils import keras_utils
-from cv.efficientdet.utils import hparams_config
+from cv.efficientdet.utils import helper, hparams_config
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
-from cv.efficientdet.visualize import vis_utils
+from cv.efficientdet.utils.horovod_utils import initialize
 
 deprecation._PRINT_DEPRECATION_WARNINGS = False
 
@@ -59,31 +53,18 @@ def infer_tlt(cfg, label_id_mapping, min_score_thresh):
     """Launch EfficientDet TLT model Inference."""
     # disable_eager_execution()
     tf.autograph.set_verbosity(0)
-    
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
-    if gpus:
-        tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-
     # Parse and update hparams
+    MODE = 'infer'
     config = hparams_config.get_detection_config(cfg['model_config']['model_name'])
     config.update(generate_params_from_cfg(config, cfg, mode='infer'))
     params = config.as_dict()
     image_dir = cfg['inference_config']['image_dir']
+    initialize(config, training=False)
 
-    # build model
-    # TODO(@yuw): verify channels_first training or force last
-    input_shape = list(config.image_size) + [3] \
-        if config.data_format == 'channels_last' else [3] + list(config.image_size)
-    _, model = efficientdet(input_shape, training=False, config=config)
-    model.summary()
-    keras_utils.restore_ckpt(
-        model,
-        cfg.inference_config.model_path,
-        config.moving_average_decay,
-        steps_per_epoch=0, skip_mismatch=False, expect_partial=True)
+    # Load model from graph json
+    model = helper.load_model(cfg['inference_config']['model_path'], cfg, MODE)
 
+    # TODO(@yuw): amp changes dtype?
     infer_model = inference.InferenceModel(model, config.image_size, params,
                                            cfg.inference_config.batch_size,
                                            label_id_mapping=label_id_mapping,
@@ -131,10 +112,12 @@ def main(cfg: ExperimentConfig):
     if cfg.inference_config.model_path.endswith('.engine'):
         print("Running inference with TensorRT engine...")
         infer_trt(cfg, label_id_mapping, cfg.eval_config.min_score_thresh or 0.4)
-    else: # TODO(@yuw): eff cfg.inference_config.model_path.endswith('.tlt'):
+    elif cfg.inference_config.model_path.endswith('.eff'):
         print("Running inference with saved_model...")
         infer_tlt(cfg, label_id_mapping, cfg.eval_config.min_score_thresh or 0.4)
-
+    else:
+        # TODO(@yuw): add internal inference for un-encrypted?
+        raise ValueError("Only .engine and .eff models are supported for inference.")
 
 if __name__ == '__main__':
     main()

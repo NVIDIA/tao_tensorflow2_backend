@@ -54,8 +54,8 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         image_size=model_utils.parse_image_size(cfg['data_config']['image_size']),
         # augmentation config
         input_rand_hflip=cfg['augmentation_config']['rand_hflip'],
-        train_scale_min=cfg['augmentation_config']['random_crop_min_scale'] or 0.1,
-        train_scale_max=cfg['augmentation_config']['random_crop_max_scale'] or 2.0,
+        jitter_min=cfg['augmentation_config']['random_crop_min_scale'] or 0.1,
+        jitter_max=cfg['augmentation_config']['random_crop_max_scale'] or 2.0,
         # train eval config
         momentum=cfg['train_config']['momentum'] or 0.9,
         iterations_per_loop=cfg['train_config']['iterations_per_loop'],

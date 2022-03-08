@@ -17,10 +17,7 @@ from cv.efficientdet.exporter.onnx_exporter import EfficientDetGraphSurgeon
 from cv.efficientdet.exporter.trt_builder import EngineBuilder
 from cv.efficientdet.inferencer import inference
 
-from cv.efficientdet.model.efficientdet import efficientdet
-
-from cv.efficientdet.utils import keras_utils
-from cv.efficientdet.utils import hparams_config
+from cv.efficientdet.utils import helper, hparams_config
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 
 deprecation._PRINT_DEPRECATION_WARNINGS = False
@@ -43,25 +40,18 @@ def run_export(cfg, results_dir=None, key=None):
         tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
 
     # Parse and update hparams
+    MODE = 'export'
     config = hparams_config.get_detection_config(cfg['model_config']['model_name'])
     config.update(generate_params_from_cfg(config, cfg, mode='export'))
     params = config.as_dict()
 
-    ckpt_path = cfg['export_config']['model_path']
     # TODO(@yuw): change to EFF
     assert str(cfg.export_config.output_path).endswith('.onnx'), "ONNX!!!"
     output_dir = os.path.dirname(cfg.export_config.output_path)
 
-    # build model
-    # TODO(@yuw): verify channels_first training or force last
-    input_shape = list(config.image_size) + [3] \
-        if config.data_format == 'channels_last' else [3] + list(config.image_size)
-    _, model = efficientdet(input_shape, training=False, config=config)
-    keras_utils.restore_ckpt(
-        model, cfg['export_config']['model_path'],
-        config.moving_average_decay,
-        steps_per_epoch=0, skip_mismatch=False, expect_partial=True)
-
+    # Load model from graph json
+    model = helper.load_model(cfg['export_config']['model_path'], cfg, MODE)
+    input_shape = list(model.layers[0].input_shape[0][1:4])
     max_batch_size = cfg.export_config.max_batch_size
     # fake_images = tf.keras.Input(shape=[None, None, None], batch_size=max_batch_size)
     export_model = inference.InferenceModel(model, config.image_size, params, max_batch_size)

@@ -17,8 +17,9 @@ from cv.efficientdet.model.efficientdet import efficientdet
 from cv.efficientdet.model import callback_builder
 from cv.efficientdet.model import optimizer_builder
 from cv.efficientdet.trainer.efficientdet_trainer import EfficientDetTrainer
-from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils import hparams_config, keras_utils
+from cv.efficientdet.utils.config_utils import generate_params_from_cfg
+from cv.efficientdet.utils.helper import dump_json, decode_eff, load_model
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
 
 
@@ -67,6 +68,51 @@ def run_experiment(cfg, results_dir, key):
         config.as_dict(),
         batch_size=cfg['eval_config']['eval_batch_size'])
 
+    # Build models
+    if not cfg['train_config']['pruned_model_path']:
+        # TODO(@yuw): verify channels_first training or force last
+        input_shape = list(config.image_size) + [3] \
+            if config.data_format == 'channels_last' else [3] + list(config.image_size)
+        original_learning_phase = tf.keras.backend.learning_phase()
+        model = efficientdet(input_shape, training=True, config=config)
+        tf.keras.backend.set_learning_phase(0)
+        eval_model = efficientdet(input_shape, training=False, config=config)
+        tf.keras.backend.set_learning_phase(original_learning_phase)
+    else:
+        print("Building pruned graph...")
+        original_learning_phase = tf.keras.backend.learning_phase()
+        model = load_model(cfg['train_config']['pruned_model_path'], cfg, mode='train')
+        tf.keras.backend.set_learning_phase(0)
+        eval_model = load_model(cfg['train_config']['pruned_model_path'], cfg, mode='eval')
+        tf.keras.backend.set_learning_phase(original_learning_phase)
+
+    if is_main_process():
+        model.summary()
+
+    resume_ckpt_path = os.path.join(cfg['results_dir'], f'{config.name}.resume')
+    if str(cfg['train_config']['checkpoint']).endswith(".eff"):
+        pretrained_ckpt_path, _ = decode_eff(cfg['train_config']['checkpoint'], cfg.key)
+    else:
+        pretrained_ckpt_path = cfg['train_config']['checkpoint']
+    if pretrained_ckpt_path and not os.path.exists(resume_ckpt_path):
+        if not cfg['train_config']['pruned_model_path']:
+            print("Loading pretrained weight....")
+            pretrained_model = tf.keras.models.load_model(pretrained_ckpt_path)
+            for layer in pretrained_model.layers[1:]:
+                # The layer must match up to prediction layers.
+                try:
+                    l_return = model.get_layer(layer.name)
+                except ValueError:
+                    # Some layers are not there
+                    print(f"Skipping as {layer.name} is not found.")
+                try:
+                    l_return.set_weights(layer.get_weights())
+                except ValueError:
+                    print(f"Skipping {layer.name} due to shape mismatch.")
+
+    # TODO(@yuw): Enable QAT
+    if cfg['train_config']['qat']:
+        model = quantize.quantize_model(model, do_quantize_residual_connections=True)
     # Compile model
     # pick focal loss implementation
     focal_loss = losses.StableFocalLoss(
@@ -74,29 +120,6 @@ def run_experiment(cfg, results_dir, key):
         config.gamma,
         label_smoothing=config.label_smoothing,
         reduction=tf.keras.losses.Reduction.NONE)
-    # TODO(@yuw): verify channels_first training or force last
-    input_shape = list(config.image_size) + [3] \
-        if config.data_format == 'channels_last' else [3] + list(config.image_size)
-    outputs, model = efficientdet(input_shape, training=True, config=config)
-
-    if cfg['train_config']['checkpoint'] and not tf.train.latest_checkpoint(cfg['results_dir']):
-        print("Loading pretrained weight....")
-        pretrained_model = tf.keras.models.load_model(cfg['train_config']['checkpoint'])
-        for layer in pretrained_model.layers[1:]:
-            # The layer must match up to prediction layers.
-            try:
-                l_return = model.get_layer(layer.name)
-            except ValueError:
-                # Some layers are not there
-                print(f"Skipping as {layer.name} is not found.")
-            try:
-                l_return.set_weights(layer.get_weights())
-            except ValueError:
-                print(f"Skipping {layer.name} due to shape mismatch.")
-
-    # TODO(@yuw): Enable QAT
-    # model = quantize.quantize_model(model, do_quantize_residual_connections=False)
-
     model.compile(
         optimizer=optimizer_builder.get_optimizer(cfg['train_config'], steps_per_epoch),
         loss={
@@ -123,15 +146,16 @@ def run_experiment(cfg, results_dir, key):
 
     # resume from checkpoint or load pretrained backbone
     train_from_epoch = 0
-    # TODO(@yuw): automatically detect with EFF checkpoint
-    if tf.train.latest_checkpoint(cfg['results_dir']):
+    if os.path.exists(resume_ckpt_path) and is_main_process():
         print("Resume training...")
+        ckpt_path, _ = decode_eff(resume_ckpt_path, cfg.key)
         train_from_epoch = keras_utils.restore_ckpt(
             model,
-            cfg['results_dir'], 
+            ckpt_path, 
             config.moving_average_decay,
             steps_per_epoch=steps_per_epoch,
             expect_partial=False)
+        # TODO(@yuw): remove ckpt_path
 
     # set up callbacks
     num_samples = (cfg['eval_config']['eval_samples'] + get_world_size() - 1) // get_world_size()
@@ -145,7 +169,8 @@ def run_experiment(cfg, results_dir, key):
         time_history=False,
         log_steps=1,
         lr_tb=False,
-        benchmark=False)
+        benchmark=False,
+        eval_model=eval_model)
 
     trainer = EfficientDetTrainer(model, config, callbacks)
     trainer.fit(

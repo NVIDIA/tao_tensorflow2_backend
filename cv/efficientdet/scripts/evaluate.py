@@ -10,10 +10,9 @@ import horovod.tensorflow.keras as hvd
 from cv.efficientdet.config.hydra_runner import hydra_runner
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.dataloader import dataloader
-from cv.efficientdet.model.efficientdet import efficientdet
 from cv.efficientdet.processor.postprocessor import EfficientDetPostprocessor
-from cv.efficientdet.utils import coco_metric, label_utils, keras_utils
-from cv.efficientdet.utils import hparams_config
+from cv.efficientdet.utils import coco_metric, label_utils
+from cv.efficientdet.utils import helper, hparams_config
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank
 
@@ -26,10 +25,10 @@ def run_experiment(cfg, results_dir, key):
         tf.config.experimental.set_memory_growth(gpu, True)
     if gpus:
         tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
-
+    MODE = 'eval'
     # Parse and update hparams
     config = hparams_config.get_detection_config(cfg['model_config']['model_name'])
-    config.update(generate_params_from_cfg(config, cfg, mode='eval'))
+    config.update(generate_params_from_cfg(config, cfg, mode=MODE))
 
     # Set up dataloader
     eval_dl = dataloader.CocoDataset(
@@ -43,20 +42,16 @@ def run_experiment(cfg, results_dir, key):
     num_samples = (cfg['eval_config']['eval_samples'] + get_world_size() - 1) // get_world_size()
     num_samples = (num_samples + cfg['eval_config']['eval_batch_size'] - 1) // cfg['eval_config']['eval_batch_size']
     cfg['eval_config']['eval_samples'] = num_samples
-
     eval_dataset = eval_dataset.shard(get_world_size(), get_rank()).take(num_samples)
-    # TODO(@yuw): make configurable
-    input_shape = [512,512,3]
-    outputs, model = efficientdet(input_shape, training=False, config=config)
+
+    # Load model from graph json
+    model = helper.load_model(cfg['eval_config']['model_path'], cfg, MODE)
 
     # evaluation
     postpc = EfficientDetPostprocessor(cfg)
     label_map = label_utils.get_label_map(cfg['eval_config']['label_map'])
     evaluator = coco_metric.EvaluationMetric(
         filename=cfg['data_config']['validation_json_file'], label_map=label_map)
-    keras_utils.restore_ckpt(
-        model, cfg['eval_config']['model_path'], config.moving_average_decay,
-        steps_per_epoch=0, skip_mismatch=False, expect_partial=True)
 
     @tf.function
     def eval_model_fn(images, labels):
