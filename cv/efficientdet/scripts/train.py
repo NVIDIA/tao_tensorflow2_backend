@@ -7,7 +7,7 @@ import tensorflow as tf
 import horovod.tensorflow.keras as hvd
 from dllogger import StdOutBackend, JSONStreamBackend, Verbosity
 import dllogger as DLLogger
-from nv_tfqat_wrappers import quantize
+from tensorflow_quantization.quantize import quantize_model
 
 from cv.efficientdet.config.hydra_runner import hydra_runner
 from cv.efficientdet.config.default_config import ExperimentConfig
@@ -86,9 +86,8 @@ def run_experiment(cfg, results_dir, key):
         eval_model = load_model(cfg['train_config']['pruned_model_path'], cfg, mode='eval')
         tf.keras.backend.set_learning_phase(original_learning_phase)
 
-    if is_main_process():
-        model.summary()
-
+    # Load pretrained weights
+    # TODO(@yuw): move weight loading to master rank
     resume_ckpt_path = os.path.join(cfg['results_dir'], f'{config.name}.resume')
     if str(cfg['train_config']['checkpoint']).endswith(".eff"):
         pretrained_ckpt_path, _ = decode_eff(cfg['train_config']['checkpoint'], cfg.key)
@@ -112,7 +111,11 @@ def run_experiment(cfg, results_dir, key):
 
     # TODO(@yuw): Enable QAT
     if cfg['train_config']['qat']:
-        model = quantize.quantize_model(model, do_quantize_residual_connections=True)
+        model = quantize_model(model)
+        eval_model = quantize_model(eval_model)
+
+    if is_main_process():
+        model.summary()
     # Compile model
     # pick focal loss implementation
     focal_loss = losses.StableFocalLoss(

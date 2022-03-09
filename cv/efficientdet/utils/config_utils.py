@@ -73,7 +73,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         lr_warmup_epoch=cfg['train_config']['lr_warmup_epoch'] or 5,
         lr_warmup_init=cfg['train_config']['lr_warmup_init'] or 0.00001,
         amp=cfg['train_config']['amp'],
-        mixed_precision=cfg['train_config']['amp'],
+        mixed_precision=cfg['train_config']['amp'] and not cfg['train_config']['qat'], #TODO(@yuw): whether raise error when qat and amp both True?
         data_format='channels_last',
         l2_weight_decay=cfg['train_config']['l2_weight_decay'],
         l1_weight_decay=cfg['train_config']['l1_weight_decay'],

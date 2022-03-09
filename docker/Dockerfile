@@ -17,10 +17,7 @@ COPY . /workspace/tao-tf2
 
 COPY docker/tensorrt_qat /tmp/tensorrt_qat
 WORKDIR /tmp/tensorrt_qat
-RUN pip install .
-COPY docker/tensorflow-onnx /tmp/tensorflow-onnx
-WORKDIR /tmp/tensorflow-onnx
-RUN pip install .
+RUN python -m pip install .
 
 RUN cd /opt
 RUN mkdir trt_oss_src && \
