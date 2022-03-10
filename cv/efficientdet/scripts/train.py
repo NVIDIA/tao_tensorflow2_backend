@@ -128,7 +128,7 @@ def run_experiment(cfg, results_dir, key):
         loss={
             'box_loss':
                 losses.BoxLoss(
-                    0.1, # config['delta'],
+                    0.1, # config['delta'], TODO(@yuw): make it configurable
                     reduction=tf.keras.losses.Reduction.NONE),
             'box_iou_loss':
                 losses.BoxIouLoss(

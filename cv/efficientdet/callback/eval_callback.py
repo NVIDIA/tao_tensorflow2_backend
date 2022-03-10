@@ -34,7 +34,8 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         self.pbar = tf.keras.utils.Progbar(eval_params['eval_config']['eval_samples'])
 
     def set_model(self, model):
-        self.ema_opt = fetch_optimizer(model, MovingAverage)
+        if self.eval_params['train_config']['moving_average_decay'] > 0:
+            self.ema_opt = fetch_optimizer(model, MovingAverage)
         return super().set_model(model)
 
     @tf.function

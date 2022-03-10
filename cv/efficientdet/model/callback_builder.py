@@ -29,13 +29,13 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
         ckpt_dir = os.path.join(params['results_dir'], 'weights')
         if not os.path.exists(ckpt_dir):
             os.mkdir(ckpt_dir)
-        if params['train_config']['moving_average_decay']:
+        if params['train_config']['moving_average_decay'] > 0:
             ckpt_callback = EffEmaCheckpoint(
                 eff_dir=ckpt_dir,
                 key=params['key'],
                 update_weights=False,
                 amp=params['train_config']['amp'],
-                verbose=1,
+                verbose=0,
                 save_freq='epoch',
                 save_weights_only=True,
                 period=params['train_config']['checkpoint_period'])
@@ -43,7 +43,7 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
             ckpt_callback = EffCheckpoint(
                 eff_dir=ckpt_dir,
                 key=params['key'],
-                verbose=1,
+                verbose=0,
                 save_freq='epoch',
                 save_weights_only=True,
                 period=params['train_config']['checkpoint_period'])
@@ -53,9 +53,9 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
             eff_dir=params['results_dir'],
             key=params['key'],
             graph_only=True,
-            verbose=1,
+            verbose=0,
             save_freq='epoch',
-            save_weights_only=True, # TODO(@yuw): to verify
+            save_weights_only=True,
             period=params['train_config']['checkpoint_period'])
         callbacks.append(model_callback)
 
