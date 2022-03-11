@@ -32,6 +32,7 @@ RUN mkdir trt_oss_src && \
    cp libnvinfer_plugin.so.8.2.* /usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so.8.2.3 && \
    cp libnvinfer_plugin_static.a /usr/lib/x86_64-linux-gnu/libnvinfer_plugin_static.a && \
    cp libnvonnxparser.so.8.2.* /usr/lib/x86_64-linux-gnu/libnvonnxparser.so.8.2.3 && \
+   cp libnvcaffeparser.so.8.2.* /usr/lib/x86_64-linux-gnu/libnvcaffeparser.so.8.2.3 && \
    cp trtexec /usr/local/bin/ && \
    cd ../../../ && \
    rm -rf trt_oss_src
