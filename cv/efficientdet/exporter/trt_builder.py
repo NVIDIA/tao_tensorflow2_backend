@@ -131,11 +131,11 @@ class EngineBuilder:
         self.config = self.builder.create_builder_config()
         self.config.max_workspace_size = workspace * (2 ** 30)
 
-        self.batch_size = None
+        # self.batch_size = None
         self.network = None
         self.parser = None
 
-    def create_network(self, onnx_path):
+    def create_network(self, onnx_path, batch_size, dynamic_batch_size=None):
         """
         Parse the ONNX graph and create the corresponding TensorRT network definition.
 
@@ -155,18 +155,43 @@ class EngineBuilder:
                 sys.exit(1)
 
         inputs = [self.network.get_input(i) for i in range(self.network.num_inputs)]
-        outputs = [self.network.get_output(i) for i in range(self.network.num_outputs)]
 
         log.info("Network Description")
-        for input in inputs: # noqa pylint: disable=W0622
-            self.batch_size = input.shape[0]
-            log.info("Input '{}' with shape {} and dtype {}".format(
-                input.name, input.shape, input.dtype))
-        for output in outputs:
-            log.info("Output '{}' with shape {} and dtype {}".format(
-                output.name, output.shape, output.dtype))
-        assert self.batch_size > 0
-        self.builder.max_batch_size = self.batch_size
+        profile = self.builder.create_optimization_profile()
+        dynamic_inputs = False
+        for input in inputs:
+            log.info("Input '{}' with shape {} and dtype {}".format(input.name, input.shape, input.dtype))
+            if input.shape[0] == -1:
+                dynamic_inputs = True
+                if dynamic_batch_size:
+                    if type(dynamic_batch_size) is str:
+                        dynamic_batch_size = [int(v) for v in dynamic_batch_size.split(",")]
+                    assert len(dynamic_batch_size) == 3
+                    min_shape = [dynamic_batch_size[0]] + list(input.shape[1:])
+                    opt_shape = [dynamic_batch_size[1]] + list(input.shape[1:])
+                    max_shape = [dynamic_batch_size[2]] + list(input.shape[1:])
+                    profile.set_shape(input.name, min_shape, opt_shape, max_shape)
+                    log.info("Input '{}' Optimization Profile with shape MIN {} / OPT {} / MAX {}".format(
+                        input.name, min_shape, opt_shape, max_shape))
+                else:
+                    shape = [batch_size] + list(input.shape[1:])
+                    profile.set_shape(input.name, shape, shape, shape)
+                    log.info("Input '{}' Optimization Profile with shape {}".format(input.name, shape))
+        if dynamic_inputs:
+            self.config.add_optimization_profile(profile)
+
+        outputs = [self.network.get_output(i) for i in range(self.network.num_outputs)]
+
+        # log.info("Network Description")
+        # for input in inputs: # noqa pylint: disable=W0622
+        #     self.batch_size = input.shape[0]
+        #     log.info("Input '{}' with shape {} and dtype {}".format(
+        #         input.name, input.shape, input.dtype))
+        # for output in outputs:
+        #     log.info("Output '{}' with shape {} and dtype {}".format(
+        #         output.name, output.shape, output.dtype))
+        # assert self.batch_size > 0
+        # self.builder.max_batch_size = self.batch_size
 
     def create_engine(self, engine_path, precision,
                       calib_input=None, calib_cache=None, calib_num_images=5000,
@@ -211,7 +236,20 @@ class EngineBuilder:
                                      max_num_images=calib_num_images,
                                      exact_batches=True))
 
-        with self.builder.build_engine(self.network, self.config) as engine, \
-                open(engine_path, "wb") as f:
-            log.debug("Serializing engine to file: {:}".format(engine_path))
-            f.write(engine.serialize())
+        engine_bytes = None
+        try:
+            engine_bytes = self.builder.build_serialized_network(self.network, self.config)
+        except AttributeError:
+            engine = self.builder.build_engine(self.network, self.config)
+            engine_bytes = engine.serialize()
+            del engine
+        assert engine_bytes
+        with open(engine_path, "wb") as f:
+            log.info("Serializing engine to file: {:}".format(engine_path))
+            f.write(engine_bytes)
+
+        # with self.builder.build_engine(self.network, self.config) as engine, \
+        #         open(engine_path, "wb") as f:
+        #     log.debug("Serializing engine to file: {:}".format(engine_path))
+        #     f.write(engine.serialize())
+

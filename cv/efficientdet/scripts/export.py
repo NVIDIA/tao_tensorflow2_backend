@@ -51,6 +51,7 @@ def run_export(cfg, results_dir=None, key=None):
 
     # Load model from graph json
     model = helper.load_model(cfg['export_config']['model_path'], cfg, MODE)
+    model.summary()
     input_shape = list(model.layers[0].input_shape[0][1:4])
     max_batch_size = cfg.export_config.max_batch_size
     # fake_images = tf.keras.Input(shape=[None, None, None], batch_size=max_batch_size)
@@ -70,12 +71,13 @@ def run_export(cfg, results_dir=None, key=None):
     effdet_gs.update_nms()
     # TODO(@yuw): convert onnx to eff
     onnx_file = effdet_gs.save(cfg.export_config.output_path)
+    print("Generating Engine.....")
     # convert to engine
     if cfg.export_config.engine_file is not None or cfg.export_config.data_type == 'int8':
 
         output_engine_path = cfg.export_config.engine_file
         builder = EngineBuilder(cfg.export_config.verbose, workspace=cfg.export_config.max_workspace_size)
-        builder.create_network(onnx_file)
+        builder.create_network(onnx_file, batch_size=max_batch_size)
         builder.create_engine(
             output_engine_path,
             cfg.export_config.data_type,

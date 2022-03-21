@@ -7,7 +7,7 @@ from __future__ import division
 from __future__ import print_function
 
 from tensorflow.keras.layers import AveragePooling2D, Dense, Flatten
-from tensorflow.keras.layers import Input
+from tensorflow.keras.layers import Activation, Input
 from tensorflow.keras.models import Model
 
 from backbones.efficientnet_tf import (
@@ -43,8 +43,10 @@ def add_dense_head(nclasses, base_model, data_format, kernel_regularizer, bias_r
     output = AveragePooling2D(pool_size=pool_size, name='avg_pool',
                               data_format=data_format, padding='valid')(output)
     output = Flatten(name='flatten')(output)
-    output = Dense(nclasses, activation='softmax', name='predictions',
+    # updated per TF2 documentation (https://www.tensorflow.org/guide/mixed_precision)
+    output = Dense(nclasses, name='predictions_dense',
                    kernel_regularizer=kernel_regularizer, bias_regularizer=bias_regularizer)(output)
+    outputs = Activation('softmax', dtype='float32', name='predictions')(output)
     final_model = Model(inputs=base_model.input, outputs=output, name=base_model.name)
     return final_model
 

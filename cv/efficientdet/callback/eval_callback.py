@@ -76,6 +76,8 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
             if self.eval_params['train_config']['image_preview'] and i == 0:
                 bs_index = 0
                 image = np.copy(images[bs_index])
+                if self.eval_params['data_format'] == 'channels_first':
+                    image = np.transpose(image, (1, 2, 0))
                 # decode image
                 image = vis_utils.denormalize_image(image)
                 predictions = np.array(detections[bs_index])

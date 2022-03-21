@@ -11,7 +11,7 @@ import json
 import logging
 import os
 
-from tensorflow_quantization.custom_qdq_cases import ResNetQDQCase
+from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase, ResNetQDQCase
 from tensorflow_quantization.quantize import quantize_model
 
 import tensorflow as tf
@@ -287,7 +287,9 @@ def run_experiment(cfg, results_dir=None,
                         bn_config=bn_config
                     )
     if cfg['train_config']['qat']:
-        final_model = quantize_model(final_model, custom_qdq_cases=[ResNetQDQCase()]) # TODO(@yuw): add ResNet residual case
+        qdq_cases = [EfficientNetQDQCase(), ResNetQDQCase()] \
+            if 'efficientnet' in cfg['model_config']['arch'] else [ResNetQDQCase()]
+        final_model = quantize_model(final_model, custom_qdq_cases=qdq_cases)
     # Printing model summary
     final_model.summary()
 

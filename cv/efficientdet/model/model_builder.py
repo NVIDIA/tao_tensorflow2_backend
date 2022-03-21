@@ -65,7 +65,8 @@ def swish(features, use_native=True, use_hard=False):
 
 
 def build_model_base(images, model_name='efficientdet-d0',
-                     num_classes=2, freeze_blocks=None, freeze_bn=False):
+                     num_classes=2, freeze_blocks=None, freeze_bn=False,
+                     data_format='channels_last'):
     """Create a base feature network and return the features before pooling.
 
     Args:
@@ -94,7 +95,7 @@ def build_model_base(images, model_name='efficientdet-d0',
         add_head=False,
         input_tensor=images,
         classes=num_classes,
-        data_format="channels_last",
+        data_format=data_format,
         freeze_bn=freeze_bn,
         freeze_blocks=freeze_blocks,
         use_bias=False,
@@ -123,6 +124,6 @@ def build_backbone(features, config):
     u1, u2, u3, u4, u5 = build_model_base(
         features, config.model_name,
         freeze_blocks=config.freeze_blocks,
-        freeze_bn=config.freeze_bn)
-
+        freeze_bn=config.freeze_bn,
+        data_format=config.data_format)
     return {0: features, 1: u1, 2: u2, 3: u3, 4: u4, 5: u5}
