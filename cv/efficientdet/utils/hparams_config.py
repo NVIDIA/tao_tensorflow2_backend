@@ -230,7 +230,8 @@ def default_detection_configs():
   h.iou_loss_weight = 1.0
 
   # regularization l2 loss.
-  h.weight_decay = 4e-5
+  h.l2_weight_decay = 4e-5
+  h.l1_weight_decay = 0.0
   h.mixed_precision = False  # If False, use float32.
   h.mixed_precision_on_inputs = False
   h.loss_scale = 2**15
