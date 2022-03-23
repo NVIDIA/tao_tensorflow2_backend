@@ -87,12 +87,7 @@ class SoftStartAnnealingLearningRateScheduler(tf.keras.optimizers.schedules.Lear
 
     def __call__(self, step):
         """Compute learning rate according to progress to reach total_steps."""
-        progress = tf.cast(step / self.total_steps, dtype=tf.float32)
-        if not 0. <= progress <= 1.:
-            raise ValueError('SoftStartAnnealingLearningRateScheduler '
-                             'does not support a progress value < 0.0 or > 1.0 '
-                             'received (%f)' % progress)
-
+        progress = step / self.total_steps
         if self.soft_start > 0.0:
             soft_start = progress / self.soft_start
         else:  # learning rate starts from base_lr
@@ -103,10 +98,13 @@ class SoftStartAnnealingLearningRateScheduler(tf.keras.optimizers.schedules.Lear
         else:   # learning rate is never annealed
             annealing = 1.0
 
-        t = soft_start if progress < self.soft_start else 1.0
-        t = annealing if progress > self.annealing_start else t
+        # t = soft_start if progress < self.soft_start else 1.0
+        t = tf.where(progress < self.soft_start, soft_start, 1.0)
+        # t = annealing if progress > self.annealing_start else t
+        t = tf.where(progress > self.annealing_start, annealing, t)
         t = tf.cast(t, dtype=tf.float32)
-        lr = exp(log(self.lr_warmup_init) + t * (log(self.base_lr) - log(self.lr_warmup_init)))
+        lr = tf.math.exp(tf.math.log(self.lr_warmup_init) + \
+          t * (tf.math.log(self.base_lr) - tf.math.log(self.lr_warmup_init)))
         return lr
     
     def get_config(self):
@@ -131,11 +129,10 @@ def learning_rate_schedule(params, steps_per_epoch):
                             total_steps)
   if lr_decay_method == 'soft_anneal':
     return SoftStartAnnealingLearningRateScheduler(
-      total_steps,
       params['learning_rate'],
       params['lr_warmup_init'],
       0.1, 0.3, # TODO(@yuw): add config
       total_steps)
 
-  raise ValueError(f'unknown lr_decay_method: {lr_decay_method}.
+  raise ValueError(f'unknown lr_decay_method: {lr_decay_method}. \
     Choose from {supported_schedules}')

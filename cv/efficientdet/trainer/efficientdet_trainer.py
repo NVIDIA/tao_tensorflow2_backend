@@ -87,11 +87,21 @@ class EfficientDetTrainer(Trainer):
         if self.config.clip_gradients_norm > 0:
             clip_norm = abs(self.config.clip_gradients_norm)
             gradients = [
-                tf.clip_by_norm(g, clip_norm) if g else None  #TODO(@yuw): if g is not None
+                tf.clip_by_norm(g, clip_norm) if g is not None else None
                 for g in gradients
             ]
             gradients, _ = tf.clip_by_global_norm(gradients, clip_norm)
             loss_vals['gradient_norm'] = tf.linalg.global_norm(gradients)
+
+        # TODO(@yuw): experimental!
+        # grads_and_vars = []
+        # # Special treatment for biases (beta is named as bias in reference model)
+        # for grad, var in zip(gradients, trainable_vars):
+        #     if grad is not None and any([pattern in var.name for pattern in ["bias", "beta"]]):
+        #         grad = 2.0 * grad
+        #     grads_and_vars.append((grad, var))
+        # self.model.optimizer.apply_gradients(grads_and_vars)
+
         self.model.optimizer.apply_gradients(zip(gradients, trainable_vars))
         return loss_vals
 
