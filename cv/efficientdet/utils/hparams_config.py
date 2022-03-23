@@ -292,6 +292,24 @@ def default_detection_configs():
 
 
 efficientdet_model_param_dict = {
+    'resdet18':
+        dict(
+            name='resdet18',
+            backbone_name='resnet18',
+            image_size=512,
+            fpn_num_filters=64,
+            fpn_cell_repeats=3,
+            box_class_repeats=3,
+        ),
+    'resdet34':
+        dict(
+            name='resdet34',
+            backbone_name='resnet34',
+            image_size=512,
+            fpn_num_filters=88,
+            fpn_cell_repeats=4,
+            box_class_repeats=3,
+        ),
     'efficientdet-d0':
         dict(
             name='efficientdet-d0',
@@ -394,7 +412,7 @@ def get_efficientdet_config(model_name='efficientdet-d1'):
 
 
 def get_detection_config(model_name):
-  if model_name.startswith('efficientdet'):
+  if model_name.startswith('efficientdet') or model_name.startswith('resdet'):
     return get_efficientdet_config(model_name)
   else:
-    raise ValueError('model name must start with efficientdet.')
+    raise ValueError('model name must start with efficientdet or resdet.')

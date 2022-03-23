@@ -36,6 +36,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         default_hparams.as_dict(),
         # model_config
         name=cfg['model_config']['model_name'],
+        model_name=cfg['model_config']['model_name'],
         aspect_ratios=aspect_ratios,
         anchor_scale=cfg['model_config']['anchor_scale'] or 4,
         min_level=cfg['model_config']['min_level'] or 3,
