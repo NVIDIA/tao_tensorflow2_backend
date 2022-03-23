@@ -80,6 +80,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         clip_gradients_norm=cfg['train_config']['clip_gradients_norm'] or 5.0,
         skip_checkpoint_variables=cfg['train_config']['skip_checkpoint_variables'],
         num_epochs=cfg['train_config']['num_epochs'],
+        lr_decay_method=cfg['train_config']['lr_decay_method'],
         # eval config
         eval_epoch_cycle=cfg['eval_config']['eval_epoch_cycle'],
         eval_batch_size=cfg['eval_config']['eval_batch_size'],

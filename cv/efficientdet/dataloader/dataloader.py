@@ -414,7 +414,7 @@ class CocoDataset(Dataset):
     )
 
     batch_size = batch_size or params['batch_size']
-    dataset = tf.data.Dataset.list_files(self._file_pattern, shuffle=False)
+    dataset = tf.data.Dataset.list_files(self._file_pattern, shuffle=self._is_training)
     if self._is_training:
       dataset = dataset.shard(get_world_size(), get_rank())
       dataset.shuffle(buffer_size=1024)
@@ -428,12 +428,15 @@ class CocoDataset(Dataset):
       return dataset
 
     dataset = dataset.interleave(
-        _prefetch_dataset, cycle_length=10, block_length=16, 
+        _prefetch_dataset, cycle_length=32, block_length=16, # cycle_length=10
         num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
     dataset = dataset.with_options(self.dataset_options)
     if self._is_training:
-      dataset = dataset.shuffle(params['shuffle_buffer'])
+      # dataset = dataset.shuffle(params['shuffle_buffer'])
+      dataset = dataset.shuffle(
+        buffer_size=params['shuffle_buffer'],
+        reshuffle_each_iteration=True,)
 
 
     # Parse the fetched records to input tensors for model function.

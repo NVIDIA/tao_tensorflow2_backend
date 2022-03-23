@@ -33,6 +33,7 @@ class TrainConfig:
     loss_scale: float = 10.0
     image_preview: bool = True
     qat: bool = False
+    lr_decay_method: str = 'cosine'
 
 
 @dataclass
