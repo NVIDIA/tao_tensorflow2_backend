@@ -58,6 +58,10 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         jitter_min=cfg['augmentation_config']['random_crop_min_scale'] or 0.1,
         jitter_max=cfg['augmentation_config']['random_crop_max_scale'] or 2.0,
         # train eval config
+        shuffle_file=cfg['train_config']['shuffle_file'],
+        shuffle_buffer=cfg['train_config']['shuffle_buffer'] or 10000,
+        cycle_length=cfg['train_config']['cycle_length'] or 32,
+        block_length=cfg['train_config']['block_length'] or 16,
         momentum=cfg['train_config']['momentum'] or 0.9,
         iterations_per_loop=cfg['train_config']['iterations_per_loop'],
         num_examples_per_epoch=cfg['train_config']['num_examples_per_epoch'],

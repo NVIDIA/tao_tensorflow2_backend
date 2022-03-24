@@ -401,7 +401,7 @@ class CocoDataset(Dataset):
     options.experimental_optimization.parallel_batch = True
     return options
 
-  def __call__(self, params, input_context=None, batch_size=None):
+  def __call__(self, params, batch_size=None):
     input_anchors = anchors.Anchors(params['min_level'], params['max_level'],
                                     params['num_scales'],
                                     params['aspect_ratios'],
@@ -414,7 +414,7 @@ class CocoDataset(Dataset):
     )
 
     batch_size = batch_size or params['batch_size']
-    dataset = tf.data.Dataset.list_files(self._file_pattern, shuffle=self._is_training)
+    dataset = tf.data.Dataset.list_files(self._file_pattern, shuffle=params['shuffle_file'])
     if self._is_training:
       dataset = dataset.shard(get_world_size(), get_rank())
       dataset.shuffle(buffer_size=1024)
@@ -433,7 +433,6 @@ class CocoDataset(Dataset):
 
     dataset = dataset.with_options(self.dataset_options)
     if self._is_training:
-      # dataset = dataset.shuffle(params['shuffle_buffer'])
       dataset = dataset.shuffle(
         buffer_size=params['shuffle_buffer'],
         reshuffle_each_iteration=True,)
