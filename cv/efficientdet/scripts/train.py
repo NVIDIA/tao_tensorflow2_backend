@@ -19,7 +19,7 @@ from cv.efficientdet.model import optimizer_builder
 from cv.efficientdet.trainer.efficientdet_trainer import EfficientDetTrainer
 from cv.efficientdet.utils import hparams_config, keras_utils
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
-from cv.efficientdet.utils.helper import dump_json, decode_eff, load_model
+from cv.efficientdet.utils.helper import dump_json, decode_eff, load_model, load_json_model
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
 
 
@@ -90,13 +90,25 @@ def run_experiment(cfg, results_dir, key):
     # TODO(@yuw): move weight loading to master rank
     resume_ckpt_path = os.path.join(cfg['results_dir'], f'{config.name}.resume')
     if str(cfg['train_config']['checkpoint']).endswith(".eff"):
-        pretrained_ckpt_path, _ = decode_eff(cfg['train_config']['checkpoint'], cfg.key)
+        pretrained_ckpt_path, ckpt_name = decode_eff(cfg['train_config']['checkpoint'], cfg.key)
     else:
         pretrained_ckpt_path = cfg['train_config']['checkpoint']
     if pretrained_ckpt_path and not os.path.exists(resume_ckpt_path):
         if not cfg['train_config']['pruned_model_path']:
             print("Loading pretrained weight....")
-            pretrained_model = tf.keras.models.load_model(pretrained_ckpt_path)
+            if 'train_graph.json' in os.listdir(pretrained_ckpt_path):
+                print("from detection:")
+                pretrained_model = load_json_model(
+                    os.path.join(pretrained_ckpt_path, 'train_graph.json'))
+                keras_utils.restore_ckpt(
+                    pretrained_model,
+                    os.path.join(pretrained_ckpt_path, ckpt_name),
+                    cfg.train_config.moving_average_decay,
+                    steps_per_epoch=0,
+                    expect_partial=True)
+            else:
+                print("from backbone:")
+                pretrained_model = tf.keras.models.load_model(pretrained_ckpt_path)
             for layer in pretrained_model.layers[1:]:
                 # The layer must match up to prediction layers.
                 try:
