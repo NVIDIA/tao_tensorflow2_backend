@@ -428,7 +428,8 @@ class CocoDataset(Dataset):
       return dataset
 
     dataset = dataset.interleave(
-        _prefetch_dataset, cycle_length=32, block_length=16, # cycle_length=10
+        _prefetch_dataset, cycle_length=params['cycle_length'], # cycle_length=32
+        block_length=params['block_length'], # block_length=16
         num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
     dataset = dataset.with_options(self.dataset_options)
