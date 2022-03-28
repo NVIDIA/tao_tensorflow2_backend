@@ -332,11 +332,7 @@ class EfficientDetGraphSurgeon:
         box_decoder = self.graph.find_descendant_by_op(box_net_split, "Concat")
         assert box_decoder and len(box_decoder.inputs) == 4
         box_decoder_tensor = box_decoder.outputs[0]
-        # for node in self.graph.nodes:
-        #     print(node.name)
-        #     print(node.op)
-        #     print("##")
-        # assert 0
+
         # 5. Find the NMS node.
         nms_node = self.graph.find_node_by_op("NonMaxSuppression")
 

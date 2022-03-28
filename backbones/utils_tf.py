@@ -1462,8 +1462,11 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
             se = keras.layers.GlobalAveragePooling2D(
                 data_format=data_format, name=name + 'se_squeeze')(x)
             # _, cc = se.get_shape()
-            se_shape = (1, 1, -1) if data_format == 'channels_last' else (-1, 1, 1)
+            se_shape = (1, 1, filters) if data_format == 'channels_last' else (filters, 1, 1)
             se = keras.layers.Reshape(se_shape, name=name + 'se_reshape')(se)
+        # in reduce and expand conv, set use_bias=True, following
+        # https://github.com/tensorflow/models/blob/77bf83b493617df6c5cd35b8d8cf495944161d99/
+        # official/legacy/image_classification/efficientnet/efficientnet_model.py#L287
         layer = keras.layers.Conv2D(
             filters_se,
             1,
@@ -1472,6 +1475,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
             kernel_initializer=CONV_KERNEL_INITIALIZER,
             kernel_regularizer=kernel_regularizer,
             bias_regularizer=bias_regularizer,
+            use_bias=True,
             trainable=not freeze,
             data_format=data_format,
             name=name + 'se_reduce'
@@ -1488,6 +1492,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
             kernel_regularizer=kernel_regularizer,
             bias_regularizer=bias_regularizer,
             data_format=data_format,
+            use_bias=True,
             trainable=not freeze,
             name=name + 'se_expand'
         )

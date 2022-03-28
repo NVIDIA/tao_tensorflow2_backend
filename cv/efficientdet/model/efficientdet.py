@@ -206,7 +206,8 @@ class ResampleFeatureMap:
         elif height <= target_height and width <= target_width:
             feat = self._maybe_apply_1x1(feat, training, num_channels)
             if height < target_height or width < target_width:
-                feat = ImageResizeLayer(target_height, target_width)(feat)
+                feat = ImageResizeLayer(
+                    target_height, target_width, self.data_format)(feat)
         else:
             raise ValueError(
                 'Incompatible Resampling : feat shape {}x{} target_shape: {}x{}'
@@ -561,7 +562,7 @@ class FPNCell:
                                                          config.fpn_weight_method)
         self.fnodes = []
         for i, fnode_cfg in enumerate(self.fpn_config.nodes):
-            logging.info('fnode %d : %s', i, fnode_cfg)
+            logging.debug('fnode %d : %s', i, fnode_cfg)
             fnode = FNode(
                 fnode_cfg['feat_level'] - self.config.min_level,
                 fnode_cfg['inputs_offsets'],

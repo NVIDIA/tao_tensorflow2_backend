@@ -36,6 +36,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         default_hparams.as_dict(),
         # model_config
         name=cfg['model_config']['model_name'],
+        model_name=cfg['model_config']['model_name'],
         aspect_ratios=aspect_ratios,
         anchor_scale=cfg['model_config']['anchor_scale'] or 4,
         min_level=cfg['model_config']['min_level'] or 3,
@@ -57,6 +58,10 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         jitter_min=cfg['augmentation_config']['random_crop_min_scale'] or 0.1,
         jitter_max=cfg['augmentation_config']['random_crop_max_scale'] or 2.0,
         # train eval config
+        shuffle_file=cfg['train_config']['shuffle_file'],
+        shuffle_buffer=cfg['train_config']['shuffle_buffer'] or 10000,
+        cycle_length=cfg['train_config']['cycle_length'] or 32,
+        block_length=cfg['train_config']['block_length'] or 16,
         momentum=cfg['train_config']['momentum'] or 0.9,
         iterations_per_loop=cfg['train_config']['iterations_per_loop'],
         num_examples_per_epoch=cfg['train_config']['num_examples_per_epoch'],
@@ -73,13 +78,14 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         lr_warmup_epoch=cfg['train_config']['lr_warmup_epoch'] or 5,
         lr_warmup_init=cfg['train_config']['lr_warmup_init'] or 0.00001,
         amp=cfg['train_config']['amp'],
-        mixed_precision=cfg['train_config']['amp'],
-        data_format='channels_last',
+        mixed_precision=cfg['train_config']['amp'] and not cfg['train_config']['qat'], #TODO(@yuw): whether raise error when qat and amp both True?
+        data_format=cfg['data_format'],
         l2_weight_decay=cfg['train_config']['l2_weight_decay'],
         l1_weight_decay=cfg['train_config']['l1_weight_decay'],
         clip_gradients_norm=cfg['train_config']['clip_gradients_norm'] or 5.0,
         skip_checkpoint_variables=cfg['train_config']['skip_checkpoint_variables'],
         num_epochs=cfg['train_config']['num_epochs'],
+        lr_decay_method=cfg['train_config']['lr_decay_method'],
         # eval config
         eval_epoch_cycle=cfg['eval_config']['eval_epoch_cycle'],
         eval_batch_size=cfg['eval_config']['eval_batch_size'],

@@ -10,7 +10,9 @@ from functools import partial
 import json
 import logging
 import os
-from nv_tfqat_wrappers import quantize
+
+from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase, ResNetQDQCase
+from tensorflow_quantization.quantize import quantize_model
 
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -72,7 +74,7 @@ def setup_callbacks(model_name, results_dir, lr_config,
         if not os.path.exists(save_weights_dir):
             os.makedirs(save_weights_dir)
         # Save encrypted models
-        checkpointer = EffCheckpoint(save_weights_dir, key, verbose=1)
+        checkpointer = EffCheckpoint(save_weights_dir, key, verbose=0)
         callbacks.append(checkpointer)
 
         # Set up the custom TensorBoard callback. It will log the loss
@@ -285,7 +287,9 @@ def run_experiment(cfg, results_dir=None,
                         bn_config=bn_config
                     )
     if cfg['train_config']['qat']:
-        final_model = quantize.quantize_model(final_model, quantize_residual_connections=False)
+        qdq_cases = [EfficientNetQDQCase(), ResNetQDQCase()] \
+            if 'efficientnet' in cfg['model_config']['arch'] else [ResNetQDQCase()]
+        final_model = quantize_model(final_model, custom_qdq_cases=qdq_cases)
     # Printing model summary
     final_model.summary()
 

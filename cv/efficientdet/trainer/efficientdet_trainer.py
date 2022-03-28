@@ -62,9 +62,11 @@ class EfficientDetTrainer(Trainer):
                 total_loss += seg_loss
                 loss_vals['seg_loss'] = seg_loss
 
-            reg_l2_loss = self._reg_l2_loss(self.config.weight_decay)
+            reg_l2_loss = self._reg_l2_loss(self.config.l2_weight_decay) if self.config.l2_weight_decay else 0
+            reg_l1_loss = self._reg_l1_loss(self.config.l1_weight_decay) if self.config.l1_weight_decay else 0
             loss_vals['reg_l2_loss'] = reg_l2_loss
-            total_loss += reg_l2_loss
+            loss_vals['reg_l1_loss'] = reg_l1_loss
+            total_loss += (reg_l2_loss + reg_l1_loss)
             if isinstance(self.model.optimizer,
                           tf.keras.mixed_precision.LossScaleOptimizer):
                 scaled_loss = self.model.optimizer.get_scaled_loss(total_loss)
@@ -90,6 +92,16 @@ class EfficientDetTrainer(Trainer):
             ]
             gradients, _ = tf.clip_by_global_norm(gradients, clip_norm)
             loss_vals['gradient_norm'] = tf.linalg.global_norm(gradients)
+
+        # TODO(@yuw): experimental!
+        # grads_and_vars = []
+        # # Special treatment for biases (beta is named as bias in reference model)
+        # for grad, var in zip(gradients, trainable_vars):
+        #     if grad is not None and any([pattern in var.name for pattern in ["bias", "beta"]]):
+        #         grad = 2.0 * grad
+        #     grads_and_vars.append((grad, var))
+        # self.model.optimizer.apply_gradients(grads_and_vars)
+
         self.model.optimizer.apply_gradients(zip(gradients, trainable_vars))
         return loss_vals
 
@@ -113,8 +125,9 @@ class EfficientDetTrainer(Trainer):
             cls_outputs, box_outputs = self.model(images, training=False)
         elif 'segmentation' in self.config.heads:
             seg_outputs, = self.model(images, training=False)
-        reg_l2loss = self._reg_l2_loss(self.config.weight_decay)
-        total_loss = reg_l2loss
+        reg_l2loss = self._reg_l2_loss(self.config.l2_weight_decay) if self.config.l2_weight_decay else 0
+        reg_l1loss = self._reg_l1_loss(self.config.l1_weight_decay) if self.config.l1_weight_decay else 0
+        total_loss = reg_l2loss + reg_l1loss
         loss_vals = {}
         if 'object_detection' in self.config.heads:
             det_loss = self._detection_loss(cls_outputs, box_outputs, labels,
@@ -145,6 +158,13 @@ class EfficientDetTrainer(Trainer):
             for v in self._freeze_vars()
             if var_match.match(v.name)
         ])
+
+    def _reg_l1_loss(self, weight_decay, regex=r'.*(kernel|weight):0$'):
+        """Return regularization l1 loss loss."""
+        return tf.contrib.layers.apply_regularization(
+            tf.keras.regularizers.l1(weight_decay / 2.0),
+            [v for v in self._freeze_vars()
+             if var_match.match(v.name)])
 
     def _detection_loss(self, cls_outputs, box_outputs, labels, loss_vals):
         """Computes total detection loss.

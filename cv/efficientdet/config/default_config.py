@@ -30,9 +30,13 @@ class TrainConfig:
     skip_checkpoint_variables: str = ''
     checkpoint_period: int = 10
     optimizer: str = 'sgd'
-    loss_scale: float = 10.0
     image_preview: bool = True
     qat: bool = False
+    lr_decay_method: str = 'cosine'
+    shuffle_buffer: int = 10000
+    cycle_length: int = 32
+    block_length: int = 16
+    shuffle_file: bool = True
 
 
 @dataclass
@@ -65,7 +69,7 @@ class DataConfig:
 
 @dataclass
 class EvalConfig:
-    """Experiment config."""
+    """Eval config."""
 
     eval_batch_size: int = 8
     min_score_thresh: float = 0.3
@@ -80,7 +84,7 @@ class EvalConfig:
 
 @dataclass
 class AugmentationConfig:
-    """Experiment config."""
+    """Augmentation config."""
 
     rand_hflip: bool = True
     random_crop_min_scale: float = 0.1
@@ -88,7 +92,7 @@ class AugmentationConfig:
 
 @dataclass
 class ExportConfig:
-    """Experiment config."""
+    """Export config."""
 
     max_batch_size: int = 8
     model_path: str = MISSING
@@ -104,7 +108,7 @@ class ExportConfig:
 
 @dataclass
 class InferenceConfig:
-    """Experiment config."""
+    """Inference config."""
     
     model_path: str = MISSING
     image_dir: str = MISSING

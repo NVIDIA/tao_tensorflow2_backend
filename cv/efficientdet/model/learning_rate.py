@@ -1,17 +1,4 @@
 # Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 """Learning rate related utils."""
 import math
 from absl import logging
@@ -57,14 +44,95 @@ class CosineLrSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     }
 
 
+@tf.keras.utils.register_keras_serializable(package='Custom')
+class SoftStartAnnealingLearningRateScheduler(tf.keras.optimizers.schedules.LearningRateSchedule):
+    """Learning rate scheduler implementation.
+
+    Learning rate scheduler modulates learning rate according to the progress in the
+    training experiment. Specifically the training progress is defined as the ratio of
+    the current iteration to the maximum iterations. Learning rate scheduler adjusts
+    learning rate in the following 3 phases:
+        Phase 1: 0.0 <= progress < soft_start:
+                 Starting from min_lr exponentially increase the learning rate to base_lr
+        Phase 2: soft_start <= progress < annealing_start:
+                 Maintain the learning rate at base_lr
+        Phase 3: annealing_start <= progress <= 1.0:
+                 Starting from base_lr exponentially decay the learning rate to min_lr
+
+    Args:
+        base_lr: Maximum learning rate
+        min_lr_ratio: The ratio between minimum learning rate (min_lr) and base_lr
+        soft_start: The progress at which learning rate achieves base_lr when starting from min_lr
+        annealing_start: The progress at which learning rate starts to drop from base_lr to min_lr
+        total_steps: Total number of iterations in the experiment
+    """
+
+    def __init__(self, base_lr, lr_warmup_init, soft_start,
+                 annealing_start, total_steps):
+        """__init__ method."""
+        super(SoftStartAnnealingLearningRateScheduler, self).__init__()
+
+        if not 0.0 <= soft_start <= 1.0:
+            raise ValueError('The soft_start variable should be >= 0.0 or <= 1.0.')
+        if not 0.0 <= annealing_start <= 1.0:
+            raise ValueError('The annealing_start variable should be >= 0.0 or <= 1.0.')
+        if not soft_start < annealing_start:
+            raise ValueError('Variable soft_start should be less than annealing_start.')
+
+        self.base_lr = base_lr
+        self.soft_start = soft_start  # Increase to lr from min_lr until this point.
+        self.annealing_start = annealing_start  # Start annealing to min_lr at this point.
+        self.total_steps = total_steps
+        self.lr_warmup_init = lr_warmup_init
+
+    def __call__(self, step):
+        """Compute learning rate according to progress to reach total_steps."""
+        progress = step / self.total_steps
+        if self.soft_start > 0.0:
+            soft_start = progress / self.soft_start
+        else:  # learning rate starts from base_lr
+            soft_start = 1.0
+
+        if self.annealing_start < 1.0:
+            annealing = (1.0 - progress) / (1.0 - self.annealing_start)
+        else:   # learning rate is never annealed
+            annealing = 1.0
+
+        # t = soft_start if progress < self.soft_start else 1.0
+        t = tf.where(progress < self.soft_start, soft_start, 1.0)
+        # t = annealing if progress > self.annealing_start else t
+        t = tf.where(progress > self.annealing_start, annealing, t)
+        t = tf.cast(t, dtype=tf.float32)
+        lr = tf.math.exp(tf.math.log(self.lr_warmup_init) + \
+          t * (tf.math.log(self.base_lr) - tf.math.log(self.lr_warmup_init)))
+        return lr
+    
+    def get_config(self):
+        """Config."""
+        return {
+            "base_lr": self.base_lr,
+            "lr_warmup_init": self.lr_warmup_init,
+            "soft_start": self.soft_start,
+            "annealing_start": self.annealing_start,
+        }
+
+
 def learning_rate_schedule(params, steps_per_epoch):
   """Learning rate schedule based on global step."""
+  supported_schedules = ['cosine', 'soft_anneal']
   lr_warmup_step = int(params['lr_warmup_epoch'] * steps_per_epoch)
   total_steps = int(params['num_epochs'] * steps_per_epoch)
-  lr_decay_method = 'cosine'  #TODO: params['lr_decay_method']
+  lr_decay_method = params['lr_decay_method']
   if lr_decay_method == 'cosine':
     return CosineLrSchedule(params['learning_rate'],
                             params['lr_warmup_init'], lr_warmup_step,
                             total_steps)
+  if lr_decay_method == 'soft_anneal':
+    return SoftStartAnnealingLearningRateScheduler(
+      params['learning_rate'],
+      params['lr_warmup_init'],
+      0.1, 0.3, # TODO(@yuw): add config
+      total_steps)
 
-  raise ValueError('unknown lr_decay_method: {}'.format(lr_decay_method))
+  raise ValueError(f'unknown lr_decay_method: {lr_decay_method}. \
+    Choose from {supported_schedules}')

@@ -29,7 +29,8 @@ def ResNet(nlayers,
            freeze_blocks=None,
            freeze_bn=False,
            use_pooling=False,
-           use_bias=False):
+           use_bias=False,
+           **kwargs):
     """
     Construct a fixed-depth vanilla ResNet, based on the architectures from the original paper [1].
 
@@ -86,7 +87,7 @@ def ResNet(nlayers,
     freeze3 = 3 in freeze_blocks
     freeze4 = 4 in freeze_blocks
 
-    activation_kwargs = activation_kwargs or {}
+    activation_kwargs = activation_kwargs or {'name': 'stem_activation'}
 
     x = keras.layers.Conv2D(64, (7, 7),
                             strides=(2, 2),

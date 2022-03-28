@@ -6,11 +6,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
+import shutil
 import logging
 import tensorrt as trt
 import tensorflow as tf
 
 from tf2onnx import tf_loader, utils, convert
+
+from cv.makenet.utils.helper import decode_eff
 
 TRT_VERSION = trt.__version__
 TRT_MAJOR = float(".".join(TRT_VERSION.split(".")[:2]))
@@ -23,9 +27,9 @@ class Exporter:
     def __init__(self,
                  config=None,
                  classmap_file=None,
-                 max_batch_size=1,
                  min_batch_size=1,
-                 opt_batch_size=1,
+                 opt_batch_size=4,
+                 max_batch_size=8,
                  **kwargs):
         """Initialize the classification exporter.
 
@@ -42,44 +46,59 @@ class Exporter:
         else:
             raise ValueError("Unsupported data type: %s" % self._dtype)
         self.backend = "onnx"
-        self.model = None
         self.input_shape = None
         self.max_batch_size = max_batch_size
         self.min_batch_size = min_batch_size
         self.opt_batch_size = opt_batch_size
 
-    def load_model(self) -> None:
-        """Load SavedModel."""
-        if not self.config.key:
-            self.model = tf.keras.models.load_model(self.config.export_config.model_path, custom_objects=None)
-            self.model.summary()
+        if not self.config.key: # TODO(@yuw): for internal usage only
+            self._saved_model = self.config.export_config.model_path
         else:
-            raise NotImplementedError
-        self._set_input_shape()
+            self._saved_model = decode_eff(
+                str(self.config.export_config.model_path),
+                self.config.key)
     
     def _set_input_shape(self):
-        self.input_shape = tuple(self.model.layers[0].input_shape[0][1:4])
+        model = tf.keras.models.load_model(self._saved_model, custom_objects=None)
+        self.input_shape = tuple(model.layers[0].input_shape[0][1:4])
 
     def export_onnx(self) -> None:
-        """Export to ONNX"""
+        """ Convert Keras saved model into ONNX format.
+
+        Args:
+            root_dir: root directory containing the quantized Keras saved model. This is the same directory where the ONNX
+                file will be saved.
+            saved_model_dir: name of the quantized 'saved_model' directory.
+            onnx_filename: desired name to save the converted ONNX file.
+        """
+        # 1. Let TensorRT optimize QDQ nodes instead of TF
+        from tf2onnx.optimizer import _optimizers
+        updated_optimizers = copy.deepcopy(_optimizers)
+        del updated_optimizers["q_dq_optimizer"]
+        del updated_optimizers["const_dequantize_optimizer"]
+
+        # 2. Extract graph definition from SavedModel
         graph_def, inputs, outputs = tf_loader.from_saved_model(
-            self.config.export_config.model_path,
-            None,
-            None,
-            "serve",
-            ["serving_default"],
-            disable_constfold=True,)
-        # B. Convert tf2onnx and save onnx file
+            model_path=self._saved_model,
+            input_names=None,
+            output_names=None,
+            tag="serve",
+            signatures=["serving_default"]
+        )
+
+        # 3. Convert tf2onnx and save onnx file
         model_proto, _ = convert._convert_common(
             graph_def,
-            name=self.config.export_config.model_path,
+            name=self._saved_model,
             opset=13,
             input_names=inputs,
             output_names=outputs,
             output_path=self.config.export_config.output_path,
+            optimizers=updated_optimizers
         )
-        utils.save_protobuf(self.config.export_config.output_path, model_proto)
 
+        utils.save_protobuf(self.config.export_config.output_path, model_proto)
+        print("ONNX conversion Done!")
     
     def export_engine(self, verbose=True) -> None:
         """Parse the model file through TensorRT and build TRT engine
@@ -142,13 +161,18 @@ class Exporter:
                 with open(engine_path, "wb") as engine_file:
                     engine_file.write(trt_engine.serialize())
 
+    def _del(self):
+        """Remove temp files."""
+        shutil.rmtree(self._saved_model)
+
     def export(self):
         """Export to EFF and TensorRT engine."""
-        self.load_model()
+        self._set_input_shape()
         # TODO(@yuw): encrypt with EFF
         self.export_onnx()
         logger.info(f"ONNX is saved at {self.config.export_config.output_path}")
         self.export_engine()
+        self._del()
 
     def _build_profile(self, builder, network, profile_shapes, default_shape_value=1):
         """

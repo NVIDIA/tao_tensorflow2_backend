@@ -11,6 +11,7 @@ import tensorflow as tf
 from backbones.efficientnet_tf import EfficientNetB0, EfficientNetB1
 from backbones.efficientnet_tf import EfficientNetB2, EfficientNetB3
 from backbones.efficientnet_tf import EfficientNetB4, EfficientNetB5
+from backbones.resnet_tf import ResNet
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
                     level='INFO')
 logger = logging.getLogger(__name__)
@@ -29,6 +30,8 @@ mappings = {
         'block1b_project_bn', 'block2d_add', 'block3d_add', 'block5f_add', 'block7b_project_bn'],
     'efficientdet-d5': [
         'block1b_project_bn', 'block2e_add', 'block3e_add', 'block5g_add', 'block7c_project_bn'],
+    'resdet18': ['stem_activation', 'block_1b_relu', 'block_2b_relu', 'block_3b_relu', 'block_4b_relu'],
+    'resdet34': ['stem_activation', 'block_1c_relu', 'block_2d_relu', 'block_3f_relu', 'block_4c_relu'],
     }
 
 
@@ -65,7 +68,8 @@ def swish(features, use_native=True, use_hard=False):
 
 
 def build_model_base(images, model_name='efficientdet-d0',
-                     num_classes=2, freeze_blocks=None, freeze_bn=False):
+                     num_classes=2, freeze_blocks=None, freeze_bn=False,
+                     data_format='channels_last'):
     """Create a base feature network and return the features before pooling.
 
     Args:
@@ -86,15 +90,19 @@ def build_model_base(images, model_name='efficientdet-d0',
         'efficientdet-d3': EfficientNetB3,
         'efficientdet-d4': EfficientNetB4,
         'efficientdet-d5': EfficientNetB5,
+        'resdet18': ResNet,
+        'resdet34': ResNet,
     }
     if model_name not in supported_backbones.keys():
         raise ValueError("{} is not a supported arch. \
             Please choose from `efficientdet-d0` to `efficientdet-d5`.")
     model = supported_backbones[model_name](
+        nlayers=int(model_name[6:]) if 'resdet' in model_name else 0,
         add_head=False,
         input_tensor=images,
         classes=num_classes,
-        data_format="channels_last",
+        use_pooling=True,
+        data_format=data_format,
         freeze_bn=freeze_bn,
         freeze_blocks=freeze_blocks,
         use_bias=False,
@@ -123,6 +131,6 @@ def build_backbone(features, config):
     u1, u2, u3, u4, u5 = build_model_base(
         features, config.model_name,
         freeze_blocks=config.freeze_blocks,
-        freeze_bn=config.freeze_bn)
-
+        freeze_bn=config.freeze_bn,
+        data_format=config.data_format)
     return {0: features, 1: u1, 2: u2, 3: u3, 4: u4, 5: u5}
