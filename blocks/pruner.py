@@ -19,15 +19,15 @@ class Pruner(ABC):
     
     def __init__(self, cfg) -> None:
         self.cfg = cfg
-        self.model_path = cfg.prune_config.model_path
+        self.model_path = cfg.prune.model_path
         self.key = cfg.key
-        self.normalizer = cfg.prune_config.normalizer
+        self.normalizer = cfg.prune.normalizer
         self.criterion = 'L2'
-        self.granularity = cfg.prune_config.pruning_granularity
-        self.min_num_filters = cfg.prune_config.min_num_filters
-        self.equalization_criterion = cfg.prune_config.equalization_criterion
+        self.granularity = cfg.prune.granularity
+        self.min_num_filters = cfg.prune.min_num_filters
+        self.equalization_criterion = cfg.prune.equalization_criterion
         self.excluded_layers = []
-        self.verbose = cfg.prune_config.verbose
+        self.verbose = cfg.verbose
     
     @abstractmethod
     def _load_model(self):

@@ -30,11 +30,14 @@ def _get_source_id_from_encoded_image(parsed_tensors):
 class TfExampleDecoder(object):
   """Tensorflow Example proto decoder."""
 
-  def __init__(self, include_mask=False, regenerate_source_id=False):
+  def __init__(self, include_mask=False, regenerate_source_id=False,
+               include_image=False):
     self._include_mask = include_mask
+    self._include_image = include_image
     self._regenerate_source_id = regenerate_source_id
     self._keys_to_features = {
         'image/encoded': tf.FixedLenFeature((), tf.string),
+        'image/filename': tf.FixedLenFeature((), tf.string, ''),
         'image/source_id': tf.FixedLenFeature((), tf.string, ''),
         'image/height': tf.FixedLenFeature((), tf.int64, -1),
         'image/width': tf.FixedLenFeature((), tf.int64, -1),
@@ -51,6 +54,13 @@ class TfExampleDecoder(object):
           'image/object/mask':
               tf.VarLenFeature(tf.string),
       })
+    if include_image:
+      self._keys_to_features.update(
+        {
+          'image/encoded':
+              tf.FixedLenFeature((), tf.string),
+        }
+      )
 
   def _decode_image(self, parsed_tensors):
     """Decodes the image and set its static shape."""
@@ -115,6 +125,7 @@ class TfExampleDecoder(object):
     """
     parsed_tensors = tf.io.parse_single_example(
         serialized_example, self._keys_to_features)
+    
     for k in parsed_tensors:
       if isinstance(parsed_tensors[k], tf.SparseTensor):
         if parsed_tensors[k].dtype == tf.string:
@@ -124,20 +135,21 @@ class TfExampleDecoder(object):
           parsed_tensors[k] = tf.sparse_tensor_to_dense(
               parsed_tensors[k], default_value=0)
 
-    image = self._decode_image(parsed_tensors)
     boxes = self._decode_boxes(parsed_tensors)
     areas = self._decode_areas(parsed_tensors)
 
-    decode_image_shape = tf.logical_or(
-        tf.equal(parsed_tensors['image/height'], -1),
-        tf.equal(parsed_tensors['image/width'], -1))
-    image_shape = tf.cast(tf.shape(image), dtype=tf.int64)
+    if self._include_image:
+      image = self._decode_image(parsed_tensors)
+      decode_image_shape = tf.logical_or(
+          tf.equal(parsed_tensors['image/height'], -1),
+          tf.equal(parsed_tensors['image/width'], -1))
+      image_shape = tf.cast(tf.shape(image), dtype=tf.int64)
 
-    parsed_tensors['image/height'] = tf.where(decode_image_shape,
-                                              image_shape[0],
-                                              parsed_tensors['image/height'])
-    parsed_tensors['image/width'] = tf.where(decode_image_shape, image_shape[1],
-                                             parsed_tensors['image/width'])
+      parsed_tensors['image/height'] = tf.where(decode_image_shape,
+                                                image_shape[0],
+                                                parsed_tensors['image/height'])
+      parsed_tensors['image/width'] = tf.where(decode_image_shape, image_shape[1],
+                                               parsed_tensors['image/width'])
 
     is_crowds = tf.cond(
         tf.greater(tf.shape(parsed_tensors['image/object/is_crowd'])[0], 0),
@@ -154,7 +166,6 @@ class TfExampleDecoder(object):
       masks = self._decode_masks(parsed_tensors)
 
     decoded_tensors = {
-        'image': image,
         'source_id': source_id,
         'height': parsed_tensors['image/height'],
         'width': parsed_tensors['image/width'],
@@ -163,6 +174,11 @@ class TfExampleDecoder(object):
         'groundtruth_area': areas,
         'groundtruth_boxes': boxes,
     }
+    if self._include_image:
+      decoded_tensors.update({'image': image})
+    else:
+      decoded_tensors.update({'filename': parsed_tensors['image/filename']})
+
     if self._include_mask:
       decoded_tensors.update({
           'groundtruth_instance_masks': masks,

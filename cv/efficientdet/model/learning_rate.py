@@ -118,19 +118,23 @@ class SoftStartAnnealingLearningRateScheduler(tf.keras.optimizers.schedules.Lear
 
 
 def learning_rate_schedule(params, steps_per_epoch):
-  """Learning rate schedule based on global step."""
+  """Learning rate schedule based on global step.
+     Args:
+        params (TrainConfig): train config loaded by Hydra.
+        steps_per_epoch (int): Number of steps per epoch.
+  """
   supported_schedules = ['cosine', 'soft_anneal']
-  lr_warmup_step = int(params['lr_warmup_epoch'] * steps_per_epoch)
-  total_steps = int(params['num_epochs'] * steps_per_epoch)
-  lr_decay_method = params['lr_decay_method']
+  lr_warmup_step = int(params.lr_schedule.warmup_epoch * steps_per_epoch)
+  total_steps = int(params.num_epochs * steps_per_epoch)
+  lr_decay_method = str(params.lr_schedule.name)
   if lr_decay_method == 'cosine':
-    return CosineLrSchedule(params['learning_rate'],
-                            params['lr_warmup_init'], lr_warmup_step,
+    return CosineLrSchedule(params.lr_schedule.learning_rate,
+                            params.lr_schedule.warmup_init, lr_warmup_step,
                             total_steps)
   if lr_decay_method == 'soft_anneal':
     return SoftStartAnnealingLearningRateScheduler(
-      params['learning_rate'],
-      params['lr_warmup_init'],
+      params.lr_schedule.learning_rate,
+      params.lr_schedule.warmup_init,
       0.1, 0.3, # TODO(@yuw): add config
       total_steps)
 

@@ -8,31 +8,7 @@ from omegaconf import MISSING
 
 
 @dataclass
-class TrainConfig:
-    """Train config."""
-
-    momentum: float = 0.9
-    iterations_per_loop: int = 10
-    num_examples_per_epoch: int = 120000
-    train_batch_size: int = 8
-    num_epochs: int = 300
-    checkpoint: str = ""
-    tf_random_seed: int = 42
-    l1_weight_decay: float = 0.0
-    l2_weight_decay: float = 0.00004
-    amp: bool = False
-    lr_warmup_epoch: int = 5
-    lr_warmup_init: float = 0.0001
-    learning_rate: float = 0.2
-    pruned_model_path: str = ''
-    moving_average_decay: float = 0.9999
-    clip_gradients_norm: float = 10.0
-    skip_checkpoint_variables: str = ''
-    checkpoint_period: int = 10
-    optimizer: str = 'sgd'
-    image_preview: bool = True
-    qat: bool = False
-    lr_decay_method: str = 'cosine'
+class LoaderConfig:
     shuffle_buffer: int = 10000
     cycle_length: int = 32
     block_length: int = 16
@@ -40,10 +16,48 @@ class TrainConfig:
 
 
 @dataclass
+class LRConfig:
+    name: str = 'cosine' # soft_anneal
+    warmup_epoch: int = 5
+    warmup_init: float = 0.0001
+    learning_rate: float = 0.2
+
+
+@dataclass
+class OptConfig:
+    name: str = 'sgd'
+    momentum: float = 0.9
+
+
+@dataclass
+class TrainConfig:
+    """Train config."""
+    optimizer: OptConfig = OptConfig()
+    lr_schedule: LRConfig = LRConfig()
+    iterations_per_loop: int = 10
+    num_examples_per_epoch: int = 120000
+    batch_size: int = 8
+    num_epochs: int = 300
+    checkpoint: str = ""
+    tf_random_seed: int = 42
+    l1_weight_decay: float = 0.0
+    l2_weight_decay: float = 0.00004
+    amp: bool = False
+    pruned_model_path: str = ''
+    moving_average_decay: float = 0.9999
+    clip_gradients_norm: float = 10.0
+    skip_checkpoint_variables: str = ''
+    checkpoint_period: int = 10
+    image_preview: bool = True
+    qat: bool = False
+    results_dir: str = MISSING
+
+
+@dataclass
 class ModelConfig:
     """Model config."""
 
-    model_name: str = 'efficientdet-d0'
+    name: str = 'efficientdet-d0'
     aspect_ratios: str = '[(1.0, 1.0), (1.4, 0.7), (0.7, 1.4)]'
     anchor_scale: int = 4
     min_level: int = 3
@@ -56,25 +70,28 @@ class ModelConfig:
 @dataclass
 class DataConfig:
     """Data config."""
-    training_file_pattern: str = MISSING
-    validation_file_pattern: str = MISSING
-    validation_json_file: str = MISSING
+    train_tfrecords: List[str] = field(default_factory=lambda: []) # TODO
+    train_dirs: List[str] = field(default_factory=lambda: []) # TODO
+    val_tfrecords: List[str] = field(default_factory=lambda: []) # TODO
+    val_dirs: List[str] = field(default_factory=lambda: []) # TODO
+    val_json_file: str = ""
     testdev_dir: str = ''
     num_classes: int = 91
     max_instances_per_image: int = 200
     skip_crowd_during_training: bool = True
     use_fake_data: bool = False
     image_size: str = '512x512' # TODO
+    loader: LoaderConfig = LoaderConfig()
 
 
 @dataclass
 class EvalConfig:
     """Eval config."""
 
-    eval_batch_size: int = 8
+    batch_size: int = 8
     min_score_thresh: float = 0.3
     eval_epoch_cycle: int = 10
-    eval_samples: int = 5000
+    num_samples: int = 5000
     max_detections_per_image: int = 100
     label_map: str = ''
     iou_thresh: float = 0.5
@@ -104,7 +121,6 @@ class ExportConfig:
     cal_cache_file: str = ""
     cal_batch_size: int = 16
     cal_batches: int = 10
-    verbose: bool = True
 
 @dataclass
 class InferenceConfig:
@@ -124,24 +140,23 @@ class PruneConfig:
     normalizer: str = 'max'
     output_path: str = MISSING
     equalization_criterion: str = 'union'
-    pruning_granularity: int = 8
-    pruning_threshold: float = MISSING
+    granularity: int = 8
+    threshold: float = MISSING
     min_num_filters: int = 16
     excluded_layers: List[str] = field(default_factory=lambda: [])
-    verbose: bool = True
 
 @dataclass
 class ExperimentConfig:
     """Experiment config."""
 
-    train_config: TrainConfig = TrainConfig()
-    model_config: ModelConfig = ModelConfig()
-    eval_config: EvalConfig = EvalConfig()
-    data_config: DataConfig = DataConfig()
-    augmentation_config: AugmentationConfig = AugmentationConfig()
-    export_config: ExportConfig = ExportConfig()
-    inference_config: InferenceConfig = InferenceConfig()
-    prune_config: PruneConfig = PruneConfig()
-    results_dir: str = MISSING
+    train: TrainConfig = TrainConfig()
+    model: ModelConfig = ModelConfig()
+    evaluate: EvalConfig = EvalConfig()
+    data: DataConfig = DataConfig()
+    augment: AugmentationConfig = AugmentationConfig()
+    export: ExportConfig = ExportConfig()
+    inference: InferenceConfig = InferenceConfig()
+    prune: PruneConfig = PruneConfig()
     key: str = ''
     data_format: str = 'channels_last'
+    verbose: bool = False

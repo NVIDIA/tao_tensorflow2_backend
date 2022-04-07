@@ -26,15 +26,15 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         self.eval_params = eval_params
         self.ema_opt = None
         self.postpc = EfficientDetPostprocessor(self.eval_params)
-        log_dir = os.path.join(eval_params['results_dir'], 'eval')
+        log_dir = os.path.join(eval_params.train.results_dir, 'eval')
         self.file_writer = tf.summary.create_file_writer(log_dir)
-        label_map = label_utils.get_label_map(eval_params['eval_config']['label_map'])
+        label_map = label_utils.get_label_map(eval_params.evaluate.label_map)
         self.evaluator = coco_metric.EvaluationMetric(
-            filename=eval_params['data_config']['validation_json_file'], label_map=label_map)
-        self.pbar = tf.keras.utils.Progbar(eval_params['eval_config']['eval_samples'])
+            filename=eval_params.data.val_json_file, label_map=label_map)
+        self.pbar = tf.keras.utils.Progbar(eval_params.evaluate.num_samples)
 
     def set_model(self, model):
-        if self.eval_params['train_config']['moving_average_decay'] > 0:
+        if self.eval_params.train.moving_average_decay > 0:
             self.ema_opt = fetch_optimizer(model, MovingAverage)
         return super().set_model(model)
 
@@ -65,7 +65,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         return detections, labels['image_scales']
 
     def evaluate(self, epoch):
-        if self.eval_params['train_config']['moving_average_decay'] > 0:
+        if self.eval_params.train.moving_average_decay > 0:
             self.ema_opt.swap_weights() # get ema weights
         self.eval_model.set_weights(self.model.get_weights())
         self.evaluator.reset_states()
@@ -73,10 +73,10 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         for i, (images, labels) in enumerate(self.dataset):
             detections, scales = self.eval_model_fn(images, labels)
             # [id, x1, y1, x2, y2, score, class]
-            if self.eval_params['train_config']['image_preview'] and i == 0:
+            if self.eval_params.train.image_preview and i == 0:
                 bs_index = 0
                 image = np.copy(images[bs_index])
-                if self.eval_params['data_format'] == 'channels_first':
+                if self.eval_params.data_format == 'channels_first':
                     image = np.transpose(image, (1, 2, 0))
                 # decode image
                 image = vis_utils.denormalize_image(image)
@@ -119,7 +119,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
             csv_format = ",".join([str(epoch+1)] + [str(round(metric_dict[key] * 100, 2)) for key in csv_metrics])
             print(metric_dict, "csv format:", csv_format)
 
-        if self.eval_params['train_config']['moving_average_decay'] > 0:
+        if self.eval_params.train.moving_average_decay > 0:
             self.ema_opt.swap_weights() # get base weights
         
         MPI.COMM_WORLD.Barrier()

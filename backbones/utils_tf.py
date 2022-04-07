@@ -1461,8 +1461,10 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
         else:
             se = keras.layers.GlobalAveragePooling2D(
                 data_format=data_format, name=name + 'se_squeeze')(x)
-            # _, cc = se.get_shape()
-            se_shape = (1, 1, filters) if data_format == 'channels_last' else (filters, 1, 1)
+            # se_shape = (1, 1, filters) if data_format == 'channels_last' else (filters, 1, 1)
+            # TODO(@yuw): use -1 instead of filters for pruning
+            # otherwise, "Reshape/Permute is not supported after a pruned layer."
+            se_shape = (1, 1, -1) if data_format == 'channels_last' else (-1, 1, 1)
             se = keras.layers.Reshape(se_shape, name=name + 'se_reshape')(se)
         # in reduce and expand conv, set use_bias=True, following
         # https://github.com/tensorflow/models/blob/77bf83b493617df6c5cd35b8d8cf495944161d99/

@@ -1,18 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
-# Copyright 2020 Google Research. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
+# Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
 """Inference related utilities."""
 
 from __future__ import absolute_import
@@ -20,24 +6,19 @@ from __future__ import division
 # gtype import
 from __future__ import print_function
 
-import copy
 import functools
 import os
-import time
-from typing import Any, Dict, List, Text, Tuple, Union
+from typing import Text, Tuple, Union
 
 from absl import logging
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-from tensorflow.python.client import timeline  # pylint: disable=g-direct-tensorflow-import
 import yaml
 
 from cv.efficientdet.dataloader import dataloader
 from cv.efficientdet.model import anchors
-from cv.efficientdet.model import efficientdet
-from cv.efficientdet.utils import hparams_config
-from cv.efficientdet.utils import keras_utils, model_utils
+from cv.efficientdet.utils import model_utils
 from cv.efficientdet.visualize import vis_utils
 
 coco_id_mapping = {
@@ -366,7 +347,7 @@ class InferenceModel(tf.Module):
                 # Generate KITTI labels
                 kitti_txt = ""
                 for d in prediction:
-                    if d[5] >= kwargs.get('min_score_thresh', 0):
+                    if d[5] >= self.min_score_thresh:
                         kitti_txt += self.label_id_mapping[int(d[6])] + ' 0 0 0 ' + ' '.join(
                             [str(i) for i in [d[2], d[1], d[4], d[3]]]) + ' 0 0 0 0 0 0 0 ' + \
                                 str(d[5]) + '\n'

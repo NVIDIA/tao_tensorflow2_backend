@@ -1,15 +1,16 @@
-results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4'
-data_config:
-  training_file_pattern: '/home/scratch.p3/yuw/datasets/coco/train-*'
-  validation_file_pattern: '/home/scratch.p3/yuw/datasets/coco/val-*'
-  validation_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'
-train_config:
+data:
+  train_tfrecords:
+    - '/home/scratch.p3/yuw/datasets/coco/train-*'
+  val_tfrecords:
+    - '/home/scratch.p3/yuw/datasets/coco/val-*'
+  val_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'
+train:
   amp: True
   num_examples_per_epoch: 120000
   train_batch_size: 16
   checkpoint_period: 1
-eval_config:
-  eval_batch_size: 16
-  eval_samples: 500
-  # model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/emackpt-90'
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4/weights/efficientdet-d0_001.eff'
+  results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0'
+evaluate:
+  batch_size: 16
+  num_samples: 500
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0/weights/efficientdet-d0_001.eff'

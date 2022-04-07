@@ -88,7 +88,7 @@ def load_model(eff_model_path, cfg, mode='train'):
     keras_utils.restore_ckpt(
         model,
         os.path.join(ckpt_path, ckpt_name), 
-        cfg.train_config.moving_average_decay,
+        cfg.train.moving_average_decay,
         steps_per_epoch=0,
         expect_partial=True)
     # TODO(@yuw): verify train_from_epoch
