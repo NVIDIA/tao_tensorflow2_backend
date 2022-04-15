@@ -46,7 +46,7 @@ def format_mounts(mount_points):
 
 def check_image_exists(docker_image):
     """Check if the image exists locally."""
-    check_command = '{} images | grep "\\<{}\\>" >/dev/null 2>&1'.format(DOCKER_COMMAND, docker_image)
+    check_command = '{} inspect --type=image {} >/dev/null 2>&1'.format(DOCKER_COMMAND, docker_image)
     rc = subprocess.call(check_command, stdout=sys.stderr, shell=True)
     return rc == 0
 
@@ -108,7 +108,6 @@ def instantiate_dev_docker(gpus, mount_file,
     docker_image = "{}/{}@{}".format(DOCKER_REGISTRY, DOCKER_REPOSITORY, DOCKER_DIGEST)
     if tag is not None:
         docker_image = "{}/{}:{}".format(DOCKER_REGISTRY, DOCKER_REPOSITORY, tag)
-
     # Invoking the nvidia docker.
     gpu_string = get_docker_gpus_prefix(gpus)
 
