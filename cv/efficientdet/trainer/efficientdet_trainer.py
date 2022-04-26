@@ -3,6 +3,8 @@ import re
 import tensorflow as tf
 import horovod.tensorflow as hvd
 
+from cv.efficientdet.utils.keras_utils import get_mixed_precision_policy
+
 
 class EfficientDetTrainer(Trainer):
     def __init__(self, model, config=None, callbacks=None):
@@ -74,7 +76,10 @@ class EfficientDetTrainer(Trainer):
             else:
                 scaled_loss = total_loss
                 optimizer = self.model.optimizer
-        tape = hvd.DistributedGradientTape(tape)
+        compress = get_mixed_precision_policy().compute_dtype == 'float16'
+        tape = hvd.DistributedGradientTape(tape, compression=hvd.Compression.fp16 \
+            if compress else hvd.Compression.none)
+
         loss_vals['loss'] = total_loss
         loss_vals['learning_rate'] = optimizer.learning_rate(optimizer.iterations)
         trainable_vars = self._freeze_vars()

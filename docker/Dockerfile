@@ -1,4 +1,4 @@
-ARG FROM_IMAGE_NAME=gitlab-master.nvidia.com:5005/dl/dgx/tensorflow:master-py3-devel
+ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:22.03-tf2-py3
 FROM ${FROM_IMAGE_NAME}
 
 RUN apt-get update

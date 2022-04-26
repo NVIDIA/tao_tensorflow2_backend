@@ -151,55 +151,58 @@ class EfficientDetGraphSurgeon:
         onnx.save(model, output_path)
         return output_path
 
-    def update_preprocessor(self, input_shape):
+    def update_preprocessor(self, input_format, input_size, preprocessor="imagenet"):
         """
-        Update preprocessor.
-
-        Remove all the pre-processing nodes in the ONNX graph and leave only
-        the image normalization essentials.
-        :param input_shape: The input tensor shape to use for the ONNX graph.
+        Remove all the pre-processing nodes in the ONNX graph and leave only the image normalization essentials.
+        :param input_format: The input data format, either "NCHW" or "NHWC".
+        :param input_size: The input size as a comma-separated string in H,W format, e.g. "512,512".
+        :param preprocessor: The preprocessor to use, either "imagenet" for imagenet mean and stdev normalization,
+        or "scale_range" for uniform [-1,+1] range normalization.
         """
         # Update the input and output tensors shape
-        assert len(input_shape) == 4
-        for i in range(len(input_shape)):
-            input_shape[i] = int(input_shape[i])
-            assert input_shape[i] >= 1
-        input_format = None
-        if input_shape[1] == 3:
-            input_format = "NCHW"
-        if input_shape[3] == 3:
-            input_format = "NHWC"
+        # input_size = input_size.split(",")
+        assert len(input_size) == 2
+        for i in range(len(input_size)):
+            input_size[i] = int(input_size[i])
+            assert input_size[i] >= 1
         assert input_format in ["NCHW", "NHWC"]
-        self.batch_size = input_shape[0]
-        self.graph.inputs[0].shape = input_shape
+        if input_format == "NCHW":
+            self.graph.inputs[0].shape = ['N', 3, input_size[0], input_size[1]]
+        if input_format == "NHWC":
+            self.graph.inputs[0].shape = ['N', input_size[0], input_size[1], 3]
         self.graph.inputs[0].dtype = np.float32
+        self.graph.inputs[0].name = "input"
+        log.info("ONNX graph input shape: {} [{} format]".format(self.graph.inputs[0].shape, input_format))
         self.infer()
-        log.info("ONNX graph input shape: {} [{} format detected]".format(
-            self.graph.inputs[0].shape, input_format))
 
-        # Find the initial nodes of the graph, whatever the input
-        # is first connected to, and disconnect them
+        # Find the initial nodes of the graph, whatever the input is first connected to, and disconnect them
         for node in [node for node in self.graph.nodes if self.graph.inputs[0] in node.inputs]:
             node.inputs.clear()
 
         # Convert to NCHW format if needed
         input_tensor = self.graph.inputs[0]
         if input_format == "NHWC":
-            input_tensor = self.graph.transpose(
-                "preprocessor/transpose", input_tensor, [0, 3, 1, 2])
+            input_tensor = self.graph.transpose("preprocessor/transpose", input_tensor, [0, 3, 1, 2])
 
-        # RGB Normalizers. The per-channel values are given with shape [1, 3, 1, 1]
-        # for proper NCHW shape broadcasting
-        scale_val = 1 / np.asarray([255], dtype=np.float32)
-        mean_val = -1 * np.expand_dims(
-            np.asarray([0.485, 0.456, 0.406], dtype=np.float32), axis=(0, 2, 3))
-        stddev_val = 1 / np.expand_dims(
-            np.asarray([0.224, 0.224, 0.224], dtype=np.float32), axis=(0, 2, 3))
-        # y = (x * scale + mean) * stddev   -->   y = x * scale * stddev + mean * stddev
-        scale_out = self.graph.elt_const(
-            "Mul", "preprocessor/scale", input_tensor, scale_val * stddev_val)
-        mean_out = self.graph.elt_const(
-            "Add", "preprocessor/mean", scale_out, mean_val * stddev_val)
+        assert preprocessor in ["imagenet", "scale_range"]
+        preprocessed_tensor = None
+        if preprocessor == "imagenet":
+            # RGB Normalizers. The per-channel values are given with shape [1, 3, 1, 1] for proper NCHW shape broadcasting
+            scale_val = 1 / np.asarray([255], dtype=np.float32)
+            mean_val = -1 * np.expand_dims(np.asarray([0.485, 0.456, 0.406], dtype=np.float32), axis=(0, 2, 3))
+            stddev_val = 1 / np.expand_dims(np.asarray([0.229, 0.224, 0.225], dtype=np.float32), axis=(0, 2, 3))
+            # y = (x * scale + mean) * stddev   -->   y = x * scale * stddev + mean * stddev
+            scale_out = self.graph.elt_const("Mul", "preprocessor/scale", input_tensor, scale_val * stddev_val)
+            mean_out = self.graph.elt_const("Add", "preprocessor/mean", scale_out, mean_val * stddev_val)
+            preprocessed_tensor = mean_out[0]
+        if preprocessor == "scale_range":
+            # RGB Normalizers. The per-channel values are given with shape [1, 3, 1, 1] for proper NCHW shape broadcasting
+            scale_val = 2 / np.asarray([255], dtype=np.float32)
+            offset_val = np.expand_dims(np.asarray([-1, -1, -1], dtype=np.float32), axis=(0, 2, 3))
+            # y = (x * scale + mean) * stddev   -->   y = x * scale * stddev + mean * stddev
+            scale_out = self.graph.elt_const("Mul", "preprocessor/scale", input_tensor, scale_val)
+            range_out = self.graph.elt_const("Add", "preprocessor/range", scale_out, offset_val)
+            preprocessed_tensor = range_out[0]
 
         # Find the first stem conv node of the graph, and connect the normalizer directly to it
         stem_name = None
@@ -208,13 +211,62 @@ class EfficientDetGraphSurgeon:
         stem = [node for node in self.graph.nodes
                 if node.op == "Conv" and stem_name in node.name][0]
         log.info("Found {} node '{}' as stem entry".format(stem.op, stem.name))
-        stem.inputs[0] = mean_out[0]
+        stem.inputs[0] = preprocessed_tensor
 
-        # Reshape nodes tend to update the batch dimension to a fixed value of 1,
-        # they should use the batch size instead
+        self.infer()
+
+    def update_shapes(self):
+        # Reshape nodes have the batch dimension as a fixed value of 1, they should use the batch size instead
+        # Output-Head reshapes use [1, -1, C], corrected reshape value should be [-1, V, C]
         for node in [node for node in self.graph.nodes if node.op == "Reshape"]:
-            if type(node.inputs[1]) == gs.Constant and node.inputs[1].values[0] == 1:
-                node.inputs[1].values[0] = self.batch_size
+            shape_in = node.inputs[0].shape
+            if shape_in is None or len(shape_in) not in [4,5]: # TFOD graphs have 5-dim inputs on this Reshape
+                continue
+            if type(node.inputs[1]) != gs.Constant:
+                continue
+            shape_out = node.inputs[1].values
+            if len(shape_out) != 3 or shape_out[0] != 1 or shape_out[1] != -1:
+                continue
+            volume = shape_in[1] * shape_in[2] * shape_in[3] / shape_out[2]
+            if len(shape_in) == 5:
+                volume *= shape_in[4]
+            shape_corrected = np.asarray([-1, volume, shape_out[2]], dtype=np.int64)
+            node.inputs[1] = gs.Constant("{}_shape".format(node.name), values=shape_corrected)
+            log.info("Updating Output-Head Reshape node {} to {}".format(node.name, node.inputs[1].values))
+
+        # Other Reshapes only need to change the first dim to -1, as long as there are no -1's already
+        for node in [node for node in self.graph.nodes if node.op == "Reshape"]:
+            if type(node.inputs[1]) != gs.Constant or node.inputs[1].values[0] != 1 or -1 in node.inputs[1].values:
+                continue
+            node.inputs[1].values[0] = -1
+            log.info("Updating Reshape node {} to {}".format(node.name, node.inputs[1].values))
+
+        # Resize nodes try to calculate the output shape dynamically, it's more optimal to pre-compute the shape
+        if self.api == "AutoML":
+            # Resize on a BiFPN will always be 2x, but grab it from the graph just in case
+            for node in [node for node in self.graph.nodes if node.op == "Resize"]:
+                if len(node.inputs) < 4 or node.inputs[0].shape is None:
+                    continue
+                scale_h, scale_w = None, None
+                if type(node.inputs[3]) == gs.Constant:
+                    # The sizes input is already folded
+                    if len(node.inputs[3].values) != 4:
+                        continue
+                    scale_h = node.inputs[3].values[2] / node.inputs[0].shape[2]
+                    scale_w = node.inputs[3].values[3] / node.inputs[0].shape[3]
+                if type(node.inputs[3]) == gs.Variable:
+                    # The sizes input comes from Shape+Slice+Concat
+                    concat = node.i(3)
+                    if concat.op != "Concat":
+                        continue
+                    if type(concat.inputs[1]) != gs.Constant or len(concat.inputs[1].values) != 2:
+                        continue
+                    scale_h = concat.inputs[1].values[0] / node.inputs[0].shape[2]
+                    scale_w = concat.inputs[1].values[1] / node.inputs[0].shape[3]
+                scales = np.asarray([1, 1, scale_h, scale_w], dtype=np.float32)
+                del node.inputs[3]
+                node.inputs[2] = gs.Constant(name="{}_scales".format(node.name), values=scales)
+                log.info("Updating Resize node {} to {}".format(node.name, scales))
 
         self.infer()
 
@@ -222,34 +274,17 @@ class EfficientDetGraphSurgeon:
         """
         Updates the graph.
 
-        To replace certain nodes in the main EfficientDet network:
-        - the global average pooling nodes are optimized when running for TFOD models.
-        - the nearest neighbor resize ops in the FPN are replaced by a TRT plugin nodes
-        when running in legacy mode.
+        To replace certain nodes in the main EfficientDet network
         """
-        if self.legacy_plugins:
-            self.infer()
-            count = 1
-            for node in [node for node in self.graph.nodes
-                         if node.op == "Resize" and node.attrs['mode'] == "nearest"]:
-                # Older versions of TensorRT do not understand nearest neighbor resize ops,
-                # so a plugin is used to perform this operation.
-                self.graph.plugin(
-                    op="ResizeNearest_TRT",
-                    name="resize_nearest_{}".format(count),
-                    inputs=[node.inputs[0]],
-                    outputs=node.outputs,
-                    attrs={
-                        'plugin_version': "1",
-                        # All resize ops in the EfficientDet FPN should have
-                        # an upscale factor of 2.0
-                        'scale': 2.0,
-                    })
-                node.outputs.clear()
-                log.info(
-                    "Replaced '{}' ({}) with a ResizeNearest_TRT plugin node".format(
-                        node.name, count))
-                count += 1
+        pass
+        # for node in self.graph.nodes:
+        #     if node.op == "Cast":
+        #         # Make the input tensor of the Cast node connect directly to the consumers of the Cast node
+        #         inp_tensor = node.inputs[0]
+        #         inp_tensor.outputs = inp_tensor.outputs + node.outputs[0].outputs
+        #         node.outputs[0].outputs.clear()
+
+        # self.graph.cleanup()
 
     def update_nms(self, threshold=None, detections=None):
         """
@@ -340,8 +375,6 @@ class EfficientDetGraphSurgeon:
         num_detections = int(nms_node.inputs[2].values) if detections is None else detections
         iou_threshold = float(nms_node.inputs[3].values)
         score_threshold = float(nms_node.inputs[4].values) if threshold is None else threshold
-        print(nms_node.inputs)
-
         num_classes = class_net.i().inputs[1].values[-1]
         normalized = False
 
@@ -353,82 +386,50 @@ class EfficientDetGraphSurgeon:
         nms_op = None
         nms_attrs = None
         nms_inputs = None
-        if not self.legacy_plugins:
-            # EfficientNMS TensorRT Plugin
-            # Fusing the decoder will always be faster, so this is
-            # the default NMS method supported. In this case,
-            # three inputs are given to the NMS TensorRT node:
-            # - The box predictions (from the Box Net node found above)
-            # - The class predictions (from the Class Net node found above)
-            # - The default anchor coordinates (from the extracted anchor constants)
-            # As the original tensors from EfficientDet will be used,
-            # the NMS code type is set to 1 (Center+Size),
-            # because this is the internal box coding format used by the network.
-            anchors_tensor = extract_anchors_tensor(box_net_split)
-            nms_inputs = [box_net_tensor, class_net_tensor, anchors_tensor]
-            nms_op = "EfficientNMS_TRT"
-            nms_attrs = {
-                'plugin_version': "1",
-                'background_class': -1,
-                'max_output_boxes': num_detections,
-                # Keep threshold to at least 0.01 for better efficiency
-                'score_threshold': max(0.01, score_threshold),
-                'iou_threshold': iou_threshold,
-                'score_activation': True,
-                'box_coding': 1,
-            }
-            nms_output_classes_dtype = np.int32
-        else:
-            # BatchedNMS TensorRT Plugin
-            # Alternatively, the ONNX box decoder can be used. This will be slower,
-            # as more element-wise and non-fused
-            # operations will need to be performed by TensorRT. However,
-            # it's easier to implement, so it is shown here
-            # for reference. In this case, only two inputs are given to the NMS TensorRT node:
-            # - The box predictions (already decoded through the ONNX Box Decoder node)
-            # - The class predictions (from the Class Net node found above,
-            # but also needs to pass through a sigmoid)
-            # This time, the box predictions will have the coordinate coding from
-            # the ONNX box decoder, which matches what the BatchedNMS plugin uses.
 
-            if self.api == "AutoML":
-                # The default boxes tensor has shape [batch_size, number_boxes, 4].
-                # This will insert a "1" dimension
-                # in the second axis, to become [batch_size, number_boxes, 1, 4],
-                # the shape that BatchedNMS expects.
-                box_decoder_tensor = self.graph.unsqueeze(
-                    "nms/box_net_reshape", box_decoder_tensor, axes=[2])[0]
-
-            # BatchedNMS also expects the classes tensor to be already activated,
-            # in the case of EfficientDet, this is through a Sigmoid op.
-            class_net_tensor = self.graph.sigmoid("nms/class_net_sigmoid", class_net_tensor)[0]
-
-            nms_inputs = [box_decoder_tensor, class_net_tensor]
-            nms_op = "BatchedNMS_TRT"
-            nms_attrs = {
-                'plugin_version': "1",
-                'shareLocation': True,
-                'backgroundLabelId': -1,
-                'numClasses': num_classes,
-                'topK': 1024,
-                'keepTopK': num_detections,
-                'scoreThreshold': score_threshold,
-                'iouThreshold': iou_threshold,
-                'isNormalized': normalized,
-                'clipBoxes': False,
-                # 'scoreBits': 10,
-            }
-            nms_output_classes_dtype = np.float32
+        # EfficientNMS TensorRT Plugin
+        # Fusing the decoder will always be faster, so this is
+        # the default NMS method supported. In this case,
+        # three inputs are given to the NMS TensorRT node:
+        # - The box predictions (from the Box Net node found above)
+        # - The class predictions (from the Class Net node found above)
+        # - The default anchor coordinates (from the extracted anchor constants)
+        # As the original tensors from EfficientDet will be used,
+        # the NMS code type is set to 1 (Center+Size),
+        # because this is the internal box coding format used by the network.
+        anchors_tensor = extract_anchors_tensor(box_net_split)
+        nms_inputs = [box_net_tensor, class_net_tensor, anchors_tensor]
+        nms_op = "EfficientNMS_TRT"
+        nms_attrs = {
+            'plugin_version': "1",
+            'background_class': -1,
+            'max_output_boxes': num_detections,
+            # Keep threshold to at least 0.01 for better efficiency
+            'score_threshold': max(0.01, score_threshold),
+            'iou_threshold': iou_threshold,
+            'score_activation': True,
+            'box_coding': 1,
+        }
+        nms_output_classes_dtype = np.int32
 
         # NMS Outputs
-        nms_output_num_detections = gs.Variable(
-            name="num_detections", dtype=np.int32, shape=[self.batch_size, 1])
+        # nms_output_num_detections = gs.Variable(
+        #     name="num_detections", dtype=np.int32, shape=[self.batch_size, 1])
+        # nms_output_boxes = gs.Variable(name="detection_boxes", dtype=np.float32,
+        #                                shape=[self.batch_size, num_detections, 4])
+        # nms_output_scores = gs.Variable(name="detection_scores", dtype=np.float32,
+        #                                 shape=[self.batch_size, num_detections])
+        # nms_output_classes = gs.Variable(name="detection_classes", dtype=nms_output_classes_dtype,
+        #                                  shape=[self.batch_size, num_detections])
+
+        nms_output_num_detections = gs.Variable(name="num_detections",
+                                                dtype=np.int32, shape=['N', 1])
         nms_output_boxes = gs.Variable(name="detection_boxes", dtype=np.float32,
-                                       shape=[self.batch_size, num_detections, 4])
+                                       shape=['N', num_detections, 4])
         nms_output_scores = gs.Variable(name="detection_scores", dtype=np.float32,
-                                        shape=[self.batch_size, num_detections])
+                                        shape=['N', num_detections])
         nms_output_classes = gs.Variable(name="detection_classes", dtype=nms_output_classes_dtype,
-                                         shape=[self.batch_size, num_detections])
+                                         shape=['N', num_detections])
 
         nms_outputs = [
             nms_output_num_detections,

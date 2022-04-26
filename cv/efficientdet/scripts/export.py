@@ -52,7 +52,7 @@ def run_export(cfg, results_dir=None, key=None):
     # Load model from graph json
     model = helper.load_model(cfg['export_config']['model_path'], cfg, MODE)
     model.summary()
-    input_shape = list(model.layers[0].input_shape[0][1:4])
+    input_shape = list(model.layers[0].input_shape[0][1:3])
     max_batch_size = cfg.export_config.max_batch_size
     # fake_images = tf.keras.Input(shape=[None, None, None], batch_size=max_batch_size)
     export_model = inference.InferenceModel(model, config.image_size, params, max_batch_size)
@@ -66,11 +66,13 @@ def run_export(cfg, results_dir=None, key=None):
     print("Generating ONNX.....")
     # convert to onnx
     effdet_gs = EfficientDetGraphSurgeon(output_dir, legacy_plugins=False)
-    effdet_gs.update_preprocessor([max_batch_size] + input_shape)
+    effdet_gs.update_preprocessor('NHWC', input_shape, preprocessor="imagenet")
+    effdet_gs.update_shapes()
     effdet_gs.update_network()
     effdet_gs.update_nms()
     # TODO(@yuw): convert onnx to eff
     onnx_file = effdet_gs.save(cfg.export_config.output_path)
+    # assert 0
     print("Generating Engine.....")
     # convert to engine
     if cfg.export_config.engine_file is not None or cfg.export_config.data_type == 'int8':
