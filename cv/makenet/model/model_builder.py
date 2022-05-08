@@ -22,13 +22,15 @@ from backbones.efficientnet_tf import (
 )
 from backbones.resnet_tf import ResNet
 from backbones.mobilenet_tf import MobileNet, MobileNetV2
+from cv.makenet.utils.helper import load_model
+
 
 SUPPORTED_ARCHS = [
     "resnet", "efficientnet_b0", "efficientnet_b1",
     "efficientnet_b2", "efficientnet_b3",
     "efficientnet_b4", "efficientnet_b5",
     "efficientnet_b6", "efficientnet_b7",
-    "mobilenet_v1", "mobilenet_v2"
+    "mobilenet_v1", "mobilenet_v2", "byom"
 ]
 
 
@@ -60,7 +62,7 @@ def get_resnet(nlayers=18,
                all_projections=True,
                use_batch_norm=True,
                use_pooling=False,
-               use_imagenet_head=False,
+               retain_head=False,
                use_bias=True,
                freeze_bn=False,
                freeze_blocks=None):
@@ -75,12 +77,34 @@ def get_resnet(nlayers=18,
                          activation_type='relu',
                          all_projections=all_projections,
                          use_pooling=use_pooling,
-                         add_head=use_imagenet_head,
+                         add_head=retain_head,
                          nclasses=nclasses,
                          freeze_blocks=freeze_blocks,
                          freeze_bn=freeze_bn,
                          use_bias=use_bias)
-    if not use_imagenet_head:
+    if not retain_head:
+        final_model = add_dense_head(nclasses, final_model,
+                                     data_format, kernel_regularizer,
+                                     bias_regularizer)
+    return final_model
+
+
+def get_byom(model_config_path=None,
+             input_shape=(3, 224, 224),
+             freeze_blocks=None,
+             passphrase=None,
+             data_format='channels_first',
+             nclasses=1000,
+             kernel_regularizer=None,
+             bias_regularizer=None,
+             retain_head=False):
+    """Wrapper to get Bring Your Own Model from json file."""
+
+    # @scha: For BYOM, we don't have the code for the model archicture.
+    # As a result, we must load from eff file
+    final_model = load_model(model_config_path, passphrase=passphrase)
+
+    if not retain_head:
         final_model = add_dense_head(nclasses, final_model,
                                      data_format, kernel_regularizer,
                                      bias_regularizer)
@@ -94,7 +118,7 @@ def get_efficientnet_b0(
     use_bias=False,
     kernel_regularizer=None,
     bias_regularizer=None,
-    use_imagenet_head=False,
+    retain_head=False,
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
@@ -105,7 +129,7 @@ def get_efficientnet_b0(
     final_model = EfficientNetB0(
         input_tensor=input_image,
         input_shape=input_shape,
-        add_head=use_imagenet_head,
+        add_head=retain_head,
         data_format=data_format,
         use_bias=use_bias,
         kernel_regularizer=kernel_regularizer,
@@ -116,7 +140,7 @@ def get_efficientnet_b0(
         stride16=stride16,
         activation_type=activation_type
     )
-    if not use_imagenet_head:
+    if not retain_head:
         final_model = add_dense_head(nclasses,
                                      final_model,
                                      data_format,
@@ -133,7 +157,7 @@ def get_efficientnet_b1(
     use_bias=False,
     kernel_regularizer=None,
     bias_regularizer=None,
-    use_imagenet_head=False,
+    retain_head=False,
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
@@ -144,7 +168,7 @@ def get_efficientnet_b1(
     final_model = EfficientNetB1(
         input_tensor=input_image,
         input_shape=input_shape,
-        add_head=use_imagenet_head,
+        add_head=retain_head,
         data_format=data_format,
         use_bias=use_bias,
         kernel_regularizer=kernel_regularizer,
@@ -155,7 +179,7 @@ def get_efficientnet_b1(
         stride16=stride16,
         activation_type=activation_type
     )
-    if not use_imagenet_head:
+    if not retain_head:
         final_model = add_dense_head(nclasses,
                                      final_model,
                                      data_format,
@@ -172,7 +196,7 @@ def get_efficientnet_b2(
     use_bias=False,
     kernel_regularizer=None,
     bias_regularizer=None,
-    use_imagenet_head=False,
+    retain_head=False,
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
@@ -183,7 +207,7 @@ def get_efficientnet_b2(
     final_model = EfficientNetB2(
         input_tensor=input_image,
         input_shape=input_shape,
-        add_head=use_imagenet_head,
+        add_head=retain_head,
         data_format=data_format,
         use_bias=use_bias,
         kernel_regularizer=kernel_regularizer,
@@ -194,7 +218,7 @@ def get_efficientnet_b2(
         stride16=stride16,
         activation_type=activation_type
     )
-    if not use_imagenet_head:
+    if not retain_head:
         final_model = add_dense_head(nclasses,
                                      final_model,
                                      data_format,
@@ -211,7 +235,7 @@ def get_efficientnet_b3(
     use_bias=False,
     kernel_regularizer=None,
     bias_regularizer=None,
-    use_imagenet_head=False,
+    retain_head=False,
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
@@ -222,7 +246,7 @@ def get_efficientnet_b3(
     final_model = EfficientNetB3(
         input_tensor=input_image,
         input_shape=input_shape,
-        add_head=use_imagenet_head,
+        add_head=retain_head,
         data_format=data_format,
         use_bias=use_bias,
         kernel_regularizer=kernel_regularizer,
@@ -233,7 +257,7 @@ def get_efficientnet_b3(
         stride16=stride16,
         activation_type=activation_type
     )
-    if not use_imagenet_head:
+    if not retain_head:
         final_model = add_dense_head(nclasses,
                                      final_model,
                                      data_format,
@@ -250,7 +274,7 @@ def get_efficientnet_b4(
     use_bias=False,
     kernel_regularizer=None,
     bias_regularizer=None,
-    use_imagenet_head=False,
+    retain_head=False,
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
@@ -261,7 +285,7 @@ def get_efficientnet_b4(
     final_model = EfficientNetB4(
         input_tensor=input_image,
         input_shape=input_shape,
-        add_head=use_imagenet_head,
+        add_head=retain_head,
         data_format=data_format,
         use_bias=use_bias,
         kernel_regularizer=kernel_regularizer,
@@ -272,7 +296,7 @@ def get_efficientnet_b4(
         stride16=stride16,
         activation_type=activation_type
     )
-    if not use_imagenet_head:
+    if not retain_head:
         final_model = add_dense_head(nclasses,
                                      final_model,
                                      data_format,
@@ -289,7 +313,7 @@ def get_efficientnet_b5(
     use_bias=False,
     kernel_regularizer=None,
     bias_regularizer=None,
-    use_imagenet_head=False,
+    retain_head=False,
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
@@ -300,7 +324,7 @@ def get_efficientnet_b5(
     final_model = EfficientNetB5(
         input_tensor=input_image,
         input_shape=input_shape,
-        add_head=use_imagenet_head,
+        add_head=retain_head,
         data_format=data_format,
         use_bias=use_bias,
         kernel_regularizer=kernel_regularizer,
@@ -311,7 +335,7 @@ def get_efficientnet_b5(
         stride16=stride16,
         activation_type=activation_type
     )
-    if not use_imagenet_head:
+    if not retain_head:
         final_model = add_dense_head(nclasses,
                                      final_model,
                                      data_format,
@@ -328,7 +352,7 @@ def get_efficientnet_b6(
     use_bias=False,
     kernel_regularizer=None,
     bias_regularizer=None,
-    use_imagenet_head=False,
+    retain_head=False,
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
@@ -339,7 +363,7 @@ def get_efficientnet_b6(
     final_model = EfficientNetB6(
         input_tensor=input_image,
         input_shape=input_shape,
-        add_head=use_imagenet_head,
+        add_head=retain_head,
         data_format=data_format,
         use_bias=use_bias,
         kernel_regularizer=kernel_regularizer,
@@ -350,7 +374,7 @@ def get_efficientnet_b6(
         stride16=stride16,
         activation_type=activation_type
     )
-    if not use_imagenet_head:
+    if not retain_head:
         final_model = add_dense_head(nclasses,
                                      final_model,
                                      data_format,
@@ -367,7 +391,7 @@ def get_efficientnet_b7(
     use_bias=False,
     kernel_regularizer=None,
     bias_regularizer=None,
-    use_imagenet_head=False,
+    retain_head=False,
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
@@ -378,7 +402,7 @@ def get_efficientnet_b7(
     final_model = EfficientNetB7(
         input_tensor=input_image,
         input_shape=input_shape,
-        add_head=use_imagenet_head,
+        add_head=retain_head,
         data_format=data_format,
         use_bias=use_bias,
         kernel_regularizer=kernel_regularizer,
@@ -389,7 +413,7 @@ def get_efficientnet_b7(
         stride16=stride16,
         activation_type=activation_type
     )
-    if not use_imagenet_head:
+    if not retain_head:
         final_model = add_dense_head(nclasses,
                                      final_model,
                                      data_format,
@@ -405,7 +429,7 @@ def get_mobilenet(input_shape=None,
                   use_batch_norm=None,
                   kernel_regularizer=None,
                   bias_regularizer=None,
-                  use_imagenet_head=False,
+                  retain_head=False,
                   use_bias=True,
                   freeze_bn=False,
                   freeze_blocks=None,
@@ -415,7 +439,7 @@ def get_mobilenet(input_shape=None,
     final_model = MobileNet(inputs=input_image,
                             input_shape=input_shape,
                             dropout=0.0,
-                            add_head=use_imagenet_head,
+                            add_head=retain_head,
                             stride=stride,
                             data_format=data_format,
                             kernel_regularizer=kernel_regularizer,
@@ -425,7 +449,7 @@ def get_mobilenet(input_shape=None,
                             use_bias=use_bias,
                             freeze_bn=freeze_bn,
                             freeze_blocks=freeze_blocks)
-    if not use_imagenet_head:
+    if not retain_head:
         final_model = add_dense_head(nclasses,
                                      final_model,
                                      data_format,
@@ -440,7 +464,7 @@ def get_mobilenet_v2(input_shape=None,
                      use_batch_norm=None,
                      kernel_regularizer=None,
                      bias_regularizer=None,
-                     use_imagenet_head=False,
+                     retain_head=False,
                      all_projections=False,
                      use_bias=True,
                      freeze_bn=False,
@@ -450,7 +474,7 @@ def get_mobilenet_v2(input_shape=None,
     input_image = Input(shape=input_shape)
     final_model = MobileNetV2(inputs=input_image,
                               input_shape=input_shape,
-                              add_head=use_imagenet_head,
+                              add_head=retain_head,
                               stride=stride,
                               data_format=data_format,
                               kernel_regularizer=kernel_regularizer,
@@ -462,7 +486,7 @@ def get_mobilenet_v2(input_shape=None,
                               freeze_bn=freeze_bn,
                               freeze_blocks=freeze_blocks)
 
-    if not use_imagenet_head:
+    if not retain_head:
         final_model = add_dense_head(nclasses,
                                      final_model,
                                      data_format,
@@ -483,7 +507,8 @@ model_choose = {"resnet": get_resnet,
                 "efficientnet_b6": get_efficientnet_b6,
                 "efficientnet_b7": get_efficientnet_b7,
                 "mobilenet_v1": get_mobilenet,
-                "mobilenet_v2": get_mobilenet_v2}
+                "mobilenet_v2": get_mobilenet_v2,
+                "byom": get_byom}
 
 
 def get_model(arch="resnet",
@@ -492,7 +517,7 @@ def get_model(arch="resnet",
               nclasses=1000,
               kernel_regularizer=None,
               bias_regularizer=None,
-              use_imagenet_head=False,
+              retain_head=False,
               freeze_blocks=None,
               **kwargs):
     """Wrapper to choose feature extractor given backbone name."""
@@ -518,6 +543,9 @@ def get_model(arch="resnet",
         kwa['use_bias'] = kwargs['use_bias']
         kwa['freeze_bn'] = kwargs['freeze_bn']
         kwa['all_projections'] = kwargs['all_projections']
+    elif arch == 'byom':
+        kwa['model_config_path'] = kwargs['model_config_path']
+        kwa['passphrase'] = kwargs['passphrase'] 
     else:
         raise ValueError('Unsupported architecture: {}'.format(arch))
 
@@ -526,7 +554,7 @@ def get_model(arch="resnet",
                                data_format=data_format,
                                kernel_regularizer=kernel_regularizer,
                                bias_regularizer=bias_regularizer,
-                               use_imagenet_head=use_imagenet_head,
+                               retain_head=retain_head,
                                freeze_blocks=freeze_blocks,
                                **kwa)
     return model

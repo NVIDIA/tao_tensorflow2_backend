@@ -4,6 +4,9 @@
 import os
 
 import cv2
+import importlib
+import json
+
 from tensorflow import keras
 import tensorflow as tf
 from numba import jit, njit
@@ -284,6 +287,56 @@ def decode_eff(eff_model_path, passphrase=None):
     return saved_model_path
 
 
+def deserialize_custom_layers(art):
+    """Deserialize the code for custom layer from EFF.
+
+    Args:
+        art (eff.core.artifact.Artifact): Artifact restored from EFF Archive.
+
+    Returns:
+        final_dict (dict): Dictionary representing CUSTOM_OBJS used in the EFF stored Keras model.
+    """
+    # Get class.
+    source_code = art.get_content()
+    spec = importlib.util.spec_from_loader('helper', loader=None)
+    helper = importlib.util.module_from_spec(spec)
+    exec(source_code, helper.__dict__) # noqa pylint: disable=W0122
+
+    final_dict = {}
+    # Get class name from attributes.
+    class_names = art["class_names"]
+    for cn in class_names:
+        final_dict[cn] = getattr(helper, cn)
+    return final_dict
+
+
+def decode_tltb(eff_path, passphrase=None):
+    """Restore Keras Model from EFF Archive.
+
+    Args:
+        eff_path (str): Path to the eff file.
+        passphrase (str): Key to load EFF file.
+
+    Returns:
+        model (keras.models.Model): Loaded keras model.
+        EFF_CUSTOM_OBJS (dict): Dictionary of custom layers from the eff file.
+    """
+    model_name = os.path.basename(eff_path).split(".")[0]
+    with Archive.restore_from(restore_path=eff_path, passphrase=passphrase) as restored_effa:
+        EFF_CUSTOM_OBJS = deserialize_custom_layers(restored_effa.artifacts['custom_layers.py'])
+        # EFF_CUSTOM_OBJS = {}
+
+        art = restored_effa.artifacts['{}.hdf5'.format(model_name)]
+        weights, m = art.get_content()
+
+    m = json.loads(m)
+    with keras.utils.CustomObjectScope(EFF_CUSTOM_OBJS):
+        model = keras.models.model_from_config(m, custom_objects=EFF_CUSTOM_OBJS)
+        model.set_weights(weights)
+
+    return model, EFF_CUSTOM_OBJS
+
+
 def load_model(model_path, passphrase=None):
     """Load hdf5 or EFF model.
 
@@ -295,11 +348,14 @@ def load_model(model_path, passphrase=None):
         Keras model: Loaded model
     """
     assert os.path.exists(model_path), "Pretrained model not found at {}".format(model_path)
-    assert os.path.splitext(model_path)[-1] in ['.hdf5', '.eff'], \
-        "Only .hdf5 and .tlt are supported."
+    assert os.path.splitext(model_path)[-1] in ['.hdf5', '.eff', '.tltb'], \
+        "Only .hdf5, .tlt, .tltb are supported."
     if model_path.endswith('.eff'):
         model_path = decode_eff(model_path, passphrase)
-    return tf.keras.models.load_model(model_path)
+        return tf.keras.models.load_model(model_path)
+    if model_path.endswith('.tltb'):
+        model, _ = decode_tltb(model_path, passphrase)
+        return model
 
 
 def zipdir(src, zip_path):
