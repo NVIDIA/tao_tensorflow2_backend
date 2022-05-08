@@ -1,0 +1,16 @@
+results_dir: '/home/scratch.p3/sean/tlt3_experiments/imagenet/tf2_byom_res18'
+key: nvidia_tlt
+data_format: 'channels_first'
+# init_epoch: 16
+train_config:
+  qat: False
+  # pretrained_model_path: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18/weights/resnet18_bn_003.eff'
+  train_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
+  val_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
+  batch_size_per_gpu: 64
+  n_epochs: 300
+model_config:
+  arch: 'byom'
+  retain_head: False
+  byom_model: '/home/projects2_metropolis/tmp/sean/converted_models_classification/resnet18_timm/resnet18.tltb'
+

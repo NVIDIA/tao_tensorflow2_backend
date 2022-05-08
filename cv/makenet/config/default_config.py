@@ -80,9 +80,10 @@ class ModelConfig:
     all_projections: bool = False
     freeze_bn: bool = False
     freeze_blocks: List[int] = field(default_factory=lambda: []) # TODO
-    use_imagenet_head: bool = False
+    retain_head: bool = False
     dropout: float = 0.0
     resize_interpolation_method: str = 'bilinear' # or 'bicubic'
+    byom_model: str = ''
 
 
 @dataclass
