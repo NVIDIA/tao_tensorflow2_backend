@@ -19,11 +19,11 @@ from eff.core import Archive, File
 from eff.callbacks import BinaryContentCallback
 
 from common.utils import (
+    CUSTOM_OBJS,
     MultiGPULearningRateScheduler,
     SoftStartCosineAnnealingScheduler,
     StepLRScheduler
 )
-from backbones.utils_tf import swish
 
 opt_dict = {
     'sgd': keras.optimizers.SGD,
@@ -205,13 +205,14 @@ def color_augmentation(
     return Image.fromarray(x_img.astype(np.uint8), "RGB")
 
 
-def setup_config(model, reg_config, bn_config=None):
+def setup_config(model, reg_config, bn_config=None, custom_objs=None):
     """Wrapper for setting up BN and regularizer.
 
     Args:
         model (keras Model): a Keras model
         reg_config (dict): reg_config dict
         bn_config (dict): config to override BatchNormalization parameters
+        custom_objs (dict): Custom objects for serialization and deserialization.
     Return:
         A new model with overridden config.
     """
@@ -255,7 +256,11 @@ def setup_config(model, reg_config, bn_config=None):
 
                 if reg_type == 'none':
                     layer_config['config']['kernel_regularizer'] = None
-    with keras.utils.CustomObjectScope({'swish': swish}):
+
+    if custom_objs:
+        CUSTOM_OBJS.update(custom_objs)
+
+    with keras.utils.CustomObjectScope(CUSTOM_OBJS):
         updated_model = keras.models.Model.from_config(mconfig)
     updated_model.set_weights(model.get_weights())
 
@@ -324,7 +329,7 @@ def decode_tltb(eff_path, passphrase=None):
     model_name = os.path.basename(eff_path).split(".")[0]
     with Archive.restore_from(restore_path=eff_path, passphrase=passphrase) as restored_effa:
         EFF_CUSTOM_OBJS = deserialize_custom_layers(restored_effa.artifacts['custom_layers.py'])
-        # EFF_CUSTOM_OBJS = {}
+        model_name = restored_effa.metadata['model_name']
 
         art = restored_effa.artifacts['{}.hdf5'.format(model_name)]
         weights, m = art.get_content()
@@ -334,7 +339,12 @@ def decode_tltb(eff_path, passphrase=None):
         model = keras.models.model_from_config(m, custom_objects=EFF_CUSTOM_OBJS)
         model.set_weights(weights)
 
-    return model, EFF_CUSTOM_OBJS
+    result = {
+        "model": model,
+        "custom_objs": EFF_CUSTOM_OBJS,
+        "model_name": model_name
+    }
+    return result
 
 
 def load_model(model_path, passphrase=None):
@@ -354,7 +364,8 @@ def load_model(model_path, passphrase=None):
         model_path = decode_eff(model_path, passphrase)
         return tf.keras.models.load_model(model_path)
     if model_path.endswith('.tltb'):
-        model, _ = decode_tltb(model_path, passphrase)
+        out_dict = decode_tltb(model_path, passphrase)
+        model = out_dict['model']
         return model
 
 

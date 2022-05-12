@@ -22,6 +22,7 @@ from tensorflow.keras.regularizers import l1, l2
 from tensorflow.keras.utils import CustomObjectScope
 
 import tensorflow as tf
+from backbones.utils_tf import swish
 
 
 ENCRYPTION_OFF = False
@@ -30,6 +31,8 @@ ap_mode_dict = {0: "sample", 1: "integrate"}
 
 # Define 1MB for filesize calculation.
 MB = 2 << 20
+
+CUSTOM_OBJS = {'swish': swish,}
 
 
 def raise_deprecation_warning(task, subtask, args):
