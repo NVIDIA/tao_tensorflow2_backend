@@ -115,10 +115,12 @@ class InferConfig:
     model_path: str = ''
     image_dir: str = ''
 
+@dataclass
 class PruneConfig:
     """Pruning config."""
     
     model_path: str = MISSING
+    byom_model_path: str = MISSING
     normalizer: str = 'max'
     output_path: str = MISSING
     equalization_criterion: str = 'union'
@@ -137,6 +139,7 @@ class ExperimentConfig:
     eval_config: EvalConfig = EvalConfig()
     export_config: ExportConfig = ExportConfig()
     infer_config: InferConfig = InferConfig()
+    prune_config: PruneConfig = PruneConfig()
     results_dir: str = MISSING
     key: str = 'nvidia_tlt'
     init_epoch: int = 1

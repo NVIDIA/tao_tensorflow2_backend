@@ -142,6 +142,8 @@ class PruneMinWeight(Prune):
         excluded_layers (list): list of names of layers that should not be pruned. Typical usage
             is for output layers of conv nets where the number of output channels must match
             a number of classes.
+        byom_custom_layer (list): Option to specify BYOM custom layers. These layers will be
+            included in the pass-through layers.
     """
 
     def __init__(
@@ -153,6 +155,7 @@ class PruneMinWeight(Prune):
         threshold,
         excluded_layers=None,
         equalization_criterion="union",
+        byom_custom_layer=None
     ):
         """Initialization routine."""
         self._normalizer = normalizer
@@ -166,6 +169,9 @@ class PruneMinWeight(Prune):
             excluded_layers = []
         self._excluded_layers = excluded_layers
         self._explored_layers = {}
+        if byom_custom_layer is None:
+            byom_custom_layer = []
+        self.byom_custom_layers = byom_custom_layer
 
     @staticmethod
     def _get_channel_index(data_format):
@@ -445,7 +451,10 @@ class PruneMinWeight(Prune):
         retained_neuron_count = len(retained_idx)
         # apply equalization for depth-wise conv.
         dw_layers = []
-        dw_layers = find_prunable_parent(dw_layers, layer, True)
+        dw_layers = find_prunable_parent(dw_layers,
+                                         layer,
+                                         True,
+                                         byom_custom_layers=self.byom_custom_layers)
         self._update_equalization_groups(dw_layers + [layer])
         previous_layer = dw_layers[0]
         previous_stat = self._explored_layers[previous_layer.name].explored_stat
@@ -512,7 +521,7 @@ class PruneMinWeight(Prune):
     def _explore_elmtwise_layer(self, layer):
         eltwise_prunable_inputs = []
         eltwise_prunable_inputs = find_prunable_parent(
-            eltwise_prunable_inputs, layer
+            eltwise_prunable_inputs, layer, byom_custom_layers=self.byom_custom_layers
         )
         logger.debug(
             "At explore_elmtwise_layer: Prunable parents at layer {}".format(layer.name)
@@ -959,6 +968,10 @@ class PruneMinWeight(Prune):
             ]:
                 # Explore conv2d traspose layer for retainable indices.
                 retained_idx = self._explore_conv_transpose_layer(layer)
+            elif 'helper' in str(type(layer)) or type(layer) == keras.layers.Lambda:
+                # @scha: BYOM custom layers are in format of <class 'helper.CustomLayer'>
+                # Make sure that the previous layer was unpruned.
+                pass
             elif type(layer) in [
                 keras.layers.Activation,
                 keras.layers.BatchNormalization,
@@ -1048,7 +1061,13 @@ class PruneMinWeight(Prune):
             outbound_nodes = layer._outbound_nodes
             if not outbound_nodes:
                 model_outputs.append(outputs)
-            layers_to_explore.extend([node.outbound_layer for node in outbound_nodes])
+
+            # @scha: in BYOM there are cases where the duplicate nodes are appended
+            # As a result, the while loop in explore never ended
+            for node in outbound_nodes:
+                if node.outbound_layer not in layers_to_explore:
+                    layers_to_explore.append(node.outbound_layer)
+
             names_to_explore = [l.name for l in layers_to_explore]
             logger.debug(
                 "Updating layers to explore at {} to: {}".format(
@@ -1213,6 +1232,10 @@ class PruneMinWeight(Prune):
                     # but, propogate retained indices from the previous layer.
                     retained_idx = self._get_previous_retained_idx(layer)
                     self._explored_layers[layer.name].retained_idx = retained_idx
+                elif 'helper' in str(type(layer)) or type(layer) == keras.layers.Lambda:
+                    # @scha: BYOM custom layers are in format of <class 'helper.CustomLayer'>
+                    retained_idx = self._get_previous_retained_idx(layer)
+                    self._explored_layers[layer.name].retained_idx = retained_idx
                 elif type(layer) in [keras.layers.InputLayer]:
                     pass
                 elif type(layer) == keras.layers.TimeDistributed:
@@ -1330,6 +1353,7 @@ def prune(
     layer_config_overrides=None,
     equalization_criterion="union",
     output_layers_with_outbound_nodes=None,
+    byom_custom_layer=None
 ):
     """Prune a model.
 
@@ -1379,6 +1403,8 @@ def prune(
             wise op layer. Options are [arithmetic_mean, geometric_mean, union, intersection].
         output_layers_with_outbound_nodes (list): Option to specify intermediate output layers
                 that have `outbound_nodes`.
+        byom_custom_layer (list): Option to specify BYOM custom layers. These layers will be
+                pass-through.
     Returns:
         model (Model): the pruned model.
     """
@@ -1396,6 +1422,7 @@ def prune(
         threshold,
         equalization_criterion=equalization_criterion,
         excluded_layers=excluded_layers,
+        byom_custom_layer=byom_custom_layer
     )
 
     return pruner.prune(model, layer_config_overrides, output_layers_with_outbound_nodes)
@@ -1469,7 +1496,11 @@ def get_L2_norm(kernels, layer):
     return norm
 
 
-def find_prunable_parent(prunable_parents, layer, skip_root=False, visited=None):
+def find_prunable_parent(prunable_parents,
+                         layer,
+                         skip_root=False,
+                         visited=None,
+                         byom_custom_layers=None):
     """Recursive function to find the first prunable parent in the current branch.
 
     Args:
@@ -1479,10 +1510,17 @@ def find_prunable_parent(prunable_parents, layer, skip_root=False, visited=None)
         skip_root(bool): Whether or not to skip the root layer(the root of the recursion tree).
             This is useful for depthwise conv case, because the current layer is prunable,
             but we want to find its parent that is prunable rather than returning itself.
+        byom_custom_layers (list): List of layers from BYOM to be added to TRAVERSABLE_LAYERS.
     Return:
         A list of keras layers which are prunable inputs to the given layer.
     """
     visited = visited or {}
+
+    if byom_custom_layers:
+        assert isinstance(byom_custom_layers, list), \
+            f"Invalid data type for byom_custom_layers, {type(byom_custom_layers)}"
+        TRAVERSABLE_LAYERS.extend(byom_custom_layers)
+
     # exit if you have encountered a prunable parent.
     if (type(layer) in [keras.layers.Conv2D,
                         keras.layers.Dense,
@@ -1520,5 +1558,9 @@ def find_prunable_parent(prunable_parents, layer, skip_root=False, visited=None)
         else:
             # Skip the Input layers if there are multiple parents.
             if type(l) not in [keras.layers.InputLayer]:
-                visited[l] = find_prunable_parent(prunable_parents, l, False, visited)
+                visited[l] = find_prunable_parent(prunable_parents,
+                                                  l,
+                                                  False,
+                                                  visited,
+                                                  byom_custom_layers)
     return list(set(prunable_parents))
