@@ -22,7 +22,7 @@ from backbones.efficientnet_tf import (
 )
 from backbones.resnet_tf import ResNet
 from backbones.mobilenet_tf import MobileNet, MobileNetV2
-from cv.makenet.utils.helper import load_model
+from cv.makenet.utils.helper import decode_tltb
 
 
 SUPPORTED_ARCHS = [
@@ -100,9 +100,13 @@ def get_byom(model_config_path=None,
              retain_head=False):
     """Wrapper to get Bring Your Own Model from json file."""
 
-    # @scha: For BYOM, we don't have the code for the model archicture.
+    # For BYOM, we don't have the code for the model archicture.
     # As a result, we must load from eff file
-    final_model = load_model(model_config_path, passphrase=passphrase)
+    out_dict = decode_tltb(model_config_path, passphrase=passphrase)
+    final_model = out_dict['model']
+
+    # Rename the model to be more meaningful
+    final_model._name = out_dict['model_name']
 
     if not retain_head:
         final_model = add_dense_head(nclasses, final_model,
