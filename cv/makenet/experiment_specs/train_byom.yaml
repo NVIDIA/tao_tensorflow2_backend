@@ -4,13 +4,26 @@ data_format: 'channels_first'
 # init_epoch: 16
 train_config:
   qat: False
-  # pretrained_model_path: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18/weights/resnet18_bn_003.eff'
   train_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   val_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
-  batch_size_per_gpu: 64
-  n_epochs: 300
+  preprocess_mode: 'torch'
+  batch_size_per_gpu: 50
+  n_epochs: 150
+  n_workers: 40
+  optim_config:
+    optimizer: 'sgd'
+    lr: 0.01
+    decay: 0.0
+    momentum: 0.9
+    nesterov: False
+  lr_config:
+    scheduler: 'cosine'
+    learning_rate: 0.04
+    soft_start: 0.0
+  enable_color_augmentation: True
+  mixup_alpha: 0.2
 model_config:
+  resize_interpolation_method: 'bicubic'
   arch: 'byom'
   retain_head: False
-  byom_model: '/home/projects2_metropolis/tmp/sean/converted_models_classification/resnet18_timm/resnet18.tltb'
-
+  byom_model: '/home/projects2_metropolis/tmp/sean/converted_models_classification/mobilenetv3_large_100/mobilenetv3_large_100.tltb'
