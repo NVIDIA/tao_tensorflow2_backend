@@ -133,7 +133,7 @@ def run_evaluate(cfg):
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
-    config_name="eval_byom", schema=ExperimentConfig
+    config_name="eval", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for continuous training of MakeNet application.

@@ -34,6 +34,7 @@ from cv.makenet.utils import preprocess_crop  # noqa pylint: disable=unused-impo
 from cv.makenet.utils.helper import (
     build_lr_scheduler,
     build_optimizer,
+    decode_tltb,
     load_model,
     initialize,
     setup_config)
@@ -257,13 +258,20 @@ def run_experiment(cfg, results_dir=None,
         freeze_blocks=cfg['model_config']['freeze_blocks'],
         **ka)
 
+    # @scha: Load CUSTOM_OBJS from BYOM
+    if cfg['model_config']['arch'] in ["byom"]:
+        custom_objs = decode_tltb(ka['model_config_path'], ka['passphrase'])['custom_objs']
+    else:
+        custom_objs = {}
+
     # Set up BN and regularizer config
     bn_config = None
     reg_config = cfg['train_config']['reg_config']
     final_model = setup_config(
         final_model,
         reg_config,
-        bn_config=bn_config
+        bn_config=bn_config,
+        custom_objs=custom_objs
     )
     
     if cfg['train_config']['pretrained_model_path']:
@@ -293,9 +301,9 @@ def run_experiment(cfg, results_dir=None,
                         bn_config=bn_config
                     )
     if cfg['train_config']['qat']:
-        # qdq_cases = [EfficientNetQDQCase(), ResNetQDQCase()] \
-        #     if 'efficientnet' in cfg['model_config']['arch'] else [ResNetQDQCase()]
-        # final_model = quantize_model(final_model, custom_qdq_cases=qdq_cases)
+        qdq_cases = [EfficientNetQDQCase(), ResNetQDQCase()] \
+            if 'efficientnet' in cfg['model_config']['arch'] else [ResNetQDQCase()]
+        final_model = quantize_model(final_model, custom_qdq_cases=qdq_cases)
         pass
     # Printing model summary
     final_model.summary()
