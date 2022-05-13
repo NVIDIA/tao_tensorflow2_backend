@@ -13,6 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 """Data loader and processing."""
+import os
 from absl import logging
 import tensorflow as tf
 
@@ -241,15 +242,28 @@ class CocoDataset(Dataset):
   """COCO Dataset."""
 
   def __init__(self,
-               file_pattern,
+               data_sources,
                is_training,
                use_fake_data=False,
-               max_instances_per_image=None):
-    self._file_pattern = file_pattern
+               max_instances_per_image=None,
+               sampling='uniform'):
+    """Dataloader for COCO format dataset.
+
+    Args:
+        data_sources (DataSource): data source for train/val set.
+        is_training (bool): training phase.
+        use_fake_data (bool, optional): Whether to use fake data. Defaults to False.
+        max_instances_per_image (int, optional): Max number of instances to detect per image.
+        sampling (str, optional): sampling method. Defaults to 'uniform'.
+    """
+    self._data_sources = data_sources
     self._is_training = is_training
     self._use_fake_data = use_fake_data
     # COCO has 100 limit, but users may set different values for custom dataset.
     self._max_instances_per_image = max_instances_per_image or 100
+    assert sampling in ['uniform', 'proportional'], \
+      f"Sampling method {sampling} is not supported."
+    self._sampling = sampling
 
   @tf.autograph.experimental.do_not_convert
   def dataset_parser(self, value, example_decoder, anchor_labeler, params):
@@ -306,19 +320,6 @@ class CocoDataset(Dataset):
           indices = tf.where(tf.logical_not(data['groundtruth_is_crowd']))
           classes = tf.gather_nd(classes, indices)
           boxes = tf.gather_nd(boxes, indices)
-
-        if params.get('grid_mask', None):
-          from aug import gridmask  # pylint: disable=g-import-not-at-top
-          image, boxes = gridmask.gridmask(image, boxes)
-
-        if params.get('autoaugment_policy', None):
-          from aug import autoaugment  # pylint: disable=g-import-not-at-top
-          if params['autoaugment_policy'] == 'randaug':
-            image, boxes = autoaugment.distort_image_with_randaugment(
-                image, boxes, num_layers=1, magnitude=15)
-          else:
-            image, boxes = autoaugment.distort_image_with_autoaugment(
-                image, boxes, params['autoaugment_policy'])
 
       input_processor = DetectionInputProcessor(image, params['image_size'],
                                                 boxes, classes)
@@ -410,56 +411,86 @@ class CocoDataset(Dataset):
     anchor_labeler = anchors.AnchorLabeler(input_anchors, params['num_classes'])
     example_decoder = tf_example_decoder.TfExampleDecoder(
         include_mask='segmentation' in params['heads'],
-        regenerate_source_id=params['regenerate_source_id']
+        regenerate_source_id=params['regenerate_source_id'],
+        include_image=True, # TODO(@yuw): make it configurable!!
     )
 
     batch_size = batch_size or params['batch_size']
-    dataset = tf.data.Dataset.list_files(self._file_pattern, shuffle=params['shuffle_file'])
-    if self._is_training:
-      dataset = dataset.shard(get_world_size(), get_rank())
-      dataset.shuffle(buffer_size=1024)
+    datasets = []
+    weights = []
+    for file_pattern, image_dir in self._data_sources:
+      dataset = tf.data.Dataset.list_files(file_pattern, shuffle=params['shuffle_file'])
+      if self._is_training:
+        dataset = dataset.shard(get_world_size(), get_rank())
+        dataset.shuffle(buffer_size=1024)
 
-    # Prefetch data from files.
-    def _prefetch_dataset(filename):
+      # Prefetch data from files.
+      def _prefetch_dataset(filename):
+        if params.get('dataset_type', None) == 'sstable':
+          pass
+        else:
+          dataset = tf.data.TFRecordDataset(filename).prefetch(1)
+        return dataset
+
+      dataset = dataset.interleave(
+          _prefetch_dataset, cycle_length=params['cycle_length'], # cycle_length=32
+          block_length=params['block_length'], # block_length=16
+          num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
+      dataset = dataset.with_options(self.dataset_options)
+      if self._is_training:
+        dataset = dataset.shuffle(
+          buffer_size=params['shuffle_buffer'],
+          reshuffle_each_iteration=True,)
+      # Parse the fetched records to input tensors for model function.
+      # pylint: disable=g-long-lambda
       if params.get('dataset_type', None) == 'sstable':
-        pass
+        map_fn = lambda key, value: self.dataset_parser(value, example_decoder,
+                                                        anchor_labeler, params)
       else:
-        dataset = tf.data.TFRecordDataset(filename).prefetch(1)
-      return dataset
+        map_fn = lambda value: self.dataset_parser(value, example_decoder,
+                                                   anchor_labeler, params)
+      # pylint: enable=g-long-lambda
+      dataset = dataset.map(
+          map_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+      # dataset = dataset.prefetch(batch_size)
+      if self._sampling and len(self._data_sources) > 1:
+        dataset = dataset.repeat()
+      datasets.append(dataset)
+      weights.append(1 if (not image_dir or image_dir == '/') else len(os.listdir(image_dir)))
 
-    dataset = dataset.interleave(
-        _prefetch_dataset, cycle_length=params['cycle_length'], # cycle_length=32
-        block_length=params['block_length'], # block_length=16
-        num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-    dataset = dataset.with_options(self.dataset_options)
-    if self._is_training:
-      dataset = dataset.shuffle(
-        buffer_size=params['shuffle_buffer'],
-        reshuffle_each_iteration=True,)
-
-
-    # Parse the fetched records to input tensors for model function.
-    # pylint: disable=g-long-lambda
-    if params.get('dataset_type', None) == 'sstable':
-      map_fn = lambda key, value: self.dataset_parser(value, example_decoder,
-                                                      anchor_labeler, params)
+    if not self._sampling or len(self._data_sources) == 1 or not self._is_training:
+        print("No Sampling")
+        combined = datasets[0]
+        for dataset in datasets[1:]:
+            combined = combined.concatenate(dataset)
+    elif self._sampling == 'proportional':
+        print("Use Proportional Sampling")
+        total = sum(weights)
+        weights = [w / total for w in weights]
+        print(weights)
+        combined = tf.data.Dataset.sample_from_datasets(
+            datasets, weights=weights
+        )
+    elif self._sampling == 'uniform':
+        print("Use Uniform Sampling")
+        weights = [1.0/len(weights)] * len(weights)
+        print(weights)
+        combined = tf.data.Dataset.sample_from_datasets(
+            datasets, weights=weights
+        )
     else:
-      map_fn = lambda value: self.dataset_parser(value, example_decoder,
-                                                 anchor_labeler, params)
-    # pylint: enable=g-long-lambda
-    dataset = dataset.map(
-        map_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    # dataset = dataset.prefetch(batch_size)
-    dataset = dataset.batch(batch_size, drop_remainder=params['drop_remainder'])
-    dataset = dataset.map(
+        raise ValueError("You shouldn't be here!")
+
+    combined = combined.batch(batch_size, drop_remainder=params['drop_remainder'])
+    combined = combined.map(
         lambda *args: self.process_example(params, batch_size, *args))
-    dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+    combined = combined.prefetch(tf.data.experimental.AUTOTUNE)
     if self._is_training:
-      dataset = dataset.repeat()
+      combined = combined.repeat()
     if self._use_fake_data:
       # Turn this dataset into a semi-fake dataset which always loop at the
       # first batch. This reduces variance in performance and is useful in
       # testing.
-      dataset = dataset.take(1).cache().repeat()
-    return dataset
+      combined = combined.take(1).cache().repeat()
+    return combined

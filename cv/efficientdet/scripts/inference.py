@@ -55,45 +55,45 @@ def infer_tlt(cfg, label_id_mapping, min_score_thresh):
     tf.autograph.set_verbosity(0)
     # Parse and update hparams
     MODE = 'infer'
-    config = hparams_config.get_detection_config(cfg['model_config']['model_name'])
+    config = hparams_config.get_detection_config(cfg.model.name)
     config.update(generate_params_from_cfg(config, cfg, mode='infer'))
     params = config.as_dict()
-    image_dir = cfg['inference_config']['image_dir']
     initialize(config, training=False)
-
+    if not os.path.exists(cfg.inference.output_dir):
+        os.makedirs(cfg.inference.output_dir, exist_ok=True)
     # Load model from graph json
-    model = helper.load_model(cfg['inference_config']['model_path'], cfg, MODE)
+    model = helper.load_model(cfg.inference.model_path, cfg, MODE)
 
     # TODO(@yuw): amp changes dtype?
     infer_model = inference.InferenceModel(model, config.image_size, params,
-                                           cfg.inference_config.batch_size,
+                                           cfg.inference.batch_size,
                                            label_id_mapping=label_id_mapping,
                                            min_score_thresh=min_score_thresh,
                                            max_boxes_to_draw=100) # TODO(@yuw): make it configurable
-    imgpath_list = [os.path.join(image_dir, imgname)
-                    for imgname in sorted(os.listdir(image_dir))
+    imgpath_list = [os.path.join(cfg.inference.image_dir, imgname)
+                    for imgname in sorted(os.listdir(cfg.inference.image_dir))
                     if os.path.splitext(imgname)[1].lower()
                     in supported_img_format]
-    for image_paths in batch_generator(imgpath_list, cfg.inference_config.batch_size):
+    for image_paths in batch_generator(imgpath_list, cfg.inference.batch_size):
         infer_model.visualize_detections(
             image_paths,
-            cfg.inference_config.output_dir,
-            cfg.inference_config.dump_label)
+            cfg.inference.output_dir,
+            cfg.inference.dump_label)
     print("Inference finished.")
 
 
 def infer_trt(cfg, label_id_mapping, min_score_thresh):
     """Run trt inference."""
-    output_dir = os.path.realpath(cfg.inference_config.output_dir)
+    output_dir = os.path.realpath(cfg.inference.output_dir)
     os.makedirs(output_dir, exist_ok=True)
     trt_infer = inference_trt.TensorRTInfer(
-        cfg.inference_config.model_path,
+        cfg.inference.model_path,
         label_id_mapping,
         min_score_thresh)
     trt_infer.visualize_detections(
-        cfg.inference_config.image_dir,
-        cfg.inference_config.output_dir,
-        cfg.inference_config.dump_label)
+        cfg.inference.image_dir,
+        cfg.inference.output_dir,
+        cfg.inference.dump_label)
     print("Finished Processing")
 
 
@@ -106,15 +106,15 @@ def main(cfg: ExperimentConfig):
     """Wrapper function for EfficientDet inference.
     """
     label_id_mapping = {}
-    if cfg.eval_config.label_map:
-        label_id_mapping = get_label_dict(cfg.eval_config.label_map)
+    if cfg.evaluate.label_map:
+        label_id_mapping = get_label_dict(cfg.evaluate.label_map)
 
-    if cfg.inference_config.model_path.endswith('.engine'):
+    if cfg.inference.model_path.endswith('.engine'):
         print("Running inference with TensorRT engine...")
-        infer_trt(cfg, label_id_mapping, cfg.eval_config.min_score_thresh or 0.4)
-    elif cfg.inference_config.model_path.endswith('.eff'):
+        infer_trt(cfg, label_id_mapping, cfg.evaluate.min_score_thresh or 0.4)
+    elif cfg.inference.model_path.endswith('.eff'):
         print("Running inference with saved_model...")
-        infer_tlt(cfg, label_id_mapping, cfg.eval_config.min_score_thresh or 0.4)
+        infer_tlt(cfg, label_id_mapping, cfg.evaluate.min_score_thresh or 0.4)
     else:
         # TODO(@yuw): add internal inference for un-encrypted?
         raise ValueError("Only .engine and .eff models are supported for inference.")

@@ -34,7 +34,7 @@ class EfficientDetPostprocessor(Postprocessor):
         use_pyfunc=True):
 
         """A legacy interface for generating [id, x, y, w, h, score, class]."""
-        _, width = model_utils.parse_image_size(self.params['data_config']['image_size'])
+        _, width = model_utils.parse_image_size(self.params.data.image_size)
 
         original_image_widths = tf.expand_dims(image_scales, -1) * width
 
@@ -58,7 +58,7 @@ class EfficientDetPostprocessor(Postprocessor):
                         classes[index],
                         tf.slice(image_ids, [index], [1]),
                         tf.slice(image_scales, [index], [1]),
-                        self.params['data_config']['num_classes'],
+                        self.params.data.num_classes,
                         nms_configs['max_output_size'],
                     ], tf.float32)
                 detections_bs.append(detections)
@@ -134,7 +134,7 @@ class EfficientDetPostprocessor(Postprocessor):
             boxes_i, scores_i, classes_i = element[0], element[1], element[2]
             nms_boxes_cls, nms_scores_cls, nms_classes_cls = [], [], []
             nms_valid_len_cls = []
-            for cid in range(self.params['data_config']['num_classes']):
+            for cid in range(self.params.data.num_classes):
                 indices = tf.where(tf.equal(classes_i, cid))
                 if indices.shape[0] == 0:
                     continue
@@ -150,7 +150,7 @@ class EfficientDetPostprocessor(Postprocessor):
                 nms_valid_len_cls.append(nms_valid_len)
 
             # Pad zeros and select topk.
-            max_output_size = self.params['eval_config'].get('max_detections_per_image', 100)
+            max_output_size = self.params['evaluate'].get('max_detections_per_image', 100)
             nms_boxes_cls = tf.pad(
                 tf.concat(nms_boxes_cls, 0), [[0, max_output_size], [0, 0]])
             nms_scores_cls = tf.pad(
@@ -189,7 +189,7 @@ class EfficientDetPostprocessor(Postprocessor):
             A tuple (boxes, scores, classes, valid_lens), where valid_lens is a scalar
             denoting the valid length of boxes/scores/classes outputs.
         """
-        eval_config= self.params['eval_config']
+        eval_config= self.params['evaluate']
         method = 'hard' # nms_configs['method']
         max_output_size = eval_config['max_detections_per_image']
 
@@ -238,12 +238,12 @@ class EfficientDetPostprocessor(Postprocessor):
             A tuple of (boxes, scores, classes).
         """
         # get boxes by apply bounding box regression to anchors.
-        eval_anchors = anchors.Anchors(self.params['model_config']['min_level'],
-                                       self.params['model_config']['max_level'],
-                                       self.params['model_config']['num_scales'],
-                                       eval(self.params['model_config']['aspect_ratios']),
-                                       self.params['model_config']['anchor_scale'],
-                                       self.params['data_config']['image_size'])
+        eval_anchors = anchors.Anchors(self.params['model']['min_level'],
+                                       self.params['model']['max_level'],
+                                       self.params['model']['num_scales'],
+                                       eval(self.params['model']['aspect_ratios']),
+                                       self.params['model']['anchor_scale'],
+                                       self.params['data']['image_size'])
 
         cls_outputs, box_outputs = self.merge_class_box_level_outputs(
             cls_outputs, box_outputs)
@@ -284,12 +284,12 @@ class EfficientDetPostprocessor(Postprocessor):
 
         cls_outputs_all, box_outputs_all = [], []
         batch_size = tf.shape(cls_outputs[0])[0]
-        for level in range(0, self.params['model_config']['max_level'] - self.params['model_config']['min_level'] + 1):
+        for level in range(0, self.params.model.max_level - self.params.model.min_level + 1):
             if self.params['data_format'] == 'channels_first':
                 cls_outputs[level] = tf.transpose(cls_outputs[level], [0, 2, 3, 1])
                 box_outputs[level] = tf.transpose(box_outputs[level], [0, 2, 3, 1])
             cls_outputs_all.append(
-                tf.reshape(cls_outputs[level], [batch_size, -1, self.params['data_config']['num_classes']]))
+                tf.reshape(cls_outputs[level], [batch_size, -1, self.params.data.num_classes]))
             box_outputs_all.append(tf.reshape(box_outputs[level], [batch_size, -1, 4]))
         return tf.concat(cls_outputs_all, 1), tf.concat(box_outputs_all, 1)
 
@@ -297,9 +297,9 @@ class EfficientDetPostprocessor(Postprocessor):
                          box_outputs: T) -> Tuple[T, T, T, T]:
         """Pick the topk class and box outputs."""
         batch_size = tf.shape(cls_outputs)[0]
-        num_classes = self.params['data_config']['num_classes']
+        num_classes = self.params['data']['num_classes']
 
-        max_nms_inputs = self.params['eval_config'].get('max_nms_inputs', 0)
+        max_nms_inputs = self.params['evaluate'].get('max_nms_inputs', 0)
         if max_nms_inputs > 0:
             # Prune anchors and detections to only keep max_nms_inputs.
             # Due to some issues, top_k is currently slow in graph model.
@@ -328,3 +328,4 @@ class EfficientDetPostprocessor(Postprocessor):
             box_outputs_topk = box_outputs
 
         return cls_outputs_topk, box_outputs_topk, classes, indices
+    

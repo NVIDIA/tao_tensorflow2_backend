@@ -28,7 +28,7 @@ os.environ["TF_CPP_VMODULE"] = 'non_max_suppression_op=0,generate_box_proposals_
 supported_img_format = ['.jpg', '.jpeg', '.JPG', '.JPEG', '.png', '.PNG']
 
 
-def run_export(cfg, results_dir=None, key=None):
+def run_export(cfg):
     """Launch EfficientDet export."""
     # disable_eager_execution()
     tf.autograph.set_verbosity(0)
@@ -41,19 +41,19 @@ def run_export(cfg, results_dir=None, key=None):
 
     # Parse and update hparams
     MODE = 'export'
-    config = hparams_config.get_detection_config(cfg['model_config']['model_name'])
+    config = hparams_config.get_detection_config(cfg.model.name)
     config.update(generate_params_from_cfg(config, cfg, mode='export'))
     params = config.as_dict()
 
     # TODO(@yuw): change to EFF
-    assert str(cfg.export_config.output_path).endswith('.onnx'), "ONNX!!!"
-    output_dir = os.path.dirname(cfg.export_config.output_path)
+    assert str(cfg.export.output_path).endswith('.onnx'), "ONNX!!!"
+    output_dir = os.path.dirname(cfg.export.output_path)
 
     # Load model from graph json
-    model = helper.load_model(cfg['export_config']['model_path'], cfg, MODE)
+    model = helper.load_model(cfg.export.model_path, cfg, MODE)
     model.summary()
     input_shape = list(model.layers[0].input_shape[0][1:3])
-    max_batch_size = cfg.export_config.max_batch_size
+    max_batch_size = cfg.export.max_batch_size
     # fake_images = tf.keras.Input(shape=[None, None, None], batch_size=max_batch_size)
     export_model = inference.InferenceModel(model, config.image_size, params, max_batch_size)
     export_model.infer = tf.function(export_model.infer)
@@ -71,22 +71,22 @@ def run_export(cfg, results_dir=None, key=None):
     effdet_gs.update_network()
     effdet_gs.update_nms()
     # TODO(@yuw): convert onnx to eff
-    onnx_file = effdet_gs.save(cfg.export_config.output_path)
-    # assert 0
+    onnx_file = effdet_gs.save(cfg.export.output_path)
+
     print("Generating Engine.....")
     # convert to engine
-    if cfg.export_config.engine_file is not None or cfg.export_config.data_type == 'int8':
+    if cfg.export.engine_file is not None or cfg.export.data_type == 'int8':
 
-        output_engine_path = cfg.export_config.engine_file
-        builder = EngineBuilder(cfg.export_config.verbose, workspace=cfg.export_config.max_workspace_size)
+        output_engine_path = cfg.export.engine_file
+        builder = EngineBuilder(cfg.verbose, workspace=cfg.export.max_workspace_size)
         builder.create_network(onnx_file, batch_size=max_batch_size)
         builder.create_engine(
             output_engine_path,
-            cfg.export_config.data_type,
-            cfg.export_config.cal_image_dir,
-            cfg.export_config.cal_cache_file,
-            cfg.export_config.cal_batch_size * cfg.export_config.cal_batches,
-            cfg.export_config.cal_batch_size)
+            cfg.export.data_type,
+            cfg.export.cal_image_dir,
+            cfg.export.cal_cache_file,
+            cfg.export.cal_batch_size * cfg.export.cal_batches,
+            cfg.export.cal_batch_size)
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -97,9 +97,7 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def main(cfg: ExperimentConfig):
     """Wrapper function for EfficientDet exporter.
     """
-    run_export(cfg=cfg,
-               results_dir=cfg.results_dir,
-               key=cfg.key)
+    run_export(cfg=cfg)
 
 
 if __name__ == '__main__':

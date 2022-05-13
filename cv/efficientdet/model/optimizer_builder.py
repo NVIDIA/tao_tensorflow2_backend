@@ -126,16 +126,20 @@ class HvdMovingAverage(MovingAverage):
 
 
 def get_optimizer(params, steps_per_epoch):
-  """Get optimizer."""
+  """Get optimizer.
+     Args:
+        params (TrainConfig): train config loaded by Hydra.
+        steps_per_epoch (int): Number of steps per epoch.
+  """
   lr = learning_rate.learning_rate_schedule(params, steps_per_epoch)
-  if params['optimizer'].lower() == 'sgd':
+  if params.optimizer.name.lower() == 'sgd':
     logging.info('Use SGD optimizer')
     optimizer = tf.keras.optimizers.SGD(
-        lr, momentum=params['momentum'])
+        lr, momentum=params.optimizer.momentum)
   else:
     raise ValueError('optimizer should be sgd')
 
-  moving_average_decay = params['moving_average_decay']
+  moving_average_decay = params.moving_average_decay
   if moving_average_decay is not None and moving_average_decay > 0.0:
     optimizer = HvdMovingAverage(optimizer, average_decay=moving_average_decay, dynamic_decay=True)
 

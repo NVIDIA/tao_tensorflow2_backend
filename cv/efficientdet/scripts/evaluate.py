@@ -9,7 +9,7 @@ import horovod.tensorflow.keras as hvd
 
 from cv.efficientdet.config.hydra_runner import hydra_runner
 from cv.efficientdet.config.default_config import ExperimentConfig
-from cv.efficientdet.dataloader import dataloader
+from cv.efficientdet.dataloader import dataloader, datasource
 from cv.efficientdet.processor.postprocessor import EfficientDetPostprocessor
 from cv.efficientdet.utils import coco_metric, label_utils
 from cv.efficientdet.utils import helper, hparams_config
@@ -17,7 +17,7 @@ from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank
 
 
-def run_experiment(cfg, results_dir, key):
+def run_experiment(cfg):
     """Run evaluation."""
     hvd.init()
     gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -27,31 +27,34 @@ def run_experiment(cfg, results_dir, key):
         tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
     MODE = 'eval'
     # Parse and update hparams
-    config = hparams_config.get_detection_config(cfg['model_config']['model_name'])
+    config = hparams_config.get_detection_config(cfg.model.name)
     config.update(generate_params_from_cfg(config, cfg, mode=MODE))
 
     # Set up dataloader
+    eval_sources = datasource.DataSource(
+        cfg.data.val_tfrecords,
+        cfg.data.val_dirs)
     eval_dl = dataloader.CocoDataset(
-        cfg['data_config']['validation_file_pattern'],
+        eval_sources,
         is_training=False,
         max_instances_per_image=config.max_instances_per_image)
     eval_dataset = eval_dl(
         config.as_dict(),
-        batch_size=cfg['eval_config']['eval_batch_size'])
+        batch_size=cfg.evaluate.batch_size)
 
-    num_samples = (cfg['eval_config']['eval_samples'] + get_world_size() - 1) // get_world_size()
-    num_samples = (num_samples + cfg['eval_config']['eval_batch_size'] - 1) // cfg['eval_config']['eval_batch_size']
-    cfg['eval_config']['eval_samples'] = num_samples
+    num_samples = (cfg.evaluate.num_samples + get_world_size() - 1) // get_world_size()
+    num_samples = (num_samples + cfg.evaluate.batch_size - 1) // cfg.evaluate.batch_size
+    cfg.evaluate.num_samples = num_samples
     eval_dataset = eval_dataset.shard(get_world_size(), get_rank()).take(num_samples)
 
     # Load model from graph json
-    model = helper.load_model(cfg['eval_config']['model_path'], cfg, MODE)
+    model = helper.load_model(cfg.evaluate.model_path, cfg, MODE)
 
     # evaluation
     postpc = EfficientDetPostprocessor(cfg)
-    label_map = label_utils.get_label_map(cfg['eval_config']['label_map'])
+    label_map = label_utils.get_label_map(cfg.evaluate.label_map)
     evaluator = coco_metric.EvaluationMetric(
-        filename=cfg['data_config']['validation_json_file'], label_map=label_map)
+        filename=cfg.data.val_json_file, label_map=label_map)
 
     @tf.function
     def eval_model_fn(images, labels):
@@ -111,9 +114,7 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for EfficientDet evaluation.
     """
-    run_experiment(cfg=cfg,
-                   results_dir=cfg.results_dir,
-                   key=cfg.key)
+    run_experiment(cfg)
 
 
 if __name__ == '__main__':
