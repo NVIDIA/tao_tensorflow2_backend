@@ -46,7 +46,7 @@ def add_dense_head(nclasses, base_model, data_format, kernel_regularizer, bias_r
     # updated per TF2 documentation (https://www.tensorflow.org/guide/mixed_precision)
     output = Dense(nclasses, name='predictions_dense',
                    kernel_regularizer=kernel_regularizer, bias_regularizer=bias_regularizer)(output)
-    outputs = Activation('softmax', dtype='float32', name='predictions')(output)
+    output = Activation('softmax', dtype='float32', name='predictions')(output)
     final_model = Model(inputs=base_model.input, outputs=output, name=base_model.name)
     return final_model
 
