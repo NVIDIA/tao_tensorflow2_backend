@@ -31,7 +31,7 @@ def run_inference(cfg):
     # set backend
     # initialize()
     predictions = []
-    inferencer = TRTInferencer(cfg['infer_config']['model_path'])
+    inferencer = TRTInferencer(cfg['infer_config']['model_path'], batch_size=1)
 
     for img_name in os.listdir(cfg['infer_config']['image_dir']):
         _, ext = os.path.splitext(img_name)

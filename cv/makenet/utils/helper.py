@@ -4,6 +4,9 @@
 import os
 
 import cv2
+import importlib
+import json
+
 from tensorflow import keras
 import tensorflow as tf
 from numba import jit, njit
@@ -16,11 +19,11 @@ from eff.core import Archive, File
 from eff.callbacks import BinaryContentCallback
 
 from common.utils import (
+    CUSTOM_OBJS,
     MultiGPULearningRateScheduler,
     SoftStartCosineAnnealingScheduler,
     StepLRScheduler
 )
-from backbones.utils_tf import swish
 
 opt_dict = {
     'sgd': keras.optimizers.SGD,
@@ -202,13 +205,14 @@ def color_augmentation(
     return Image.fromarray(x_img.astype(np.uint8), "RGB")
 
 
-def setup_config(model, reg_config, bn_config=None):
+def setup_config(model, reg_config, bn_config=None, custom_objs=None):
     """Wrapper for setting up BN and regularizer.
 
     Args:
         model (keras Model): a Keras model
         reg_config (dict): reg_config dict
         bn_config (dict): config to override BatchNormalization parameters
+        custom_objs (dict): Custom objects for serialization and deserialization.
     Return:
         A new model with overridden config.
     """
@@ -252,7 +256,11 @@ def setup_config(model, reg_config, bn_config=None):
 
                 if reg_type == 'none':
                     layer_config['config']['kernel_regularizer'] = None
-    with keras.utils.CustomObjectScope({'swish': swish}):
+
+    if custom_objs:
+        CUSTOM_OBJS.update(custom_objs)
+
+    with keras.utils.CustomObjectScope(CUSTOM_OBJS):
         updated_model = keras.models.Model.from_config(mconfig)
     updated_model.set_weights(model.get_weights())
 
@@ -284,6 +292,61 @@ def decode_eff(eff_model_path, passphrase=None):
     return saved_model_path
 
 
+def deserialize_custom_layers(art):
+    """Deserialize the code for custom layer from EFF.
+
+    Args:
+        art (eff.core.artifact.Artifact): Artifact restored from EFF Archive.
+
+    Returns:
+        final_dict (dict): Dictionary representing CUSTOM_OBJS used in the EFF stored Keras model.
+    """
+    # Get class.
+    source_code = art.get_content()
+    spec = importlib.util.spec_from_loader('helper', loader=None)
+    helper = importlib.util.module_from_spec(spec)
+    exec(source_code, helper.__dict__) # noqa pylint: disable=W0122
+
+    final_dict = {}
+    # Get class name from attributes.
+    class_names = art["class_names"]
+    for cn in class_names:
+        final_dict[cn] = getattr(helper, cn)
+    return final_dict
+
+
+def decode_tltb(eff_path, passphrase=None):
+    """Restore Keras Model from EFF Archive.
+
+    Args:
+        eff_path (str): Path to the eff file.
+        passphrase (str): Key to load EFF file.
+
+    Returns:
+        model (keras.models.Model): Loaded keras model.
+        EFF_CUSTOM_OBJS (dict): Dictionary of custom layers from the eff file.
+    """
+    model_name = os.path.basename(eff_path).split(".")[0]
+    with Archive.restore_from(restore_path=eff_path, passphrase=passphrase) as restored_effa:
+        EFF_CUSTOM_OBJS = deserialize_custom_layers(restored_effa.artifacts['custom_layers.py'])
+        model_name = restored_effa.metadata['model_name']
+
+        art = restored_effa.artifacts['{}.hdf5'.format(model_name)]
+        weights, m = art.get_content()
+
+    m = json.loads(m)
+    with keras.utils.CustomObjectScope(EFF_CUSTOM_OBJS):
+        model = keras.models.model_from_config(m, custom_objects=EFF_CUSTOM_OBJS)
+        model.set_weights(weights)
+
+    result = {
+        "model": model,
+        "custom_objs": EFF_CUSTOM_OBJS,
+        "model_name": model_name
+    }
+    return result
+
+
 def load_model(model_path, passphrase=None):
     """Load hdf5 or EFF model.
 
@@ -295,11 +358,15 @@ def load_model(model_path, passphrase=None):
         Keras model: Loaded model
     """
     assert os.path.exists(model_path), "Pretrained model not found at {}".format(model_path)
-    assert os.path.splitext(model_path)[-1] in ['.hdf5', '.eff'], \
-        "Only .hdf5 and .tlt are supported."
+    assert os.path.splitext(model_path)[-1] in ['.hdf5', '.eff', '.tltb'], \
+        "Only .hdf5, .tlt, .tltb are supported."
     if model_path.endswith('.eff'):
         model_path = decode_eff(model_path, passphrase)
-    return tf.keras.models.load_model(model_path)
+        return tf.keras.models.load_model(model_path)
+    if model_path.endswith('.tltb'):
+        out_dict = decode_tltb(model_path, passphrase)
+        model = out_dict['model']
+        return model
 
 
 def zipdir(src, zip_path):

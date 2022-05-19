@@ -34,6 +34,7 @@ from cv.makenet.utils import preprocess_crop  # noqa pylint: disable=unused-impo
 from cv.makenet.utils.helper import (
     build_lr_scheduler,
     build_optimizer,
+    decode_tltb,
     load_model,
     initialize,
     setup_config)
@@ -230,6 +231,10 @@ def run_experiment(cfg, results_dir=None,
                   no_horizontal_flip=cfg['train_config']['disable_horizontal_flip'],
                   data_format=cfg['data_format'])
 
+    # @scha: For BYOM model loading
+    if cfg['model_config']['arch'] in ["byom"] and cfg['model_config']['byom_model'] == '':
+        raise ValueError('{} requires .tltb file to be processed by TAO'.format(cfg['model_config']['arch']))
+
     ka = dict(
         nlayers=cfg['model_config']['n_layers'],
         use_batch_norm=cfg['model_config']['use_batch_norm'],
@@ -237,7 +242,9 @@ def run_experiment(cfg, results_dir=None,
         freeze_bn=cfg['model_config']['freeze_bn'],
         use_bias = cfg['model_config']['use_bias'],
         all_projections=cfg['model_config']['all_projections'],
-        dropout=cfg['model_config']['dropout']
+        dropout=cfg['model_config']['dropout'],
+        model_config_path = cfg['model_config']['byom_model'],
+        passphrase = cfg['key']
     )
     input_shape = (nchannels, image_height, image_width) \
         if cfg['data_format'] == 'channels_first' else (image_height, image_width, nchannels)
@@ -247,9 +254,15 @@ def run_experiment(cfg, results_dir=None,
         input_shape=input_shape,
         data_format=cfg['data_format'],
         nclasses=nclasses,
-        use_imagenet_head=cfg['model_config']['use_imagenet_head'],
+        retain_head=cfg['model_config']['retain_head'],
         freeze_blocks=cfg['model_config']['freeze_blocks'],
         **ka)
+
+    # @scha: Load CUSTOM_OBJS from BYOM
+    if cfg['model_config']['arch'] in ["byom"]:
+        custom_objs = decode_tltb(ka['model_config_path'], ka['passphrase'])['custom_objs']
+    else:
+        custom_objs = {}
 
     # Set up BN and regularizer config
     bn_config = None
@@ -257,7 +270,8 @@ def run_experiment(cfg, results_dir=None,
     final_model = setup_config(
         final_model,
         reg_config,
-        bn_config=bn_config
+        bn_config=bn_config,
+        custom_objs=custom_objs
     )
     
     if cfg['train_config']['pretrained_model_path']:
@@ -290,6 +304,7 @@ def run_experiment(cfg, results_dir=None,
         qdq_cases = [EfficientNetQDQCase(), ResNetQDQCase()] \
             if 'efficientnet' in cfg['model_config']['arch'] else [ResNetQDQCase()]
         final_model = quantize_model(final_model, custom_qdq_cases=qdq_cases)
+        pass
     # Printing model summary
     final_model.summary()
 
@@ -351,7 +366,7 @@ def run_experiment(cfg, results_dir=None,
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
-    config_name="train", schema=ExperimentConfig
+    config_name="train_byom", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for continuous training of MakeNet application.

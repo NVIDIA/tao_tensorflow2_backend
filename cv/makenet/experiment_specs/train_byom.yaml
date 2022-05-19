@@ -1,0 +1,29 @@
+results_dir: '/home/scratch.p3/sean/tlt3_experiments/imagenet/tf2_byom_res18'
+key: nvidia_tlt
+data_format: 'channels_first'
+# init_epoch: 16
+train_config:
+  qat: False
+  train_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
+  val_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
+  preprocess_mode: 'torch'
+  batch_size_per_gpu: 50
+  n_epochs: 150
+  n_workers: 40
+  optim_config:
+    optimizer: 'sgd'
+    lr: 0.01
+    decay: 0.0
+    momentum: 0.9
+    nesterov: False
+  lr_config:
+    scheduler: 'cosine'
+    learning_rate: 0.04
+    soft_start: 0.0
+  enable_color_augmentation: True
+  mixup_alpha: 0.2
+model_config:
+  resize_interpolation_method: 'bicubic'
+  arch: 'byom'
+  retain_head: False
+  byom_model: '/home/projects2_metropolis/tmp/sean/converted_models_classification/mobilenetv3_large_100/mobilenetv3_large_100.tltb'
