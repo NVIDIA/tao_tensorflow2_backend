@@ -36,7 +36,6 @@ from cv.makenet.utils.helper import (
     build_optimizer,
     decode_tltb,
     load_model,
-    initialize,
     setup_config)
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 Image.MAX_IMAGE_PIXELS = 9000000000
@@ -201,7 +200,7 @@ def run_experiment(cfg, results_dir=None,
     # Set random seed.
     logger.debug("Random seed is set to {}".format(cfg['train_config']['random_seed']))
     
-    initialize()
+    # initialize()
 
     nchannels, image_height, image_width = cfg['model_config']['input_image_size']
     assert nchannels in [1, 3], "Invalid input image dimension."
@@ -283,7 +282,7 @@ def run_experiment(cfg, results_dir=None,
         strict_mode = True
         for layer in pretrained_model.layers[1:]:
             # The layer must match up to prediction layers.
-            if layer.name == 'predictions':
+            if layer.name == 'predictions_dense':
                 strict_mode = False
             try:
                 l_return = final_model.get_layer(layer.name)
@@ -312,13 +311,14 @@ def run_experiment(cfg, results_dir=None,
         raise ValueError("Make sure to load the correct model when setting initial epoch > 1.")
 
     if cfg['train_config']['pretrained_model_path'] and cfg['init_epoch'] > 1:
+        final_model = pretrained_model
         opt = pretrained_model.optimizer
     else:
         # Defining optimizer
         opt = build_optimizer(cfg['train_config']['optim_config'])
     # Add Horovod Distributed Optimizer
     opt = hvd.DistributedOptimizer(
-        opt, compression=hvd.Compression.fp16) # backward_passes_per_step=1, average_aggregated_gradients=True)
+        opt, backward_passes_per_step=1, average_aggregated_gradients=True)
     # Compiling model
     cc = tf.keras.losses.CategoricalCrossentropy(
         label_smoothing=cfg['train_config']['label_smoothing'])
@@ -348,7 +348,7 @@ def run_experiment(cfg, results_dir=None,
         verbose=verbose,
         workers=cfg['train_config']['n_workers'],
         validation_data=val_iterator,
-        validation_steps=len(val_iterator) // hvd.size(),
+        validation_steps=len(val_iterator), # // hvd.size(),
         validation_freq=2,
         callbacks=callbacks,
         initial_epoch=init_epoch - 1)
