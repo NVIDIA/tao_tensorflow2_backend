@@ -26,3 +26,6 @@ onnx-graphsurgeon==0.3.14
 git+https://github.com/onnx/tensorflow-onnx
 pytest
 graphviz
+pyarrow
+simplejson
+tabulate

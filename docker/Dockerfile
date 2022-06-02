@@ -1,4 +1,4 @@
-ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:22.03-tf2-py3
+ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:22.05-tf2-py3
 FROM ${FROM_IMAGE_NAME}
 
 RUN apt-get update
