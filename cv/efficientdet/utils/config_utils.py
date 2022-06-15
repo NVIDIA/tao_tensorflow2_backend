@@ -55,9 +55,10 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         image_size=model_utils.parse_image_size(cfg['data']['image_size']),
         # Loader config
         shuffle_file=cfg['data']['loader']['shuffle_file'],
-        shuffle_buffer=cfg['data']['loader']['shuffle_buffer'] or 10000,
+        shuffle_buffer=cfg['data']['loader']['shuffle_buffer'] or 1024,
         cycle_length=cfg['data']['loader']['cycle_length'] or 32,
         block_length=cfg['data']['loader']['block_length'] or 16,
+        prefetch_size=cfg['data']['loader']['prefetch_size'] or 2, # set to 0 for AUTOTUNE
         # augmentation config
         input_rand_hflip=cfg['augment']['rand_hflip'],
         jitter_min=cfg['augment']['random_crop_min_scale'] or 0.1,
