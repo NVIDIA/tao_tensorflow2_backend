@@ -65,8 +65,9 @@ def decode_eff(eff_model_path, passphrase=None):
     for f in extracted_files:
          if 'ckpt' in f:
              ckpt_name = f.split('.')[0]
-    if not ckpt_name:
-        raise IOError(f"{eff_model_path} was not saved properly.")
+    # TODO(@yuw): backbone ckpt vs effdet vs failed case
+    # if not ckpt_name:
+    #     raise IOError(f"{eff_model_path} was not saved properly.")
     return ckpt_path, ckpt_name
 
 

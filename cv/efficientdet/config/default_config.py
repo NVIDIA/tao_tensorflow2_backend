@@ -13,6 +13,7 @@ class LoaderConfig:
     cycle_length: int = 32
     block_length: int = 16
     shuffle_file: bool = True
+    prefetch_size: int = 2
 
 
 @dataclass

@@ -14,6 +14,7 @@
 # ==============================================================================
 """Data loader and processing."""
 import os
+import multiprocessing
 from absl import logging
 import tensorflow as tf
 
@@ -422,7 +423,7 @@ class CocoDataset(Dataset):
       dataset = tf.data.Dataset.list_files(file_pattern, shuffle=params['shuffle_file'])
       if self._is_training:
         dataset = dataset.shard(get_world_size(), get_rank())
-        dataset.shuffle(buffer_size=1024)
+        dataset.shuffle(buffer_size=64)
 
       # Prefetch data from files.
       def _prefetch_dataset(filename):
@@ -435,7 +436,7 @@ class CocoDataset(Dataset):
       dataset = dataset.interleave(
           _prefetch_dataset, cycle_length=params['cycle_length'], # cycle_length=32
           block_length=params['block_length'], # block_length=16
-          num_parallel_calls=tf.data.experimental.AUTOTUNE)
+          num_parallel_calls=tf.data.experimental.AUTOTUNE)  # TODO(@yuw): whether to fix the number
 
       dataset = dataset.with_options(self.dataset_options)
       if self._is_training:
@@ -451,8 +452,10 @@ class CocoDataset(Dataset):
         map_fn = lambda value: self.dataset_parser(value, example_decoder,
                                                    anchor_labeler, params)
       # pylint: enable=g-long-lambda
+      # TODO(@yuw): whether to make it configurable or tf.data.experimental.AUTOTUNE
+      core_count = multiprocessing.cpu_count() // 2  # note: // 2 to be conservative
       dataset = dataset.map(
-          map_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+          map_fn, num_parallel_calls=max(core_count // get_world_size(), 1))
       # dataset = dataset.prefetch(batch_size)
       if self._sampling and len(self._data_sources) > 1:
         dataset = dataset.repeat()
@@ -477,7 +480,7 @@ class CocoDataset(Dataset):
         weights = [1.0/len(weights)] * len(weights)
         print(weights)
         combined = tf.data.Dataset.sample_from_datasets(
-            datasets, weights=weights
+            datasets, weights=weights, stop_on_empty_dataset=True,
         )
     else:
         raise ValueError("You shouldn't be here!")
@@ -485,7 +488,7 @@ class CocoDataset(Dataset):
     combined = combined.batch(batch_size, drop_remainder=params['drop_remainder'])
     combined = combined.map(
         lambda *args: self.process_example(params, batch_size, *args))
-    combined = combined.prefetch(tf.data.experimental.AUTOTUNE)
+    combined = combined.prefetch(params['prefetch_size'] or tf.data.experimental.AUTOTUNE)
     if self._is_training:
       combined = combined.repeat()
     if self._use_fake_data:

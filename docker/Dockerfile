@@ -29,10 +29,10 @@ RUN mkdir trt_oss_src && \
    mkdir -p build && cd build  && \
    cmake .. -DGPU_ARCHS="35 52 53 60 61 70 75 80 86" -DTRT_LIB_DIR=/usr/lib/x86_64-linux-gnu -DTRT_BIN_DIR=`pwd`/out -DCUDA_VERSION=11.4 -DCUDNN_VERSION=8.2 && \
    make -j8 && \
-   cp libnvinfer_plugin.so.8.2.* /usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so.8.2.3 && \
+   cp libnvinfer_plugin.so.8.2.* /usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so.8.2.5 && \
    cp libnvinfer_plugin_static.a /usr/lib/x86_64-linux-gnu/libnvinfer_plugin_static.a && \
-   cp libnvonnxparser.so.8.2.* /usr/lib/x86_64-linux-gnu/libnvonnxparser.so.8.2.3 && \
-   cp libnvcaffeparser.so.8.2.* /usr/lib/x86_64-linux-gnu/libnvcaffeparser.so.8.2.3 && \
+   cp libnvonnxparser.so.8.2.* /usr/lib/x86_64-linux-gnu/libnvonnxparser.so.8.2.5 && \
+   cp libnvcaffeparser.so.8.2.* /usr/lib/x86_64-linux-gnu/libnvcaffeparser.so.8.2.5 && \
    cp trtexec /usr/local/bin/ && \
    cd ../../../ && \
    rm -rf trt_oss_src
