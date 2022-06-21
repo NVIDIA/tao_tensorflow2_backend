@@ -28,7 +28,7 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
         # set up checkpointing callbacks
         ckpt_dir = os.path.join(params['train']['results_dir'], 'weights')
         if not os.path.exists(ckpt_dir):
-            os.mkdirs(ckpt_dir, exist_ok=True)
+            os.makedirs(ckpt_dir, exist_ok=True)
         if params['train']['moving_average_decay'] > 0:
             ckpt_callback = EffEmaCheckpoint(
                 eff_dir=ckpt_dir,
