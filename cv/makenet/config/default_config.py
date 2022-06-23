@@ -33,12 +33,12 @@ class OptimConfig:
 class LRConfig:
     """Learning rate config."""
 
-    scheduler: str = 'cosine'
+    scheduler: str = 'cosine' # soft_anneal, step
     learning_rate: float = 0.05
     soft_start: float = 0.05
-    annealing_points: List[int] = MISSING
-    annealing_divider: List[int] = MISSING
-    min_lr_ratio: float = 0.000015
+    annealing_points: List[float] = field(default_factory=lambda: [0.33, 0.66, 0.88])
+    annealing_divider: float = 10
+    min_lr_ratio: float = 0.00003
     gamma: float = 0.000015
     step_size: int = 10
 

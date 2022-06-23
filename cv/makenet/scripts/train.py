@@ -336,9 +336,8 @@ def run_experiment(cfg, results_dir=None,
                                 hvd)
     # Writing out class-map file for inference mapping
     if hvd.rank() == 0:
-        with open(os.path.join(results_dir, "classmap.json"), "w") \
-             as classdump:
-            json.dump(train_iterator.class_indices, classdump)
+        with open(os.path.join(results_dir, "classmap.json"), "w") as f:
+            json.dump(train_iterator.class_indices, f)
 
     # Commencing Training
     final_model.fit(
