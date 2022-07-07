@@ -43,13 +43,13 @@ logger = logging.getLogger(__name__)
 verbose = 0
 
 
-def setup_callbacks(model_name, results_dir, lr_config,
+def setup_callbacks(ckpt_freq, results_dir, lr_config,
                     init_epoch, iters_per_epoch, max_epoch, key,
                     hvd):
     """Setup callbacks: tensorboard, checkpointer, lrscheduler, csvlogger.
 
     Args:
-        model_name (str): name of the model used.
+        ckpt_freq (int): checkpoint and validation frequency.
         results_dir (str): Path to a folder where various training outputs will
                            be written.
         init_epoch (int): The number of epoch to resume training.
@@ -74,7 +74,7 @@ def setup_callbacks(model_name, results_dir, lr_config,
         if not os.path.exists(save_weights_dir):
             os.makedirs(save_weights_dir)
         # Save encrypted models
-        checkpointer = EffCheckpoint(save_weights_dir, key, verbose=0)
+        checkpointer = EffCheckpoint(save_weights_dir, key, verbose=0, ckpt_freq=ckpt_freq)
         callbacks.append(checkpointer)
 
         # Set up the custom TensorBoard callback. It will log the loss
@@ -329,7 +329,8 @@ def run_experiment(cfg, results_dir=None,
         experimental_run_tf_function=False)
 
     # Setup callbacks
-    callbacks = setup_callbacks(cfg['model_config']['arch'], results_dir,
+    callbacks = setup_callbacks(cfg['train_config']['checkpoint_freq'],
+                                results_dir,
                                 cfg['train_config']['lr_config'],
                                 init_epoch, len(train_iterator) // hvd.size(),
                                 cfg['train_config']['n_epochs'], key,
@@ -348,7 +349,7 @@ def run_experiment(cfg, results_dir=None,
         workers=cfg['train_config']['n_workers'],
         validation_data=val_iterator,
         validation_steps=len(val_iterator), # // hvd.size(),
-        validation_freq=2,
+        validation_freq=cfg['train_config']['checkpoint_freq'],
         callbacks=callbacks,
         initial_epoch=init_epoch - 1)
 
