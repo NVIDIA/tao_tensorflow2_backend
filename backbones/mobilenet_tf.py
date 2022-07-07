@@ -11,7 +11,7 @@ from tensorflow.keras import layers
 from tensorflow.keras import models
 
 from backbones.utils_tf import _conv_block, _depthwise_conv_block, \
-                                _inverted_res_block, _make_divisible
+    _inverted_res_block, _make_divisible
 from backbones.utils_tf import arg_scope
 
 
@@ -31,8 +31,7 @@ def MobileNet(inputs,
               freeze_bn=False,
               freeze_blocks=None,
               use_bias=False):
-    """
-    The MobileNet model architecture.
+    """The MobileNet model architecture.
 
     Args:
         inputs(tensor): Input tensor.
@@ -59,7 +58,7 @@ def MobileNet(inputs,
     """
     # Determine proper input shape and default size.
     assert stride in [16, 32], (
-        "Only stride 16 and 32 are supported, got {}".format(stride)
+        f"Only stride 16 and 32 are supported, got {stride}"
     )
     old_data_format = backend.image_data_format()
     backend.set_image_data_format(data_format)
@@ -164,8 +163,7 @@ def MobileNetV2(inputs,
                 freeze_bn=False,
                 freeze_blocks=None,
                 use_bias=False):
-    """
-    The MobileNet V2 model architecture.
+    """The MobileNet V2 model architecture.
 
     Args:
         inputs(tensor): Input tensor.
@@ -188,7 +186,7 @@ def MobileNetV2(inputs,
 
     """
     assert stride in [16, 32], (
-        "Only stride 16 and 32 are supported, got {}".format(stride)
+        f"Only stride 16 and 32 are supported, got {stride}"
     )
     old_data_format = backend.image_data_format()
     backend.set_image_data_format(data_format)
