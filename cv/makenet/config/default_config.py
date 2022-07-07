@@ -50,6 +50,7 @@ class TrainConfig:
     train_dataset_path: str = MISSING
     val_dataset_path: str = MISSING
     pretrained_model_path: str = ''
+    checkpoint_freq: int = 1
     batch_size_per_gpu: int = 64
     n_epochs: int = 100
     n_workers: int = 10

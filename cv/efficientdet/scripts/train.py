@@ -109,7 +109,7 @@ def run_experiment(cfg):
                 keras_utils.restore_ckpt(
                     pretrained_model,
                     os.path.join(pretrained_ckpt_path, ckpt_name),
-                    cfg.config.moving_average_decay,
+                    cfg.train.moving_average_decay,
                     steps_per_epoch=0,
                     expect_partial=True)
             else:

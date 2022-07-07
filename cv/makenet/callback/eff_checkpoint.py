@@ -33,6 +33,7 @@ class EffCheckpoint(ModelCheckpoint):
                  save_weights_only=False,
                  mode='auto',
                  save_freq='epoch',
+                 ckpt_freq=1,
                  options=None,
                  **kwargs):
         """Initialization with encryption key."""
@@ -48,6 +49,7 @@ class EffCheckpoint(ModelCheckpoint):
         self.passphrase = key
         self.epochs_since_last_save = 0
         self.eff_dir = eff_dir
+        self.ckpt_freq = ckpt_freq
 
     def zipdir(self, src, zip_path) -> None:
         """
@@ -97,10 +99,10 @@ class EffCheckpoint(ModelCheckpoint):
     def on_epoch_end(self, epoch, logs=None):
         """Override on_epoch_end."""
         self.epochs_since_last_save += 1
-        self.filepath = tempfile.mkdtemp() # override filepath
 
         # pylint: disable=protected-access
-        if self.save_freq == 'epoch':
+        if self.save_freq == 'epoch' and self.epochs_since_last_save % self.ckpt_freq == 0:
+            self.filepath = tempfile.mkdtemp() # override filepath
             self._save_model(epoch=epoch, batch=None, logs=logs)
             self._save_eff(epoch=epoch)
             self._remove_tmp_files()
