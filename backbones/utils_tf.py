@@ -48,7 +48,7 @@ def _name_op(op):
 
 def _kwarg_names(func):
     kwargs_length = len(func.__defaults__) if func.__defaults__ else 0
-    return func.__code__.co_varnames[-kwargs_length : func.__code__.co_argcount]
+    return func.__code__.co_varnames[-kwargs_length: func.__code__.co_argcount]
 
 
 def _add_op(op):
@@ -105,8 +105,9 @@ def arg_scope(list_ops_or_scope, **kwargs):
                     op = op.__init__
                 key_op = _key_op(op)
                 if not has_arg_scope(op):
+                    name_module, name_op = _name_op(op)
                     raise ValueError(
-                        "%s::%s is not decorated with @add_arg_scope" % _name_op(op)
+                        f"{name_module}::{name_op} is not decorated with @add_arg_scope"
                     )
                 if key_op in current_scope:
                     current_kwargs = current_scope[key_op].copy()
@@ -172,8 +173,7 @@ def arg_scoped_arguments(func):
 
 
 def add_dense_head(model, inputs, nclasses, activation):
-    """
-    Create a model that stacks a dense head on top of a another model. It is also flattened.
+    """Create a model that stacks a dense head on top of a another model. It is also flattened.
 
     Args:
         model (Model): the model on top of which the head should be created.
@@ -185,11 +185,11 @@ def add_dense_head(model, inputs, nclasses, activation):
         Model: A model with the head stacked on top of the `model` input.
     """
     x = model.outputs[0]
-    head_name = "head_fc%d" % (nclasses)
+    head_name = f"head_fc{nclasses}"
     x = keras.layers.Flatten()(x)
     x = keras.layers.Dense(nclasses, activation=activation, name=head_name)(x)
     model = keras.models.Model(
-        inputs=inputs, outputs=x, name="%s_fc%d" % (model.name, nclasses)
+        inputs=inputs, outputs=x, name=f"{model.name}_fc{nclasses}"
     )
     return model
 
@@ -209,8 +209,7 @@ class subblock_ids(object):
     """A operator to get index of subblock, overload [] operation."""
 
     def __getitem__(self, key):
-        """
-        Generate a subblock ID and return.
+        """Generate a subblock ID and return.
 
         Args:
             key (int): an index used to generate the subblock ID.
@@ -241,8 +240,7 @@ class InceptionV1Block(object):
                  use_bias=True,
                  trainable=True,
                  use_td=False):
-        """
-        Initialization of the block functor object.
+        """Initialization of the block functor object.
 
         Args:
             use_batch_norm (bool): whether batchnorm should be added after each convolution.
@@ -279,7 +277,7 @@ class InceptionV1Block(object):
         self.activation_type = activation_type
         self.subblocks = subblocks
         self.index = index
-        self.name = 'inception_%s' % index
+        self.name = f'inception_{index}'
         self.freeze_bn = freeze_bn
         self.use_bias = use_bias
         self.trainable = trainable
@@ -299,8 +297,7 @@ class InceptionV1Block(object):
         return x
 
     def _subblocks(self, x, name_prefix=None):
-        """
-        Stack several convolutions in a specific sequence given by a list of subblocks.
+        """Stack several convolutions in a specific sequence given by a list of subblocks.
 
         Args:
             x (tensor): the input tensor.
@@ -326,7 +323,7 @@ class InceptionV1Block(object):
             data_format=self.data_format,
             kernel_regularizer=self.kernel_regularizer,
             bias_regularizer=self.bias_regularizer,
-            name='%s_%s' % (name_prefix, SUBBLOCK_IDS[0]),
+            name=f'{name_prefix}_{SUBBLOCK_IDS[0]}',
             use_bias=self.use_bias,
             trainable=self.trainable)
         if self.use_td:
@@ -334,7 +331,7 @@ class InceptionV1Block(object):
         x1 = layer(x)
 
         if self.use_batch_norm:
-            _name = '%s_%s_bn' % (name_prefix, SUBBLOCK_IDS[0])
+            _name = f'{name_prefix}_{SUBBLOCK_IDS[0]}_bn'
             layer = keras.layers.BatchNormalization(axis=bn_axis, name=_name)
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
@@ -353,7 +350,7 @@ class InceptionV1Block(object):
             data_format=self.data_format,
             kernel_regularizer=self.kernel_regularizer,
             bias_regularizer=self.bias_regularizer,
-            name='%s_%s' % (name_prefix, SUBBLOCK_IDS[1]),
+            name=f'{name_prefix}_{SUBBLOCK_IDS[1]}',
             use_bias=self.use_bias,
             trainable=self.trainable)
         if self.use_td:
@@ -361,7 +358,7 @@ class InceptionV1Block(object):
         x2 = layer(x)
 
         if self.use_batch_norm:
-            _name = '%s_%s_bn' % (name_prefix, SUBBLOCK_IDS[1])
+            _name = f'{name_prefix}_{SUBBLOCK_IDS[1]}_bn'
             layer = keras.layers.BatchNormalization(axis=bn_axis, name=_name)
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
@@ -380,7 +377,7 @@ class InceptionV1Block(object):
             data_format=self.data_format,
             kernel_regularizer=self.kernel_regularizer,
             bias_regularizer=self.bias_regularizer,
-            name='%s_%s' % (name_prefix, SUBBLOCK_IDS[2]),
+            name=f'{name_prefix}_{SUBBLOCK_IDS[2]}',
             use_bias=self.use_bias,
             trainable=self.trainable)
         if self.use_td:
@@ -388,7 +385,7 @@ class InceptionV1Block(object):
         x2 = layer(x2)
 
         if self.use_batch_norm:
-            _name = '%s_%s_bn' % (name_prefix, SUBBLOCK_IDS[2])
+            _name = f'{name_prefix}_{SUBBLOCK_IDS[2]}_bn'
             layer = keras.layers.BatchNormalization(axis=bn_axis, name=_name)
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
@@ -407,7 +404,7 @@ class InceptionV1Block(object):
             data_format=self.data_format,
             kernel_regularizer=self.kernel_regularizer,
             bias_regularizer=self.bias_regularizer,
-            name='%s_%s' % (name_prefix, SUBBLOCK_IDS[3]),
+            name=f'{name_prefix}_{SUBBLOCK_IDS[2]}',
             use_bias=self.use_bias,
             trainable=self.trainable)
         if self.use_td:
@@ -415,7 +412,7 @@ class InceptionV1Block(object):
         x3 = layer(x)
 
         if self.use_batch_norm:
-            _name = '%s_%s_bn' % (name_prefix, SUBBLOCK_IDS[3])
+            _name = f'{name_prefix}_{SUBBLOCK_IDS[3]}_bn'
             layer = keras.layers.BatchNormalization(axis=bn_axis, name=_name)
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
@@ -434,7 +431,7 @@ class InceptionV1Block(object):
             data_format=self.data_format,
             kernel_regularizer=self.kernel_regularizer,
             bias_regularizer=self.bias_regularizer,
-            name='%s_%s' % (name_prefix, SUBBLOCK_IDS[4]),
+            name=f'{name_prefix}_{SUBBLOCK_IDS[4]}',
             use_bias=self.use_bias,
             trainable=self.trainable)
         if self.use_td:
@@ -442,7 +439,7 @@ class InceptionV1Block(object):
         x3 = layer(x3)
 
         if self.use_batch_norm:
-            _name = '%s_%s_bn' % (name_prefix, SUBBLOCK_IDS[4])
+            _name = f'{name_prefix}_{SUBBLOCK_IDS[4]}_bn'
             layer = keras.layers.BatchNormalization(axis=bn_axis, name=_name)
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
@@ -458,7 +455,7 @@ class InceptionV1Block(object):
             strides=(1, 1),
             padding='same',
             data_format=self.data_format,
-            name='%s_%s' % (name_prefix, SUBBLOCK_IDS[5]))
+            name=f'{name_prefix}_{SUBBLOCK_IDS[5]}')
         if self.use_td:
             layer = keras.layers.TimeDistributed(layer)
         x4 = layer(x)
@@ -471,7 +468,7 @@ class InceptionV1Block(object):
             data_format=self.data_format,
             kernel_regularizer=self.kernel_regularizer,
             bias_regularizer=self.bias_regularizer,
-            name='%s_%s' % (name_prefix, SUBBLOCK_IDS[6]),
+            name=f'{name_prefix}_{SUBBLOCK_IDS[6]}',
             use_bias=self.use_bias,
             trainable=self.trainable)
         if self.use_td:
@@ -479,7 +476,7 @@ class InceptionV1Block(object):
         x4 = layer(x4)
 
         if self.use_batch_norm:
-            _name = '%s_%s_bn' % (name_prefix, SUBBLOCK_IDS[6])
+            _name = f'{name_prefix}_{SUBBLOCK_IDS[5]}_bn'
             layer = keras.layers.BatchNormalization(axis=bn_axis, name=_name)
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
@@ -495,14 +492,13 @@ class InceptionV1Block(object):
                 concat_axis += 1
         else:
             concat_axis = -1
-        layer = keras.layers.Concatenate(axis=concat_axis, name='%s_output' % (name_prefix))
+        layer = keras.layers.Concatenate(axis=concat_axis, name=f'{name_prefix}_output')
         x = layer([x1, x2, x3, x4])
         return x
 
 
 def update_config(model, inputs, config, name_pattern=None):
-    """
-    Update the configuration of an existing model.
+    """Update the configuration of an existing model.
 
     Note that the input tensors to apply the new model to must be different
     from those of the original model. This is because when Keras
@@ -531,8 +527,7 @@ def update_config(model, inputs, config, name_pattern=None):
 
 
 def update_regularizers(model, inputs, kernel_regularizer, bias_regularizer, name_pattern=None):
-    """
-    Update the weight decay regularizers of an existing model.
+    """Update the weight decay regularizers of an existing model.
 
     Note that the input tensors to apply the new model to must be different
     from those of the original model. This is because when Keras
@@ -562,8 +557,7 @@ def _conv_block(inputs, filters, alpha, kernel=(3, 3),
                 activation_type='relu', data_format='channels_first',
                 freeze_bn=False, trainable=True,
                 use_bias=False):
-    """
-    Construct a conv block to be used in MobileNet.
+    """Construct a conv block to be used in MobileNet.
 
     Args:
         inputs(tensor): The input tensor.
@@ -604,7 +598,7 @@ def _conv_block(inputs, filters, alpha, kernel=(3, 3),
     if use_batch_norm:
         if freeze_bn:
             x = keras.layers.BatchNormalization(
-                axis=channel_axis, 
+                axis=channel_axis,
                 trainable=False,
                 name='conv1_bn')(x)
         else:
@@ -624,8 +618,7 @@ def _depthwise_conv_block(inputs, pointwise_conv_filters, alpha,
                           activation_type='relu', data_format='channels_first',
                           freeze_bn=False, trainable=True,
                           use_bias=False):
-    """
-    Depthwise conv block as building blocks for MobileNet.
+    """Depthwise conv block as building blocks for MobileNet.
 
     Args:
         inputs(tensor): The input tensor.
@@ -651,14 +644,14 @@ def _depthwise_conv_block(inputs, pointwise_conv_filters, alpha,
     channel_axis = get_batchnorm_axis(data_format)
     pointwise_conv_filters = int(pointwise_conv_filters * alpha)
     # Also use explicit padding here to avoid TF style padding.
-    x = keras.layers.ZeroPadding2D((1, 1), name='conv_pad_%d' % block_id)(inputs)
+    x = keras.layers.ZeroPadding2D((1, 1), name=f'conv_pad_{block_id}')(inputs)
     x = keras.layers.DepthwiseConv2D(
         (3, 3),
         padding='valid',
         depth_multiplier=depth_multiplier,
         strides=strides,
         use_bias=use_bias,
-        name='conv_dw_%d' % block_id,
+        name=f'conv_dw_{block_id}',
         kernel_regularizer=kernel_regularizer,
         bias_regularizer=bias_regularizer,
         trainable=trainable)(x)
@@ -668,15 +661,15 @@ def _depthwise_conv_block(inputs, pointwise_conv_filters, alpha,
             x = keras.layers.BatchNormalization(
                 axis=channel_axis,
                 trainable=False,
-                name='conv_dw_%d_bn' % block_id)(x)
+                name=f'conv_dw_{block_id}_bn')(x)
         else:
             x = keras.layers.BatchNormalization(axis=channel_axis,
-                                                name='conv_dw_%d_bn' % block_id)(x)
+                                                name=f'conv_dw_{block_id}_bn')(x)
 
     if activation_type == 'relu6':
-        x = keras.layers.ReLU(6., name='conv_dw_%d_relu6' % block_id)(x)
+        x = keras.layers.ReLU(6., name=f'conv_dw_{block_id}_relu6')(x)
     else:
-        x = keras.layers.ReLU(name='conv_dw_%d_relu' % block_id)(x)
+        x = keras.layers.ReLU(name=f'conv_dw_{block_id}_relu')(x)
 
     x = keras.layers.Conv2D(
         pointwise_conv_filters,
@@ -684,7 +677,7 @@ def _depthwise_conv_block(inputs, pointwise_conv_filters, alpha,
         padding='valid',
         use_bias=use_bias,
         strides=(1, 1),
-        name='conv_pw_%d' % block_id,
+        name=f'conv_pw_{block_id}',
         kernel_regularizer=kernel_regularizer,
         bias_regularizer=bias_regularizer,
         trainable=trainable)(x)
@@ -694,16 +687,16 @@ def _depthwise_conv_block(inputs, pointwise_conv_filters, alpha,
             x = keras.layers.BatchNormalization(
                 axis=channel_axis,
                 trainable=False,
-                name='conv_pw_%d_bn' % block_id)(x)
+                name=f'conv_pw_{block_id}_bn')(x)
         else:
             x = keras.layers.BatchNormalization(
                 axis=channel_axis,
-                name='conv_pw_%d_bn' % block_id)(x)
+                name=f'conv_pw_{block_id}_bn')(x)
 
     if activation_type == 'relu6':
-        x = keras.layers.ReLU(6., name='conv_pw_relu6_%d' % block_id)(x)
+        x = keras.layers.ReLU(6., name=f'conv_pw_relu6_{block_id}')(x)
     else:
-        x = keras.layers.ReLU(name='conv_pw_relu_%d' % block_id)(x)
+        x = keras.layers.ReLU(name=f'conv_pw_relu_{block_id}')(x)
     return x
 
 
@@ -714,8 +707,7 @@ def _leaky_conv(inputs, filters, alpha=0.1, kernel=(3, 3),
                 padding='same', data_format='channels_first',
                 freeze_bn=False, trainable=True,
                 use_bias=False, name='conv1', use_td=False):
-    """
-    Construct a leaky relu conv block to be used in DarkNet.
+    """Construct a leaky relu conv block to be used in DarkNet.
 
     Args:
         inputs(tensor): The input tensor.
@@ -757,14 +749,14 @@ def _leaky_conv(inputs, filters, alpha=0.1, kernel=(3, 3),
     x = _layer(inputs)
 
     if use_batch_norm:
-        _layer = keras.layers.BatchNormalization(axis=channel_axis, name=name+'_bn')
+        _layer = keras.layers.BatchNormalization(axis=channel_axis, name=name + '_bn')
         if use_td:
             _layer = keras.layers.TimeDistributed(_layer)
         if freeze_bn:
             x = _layer(trainable=False)(x)
         else:
             x = _layer(x)
-    x = keras.layers.LeakyReLU(alpha=alpha, name=name+'_lrelu')(x)
+    x = keras.layers.LeakyReLU(alpha=alpha, name=name + '_lrelu')(x)
     return x
 
 
@@ -785,8 +777,7 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters,
                         data_format='channels_first', all_projections=True,
                         trainable=True, freeze_bn=False,
                         use_bias=False):
-    """
-    Inverted residual block as building blocks for MobileNet V2.
+    """Inverted residual block as building blocks for MobileNet V2.
 
     Args:
         inputs(tensor): Input tensor.
@@ -815,7 +806,7 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters,
     pointwise_conv_filters = int(filters * alpha)
     pointwise_filters = _make_divisible(pointwise_conv_filters, 8)
     x = inputs
-    prefix = 'block_{}_'.format(block_id)
+    prefix = f'block_{block_id}_'
 
     if block_id:
         # Expand
@@ -845,9 +836,9 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters,
                     momentum=0.999,
                     name=prefix + 'expand_bn')(x)
         if activation_type == 'relu6':
-            x = keras.layers.ReLU(6., name='re_lu_%d' % (block_id + 1))(x)
+            x = keras.layers.ReLU(6., name=f're_lu_{block_id + 1}')(x)
         else:
-            x = keras.layers.ReLU(name='re_lu_%d' % (block_id + 1))(x)
+            x = keras.layers.ReLU(name=f're_lu_{block_id + 1}')(x)
     else:
         prefix = 'expanded_conv_'
 
@@ -874,10 +865,10 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters,
                 name=prefix + 'depthwise_bn')(x)
         else:
             x = keras.layers.BatchNormalization(
-                    epsilon=1e-3,
-                    axis=channel_axis,
-                    momentum=0.999,
-                    name=prefix + 'depthwise_bn')(x)
+                epsilon=1e-3,
+                axis=channel_axis,
+                momentum=0.999,
+                name=prefix + 'depthwise_bn')(x)
 
     if activation_type == 'relu6':
         x = keras.layers.ReLU(6., name=prefix + 'relu6')(x)
@@ -929,7 +920,7 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters,
 
 def get_uid(base_name):
     """Return a unique ID."""
-    get_uid.lock.acquire()
+    get_uid.lock.acquire()  # noqa pylint: disable=R1732
     if base_name not in get_uid.seqn:
         get_uid.seqn[base_name] = 0
     uid = get_uid.seqn[base_name]
@@ -943,8 +934,7 @@ get_uid.lock = threading.Lock()
 
 
 def add_activation(activation_type, **kwargs):
-    """
-    Create an activation layer based on activation type and additional arguments.
+    """Create an activation layer based on activation type and additional arguments.
 
     Note that the needed kwargs depend on the activation type.
 
@@ -994,8 +984,7 @@ class CNNBlock(object):
                  dilation_rate=(1, 1),
                  all_projections=False,
                  use_bias=True):
-        """
-        Initialization of the block functor object.
+        """Initialization of the block functor object.
 
         Args:
             use_batch_norm (bool): whether batchnorm should be added after each convolution.
@@ -1040,9 +1029,10 @@ class CNNBlock(object):
         self.freeze_bn = freeze_bn
         self.freeze_block = freeze_block
         if index is not None:
-            self.name = 'block_%d' % index
+            self.name = f'block_{index}'
         else:
-            self.name = 'block_%d' % (get_uid('block') + 1)
+            block_uid = get_uid('block') + 1
+            self.name = f'block_{block_uid}'
 
     def __call__(self, x):
         """Build the block.
@@ -1054,7 +1044,7 @@ class CNNBlock(object):
             tensor: the output tensor after applying the block on top of input `x`.
         """
         for i in range(self.repeat):
-            name = '%s%s_' % (self.name, self.subblock_ids[i])
+            name = f'{self.name}{self.subblock_ids[i]}_'
             if i == 0:
                 # Set the stride only on the first layer.
                 stride = self.stride
@@ -1072,8 +1062,7 @@ class CNNBlock(object):
         return x
 
     def _subblocks(self, x, stride, dimension_changed, name_prefix=None, freeze=False):
-        """
-        Stack several convolutions in a specific sequence given by a list of subblocks.
+        """Stack several convolutions in a specific sequence given by a list of subblocks.
 
         Args:
             x (tensor): the input tensor.
@@ -1109,20 +1098,20 @@ class CNNBlock(object):
                 use_bias=self.use_bias,
                 kernel_regularizer=self.kernel_regularizer,
                 bias_regularizer=self.bias_regularizer,
-                name='%sconv_%d' % (name_prefix, i + 1),
+                name=f'{name_prefix}conv_{i+1}',
                 trainable=not freeze)(x)
             if self.use_batch_norm:
                 if self.freeze_bn:
                     x = keras.layers.BatchNormalization(
                         axis=bn_axis,
                         trainable=False,
-                        name='%sbn_%d' % (name_prefix, i + 1))(x)
+                        name=f'{name_prefix}bn_{i+1}')(x)
                 else:
                     x = keras.layers.BatchNormalization(
-                        axis=bn_axis, name='%sbn_%d' % (name_prefix, i + 1))(x)
+                        axis=bn_axis, name=f'{name_prefix}bn_{i+1}')(x)
             if i != nblocks - 1:  # All except last conv in block.
                 x = add_activation(self.activation_type,
-                                   name='%s%s_%d' % (name_prefix, self.activation_type, i + 1))(x)
+                                   name=f'{name_prefix}{self.activation_type}_{i+1}')(x)
 
         if self.use_shortcuts:
             if self.all_projections:
@@ -1136,18 +1125,18 @@ class CNNBlock(object):
                     use_bias=self.use_bias,
                     kernel_regularizer=self.kernel_regularizer,
                     bias_regularizer=self.bias_regularizer,
-                    name='%sconv_shortcut' % name_prefix,
+                    name=f'{name_prefix}conv_shortcut',
                     trainable=not freeze)(shortcut)
                 if self.use_batch_norm:
                     if self.freeze_bn:
-                        _name = '%sbn_shortcut' % name_prefix
+                        _name = f'{name_prefix}bn_shortcut'
                         shortcut = keras.layers.BatchNormalization(
                             axis=bn_axis,
                             trainable=False,
                             name=_name)(shortcut)
                     else:
                         shortcut = keras.layers.BatchNormalization(
-                            axis=bn_axis, name='%sbn_shortcut' % name_prefix)(shortcut)
+                            axis=bn_axis, name=f'{name_prefix}bn_shortcut')(shortcut)
             else:
                 # Add projection layers to shortcut only if there is a change in dimesion.
                 if dimension_changed:  # Dimension changed.
@@ -1159,22 +1148,22 @@ class CNNBlock(object):
                         use_bias=self.use_bias,
                         kernel_regularizer=self.kernel_regularizer,
                         bias_regularizer=self.bias_regularizer,
-                        name='%sconv_shortcut' % name_prefix,
+                        name=f'{name_prefix}conv_shortcut',
                         trainable=not freeze)(shortcut)
                     if self.use_batch_norm:
                         if self.freeze_bn:
                             shortcut = keras.layers.BatchNormalization(
                                 axis=bn_axis,
                                 trainable=False,
-                                name='%sbn_shortcut' % name_prefix)(shortcut)
+                                name=f'{name_prefix}bn_shortcut')(shortcut)
                         else:
                             shortcut = keras.layers.BatchNormalization(
-                                axis=bn_axis, name='%sbn_shortcut' % name_prefix)(shortcut)
+                                axis=bn_axis, name=f'{name_prefix}bn_shortcut')(shortcut)
 
             x = keras.layers.add([x, shortcut])
 
         x = add_activation(self.activation_type,
-                           name='%s%s' % (name_prefix, self.activation_type))(x)
+                           name=f'{name_prefix}{self.activation_type}')(x)
 
         return x
 
@@ -1183,8 +1172,7 @@ class CNNBlock(object):
 def fire_module(inputs, block_id, squeeze, expand, kernel_regularizer=None,
                 bias_regularizer=None, data_format='channels_first',
                 trainable=True):
-    """
-    The squeeze net fire module architecture.
+    """The squeeze net fire module architecture.
 
     For details, see https://arxiv.org/pdf/1602.07360.pdf
 
@@ -1259,7 +1247,6 @@ def mish(x):
     Returns:
         mish(x) = x * tanh(ln(1 + e^x))
     """
-
     return x * tf.math.tanh(tf.math.softplus(x))
 
 
@@ -1444,7 +1431,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
             # (N, R*C, H, W), and reshape back to (N, R, C, 1, 1) after global pooling.
             R, C, H, W = x.get_shape().as_list()[1:]
             assert None not in (R, C, H, W), (
-                "Expect R, C, H, W all not None. While got {}".format((R, C, H, W))
+                f"Expect R, C, H, W all not None. While got {(R, C, H, W)}"
             )
             # Another issue is for pruning. Reshape cannot follow a pruned layer
             # in modulus pruning due to dimension change after pruning.

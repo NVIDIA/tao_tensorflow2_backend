@@ -31,8 +31,7 @@ def ResNet(nlayers,
            use_pooling=False,
            use_bias=False,
            **kwargs):
-    """
-    Construct a fixed-depth vanilla ResNet, based on the architectures from the original paper [1].
+    """Construct a fixed-depth vanilla ResNet, based on the architectures from the original paper [1].
 
     Args:
         nlayers (int): the number of layers in the desired ResNet (e.g. 18, 34, ..., 152).
@@ -209,7 +208,7 @@ def ResNet(nlayers,
                          subblocks=[(1, 512), (3, 512), (1, 2048)],
                          index=4, freeze_block=freeze4)(x)
         else:
-            raise NotImplementedError('A resnet with nlayers=%d is not implemented.' % nlayers)
+            raise NotImplementedError(f'A resnet with nlayers={nlayers} is not implemented.')
 
     # Add AveragePooling2D layer if use_pooling is enabled after resnet block.
     if use_pooling:
@@ -218,7 +217,7 @@ def ResNet(nlayers,
                                           padding='same')(x)
 
     # Naming model.
-    model_name = 'resnet%d' % nlayers
+    model_name = f'resnet{nlayers}'
     if not use_pooling:
         model_name += '_nopool'
     if use_batch_norm:

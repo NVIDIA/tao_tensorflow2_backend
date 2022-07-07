@@ -29,3 +29,7 @@ graphviz
 pyarrow
 simplejson
 tabulate
+flake8
+pydocstyle
+pyflakes
+pylint
