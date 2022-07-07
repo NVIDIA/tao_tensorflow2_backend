@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 
 class Postprocessor(ABC):
     """Base class of Input processor."""
+
     @abstractmethod
     def __init__(self, config=None):
         """Initializes a new `Postprocessor`.

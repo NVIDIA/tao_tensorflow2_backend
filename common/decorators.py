@@ -9,8 +9,7 @@ import inspect
 
 
 def override(method):
-    """
-    Override decorator.
+    """Override decorator.
 
     Decorator implementing method overriding in python
     Must also use the @subclass class decorator
@@ -20,8 +19,7 @@ def override(method):
 
 
 def subclass(class_object):
-    """
-    Subclass decorator.
+    """Subclass decorator.
 
     Verify all @override methods
     Use a class decorator to find the method's class
@@ -36,8 +34,5 @@ def subclass(class_object):
                         method.__doc__ = base_class.__dict__[name].__doc__
                     found = True
                     break
-            assert found, '"%s.%s" not found in any base class' % (
-                class_object.__name__,
-                name,
-            )
+            assert found, f'"{class_object.__name__}.{name}" not found in any base class'
     return class_object

@@ -16,8 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 class Pruner(ABC):
-    
+    """Base Pruner."""
+
     def __init__(self, cfg) -> None:
+        """Initialize."""
         self.cfg = cfg
         self.model_path = cfg.prune.model_path
         self.key = cfg.key
@@ -28,15 +30,17 @@ class Pruner(ABC):
         self.equalization_criterion = cfg.prune.equalization_criterion
         self.excluded_layers = []
         self.verbose = cfg.verbose
-    
+
     @abstractmethod
     def _load_model(self):
         pass
-        
+
     def set_model_path(self, model_path):
+        """Method to set model path."""
         self.model_path = model_path
 
     def prune(self, threshold, excluded_layers):
+        """Prune a model."""
         self._load_model()
         # Pruning trained model
         pruned_model = prune(
@@ -56,9 +60,6 @@ class Pruner(ABC):
             logger.info(pruned_model.summary())
 
         pruning_ratio = pruned_model.count_params() / self.model.count_params()
-        logger.info(
-            "Pruning ratio (pruned model / original model): {}".format(
-                pruning_ratio
-            )
-        )
+        logger.info("Pruning ratio (pruned model / original model):")
+        logger.info(pruning_ratio)
         return pruned_model

@@ -1,25 +1,21 @@
 # Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
 
-"""IVA common utils used across all apps."""
+"""TAO common utils used across all apps."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import argparse
-from functools import lru_cache
 import logging
 import math
 from math import exp, log
 import os
 import sys
-import tempfile
 
 from tensorflow import keras
 from tensorflow.keras import backend as K
-from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 from tensorflow.keras.regularizers import l1, l2
-from tensorflow.keras.utils import CustomObjectScope
 
 import tensorflow as tf
 from backbones.utils_tf import swish
@@ -32,7 +28,7 @@ ap_mode_dict = {0: "sample", 1: "integrate"}
 # Define 1MB for filesize calculation.
 MB = 2 << 20
 
-CUSTOM_OBJS = {'swish': swish,}
+CUSTOM_OBJS = {'swish': swish}
 
 
 def raise_deprecation_warning(task, subtask, args):
@@ -49,12 +45,9 @@ def raise_deprecation_warning(task, subtask, args):
     if not isinstance(args, list):
         raise TypeError("There should a list of arguments.")
     args_string = " ".join(args)
-    new_command = "{} {} {}".format(
-        task, subtask, args_string
-    )
+    new_command = f"{task} {subtask} {args_string}"
     raise DeprecationWarning(
-        "This command has been deprecated in this version of TLT. "
-        "Please run \n{}".format(new_command)
+        f"This command has been deprecated in this version of TLT. Please run \n{new_command}"
     )
 
 
@@ -79,7 +72,7 @@ def get_num_params(model):
         num_params(int): Number of parameters in a model. Represented
         in units per million.
     """
-    return model.count_params()/1e6
+    return model.count_params() / 1e6
 
 
 def get_model_file_size(model_path):
@@ -129,14 +122,14 @@ def summary_from_value(tag, value, scope=None):
     summary_value = summary.value.add()
     summary_value.simple_value = value
     if scope:
-        summary_value.tag = '{}/{}'.format(scope, tag)
+        summary_value.tag = f'{scope}/{tag}'
     else:
         summary_value.tag = tag
     return summary
 
 
 def parse_model_load_from_config(train_config):
-    '''Parse model loading config from protobuf.
+    """Parse model loading config from protobuf.
 
     Input:
         the protobuf config at training_config level.
@@ -145,16 +138,15 @@ def parse_model_load_from_config(train_config):
         load_graph (bool): Whether to load whole graph. If False, will need to recompile the model
         reset_optim (bool): Whether to reset optim. This field must be true if load_graph is false.
         initial_epoch (int): the starting epoch number. 0 - based
-    '''
-
+    """
     load_type = train_config.WhichOneof('load_model')
     if load_type is None:
         return None, False, True, 0
     if load_type == 'resume_model_path':
         try:
             epoch = int(train_config.resume_model_path.split('.')[-2].split('_')[-1])
-        except Exception:
-            raise ValueError("Cannot parse the checkpoint path. Did you rename it?")
+        except Exception as e:
+            raise ValueError("Cannot parse the checkpoint path. Did you rename it?") from e
         return train_config.resume_model_path, True, False, epoch
     if load_type == 'pretrain_model_path':
         return train_config.pretrain_model_path, False, True, 0
@@ -164,7 +156,7 @@ def parse_model_load_from_config(train_config):
 
 
 def check_tf_oom(func):
-    '''A decorator function to check OOM and raise informative errors.'''
+    """A decorator function to check OOM and raise informative errors."""
 
     def return_func(*args, **kwargs):
         try:
@@ -177,7 +169,7 @@ def check_tf_oom(func):
                     "resolution, use a smaller backbone, or enable model parallelism for "
                     "supported TLT architectures (see TLT documentation)."
                 )
-                exit(1)
+                sys.exit(1)
             else:
                 # throw out the error as-is if they are not OOM error
                 raise e
@@ -202,12 +194,12 @@ class StepLRScheduler(keras.callbacks.Callback):
 
     def __init__(self, base_lr=1e-2, gamma=0.1, step_size=33, max_iterations=12345):
         """__init__ method."""
-        super(StepLRScheduler, self).__init__()
+        super().__init__()
 
         if not 0.0 <= step_size <= 100.0:
-            raise ValueError('StepLRScheduler ' 'does not support a step size < 0.0 or > 100.0')
+            raise ValueError('StepLRScheduler does not support a step size < 0.0 or > 100.0')
         if not 0.0 <= gamma <= 1.0:
-            raise ValueError('StepLRScheduler ' 'does not support gamma < 0.0 or > 1.0')
+            raise ValueError('StepLRScheduler does not support gamma < 0.0 or > 1.0')
         self.base_lr = base_lr
         self.gamma = gamma
         self.step_size = step_size
@@ -243,9 +235,8 @@ class StepLRScheduler(keras.callbacks.Callback):
     def get_learning_rate(self, progress):
         """Compute learning rate according to progress to reach max iterations."""
         if not 0. <= progress <= 1.:
-            raise ValueError('StepLRScheduler '
-                             'does not support a progress value < 0.0 or > 1.0 '
-                             'received (%f)' % progress)
+            raise ValueError(
+                f'StepLRScheduler does not support a progress value < 0.0 or > 1.0 received ({progress})')
 
         numsteps = self.max_iterations * self.step_size // 100
         exp_factor = self.global_step / numsteps
@@ -297,7 +288,7 @@ class MultiGPULearningRateScheduler(keras.callbacks.Callback):
             annealing_points=[0.33, 0.66, 0.88],
             annealing_divider=10.0):
         """__init__ method."""
-        super(MultiGPULearningRateScheduler, self).__init__()
+        super().__init__()
 
         if not 0.0 <= soft_start <= 1.0:
             raise ValueError('The soft_start varible should be >= 0.0 or <= 1.0.')
@@ -348,9 +339,8 @@ class MultiGPULearningRateScheduler(keras.callbacks.Callback):
     def get_learning_rate(self, progress):
         """Compute learning rate according to progress to reach max_iterations."""
         if not 0. <= progress <= 1.:
-            raise ValueError('MultiGPULearningRateScheduler '
-                             'does not support a progress value < 0.0 or > 1.0 '
-                             'received (%f)' % progress)
+            raise ValueError(
+                f'MultiGPULearningRateScheduler does not support a progress value < 0.0 or > 1.0 received ({progress})')
 
         if not self.base_lr:
             return self.base_lr
@@ -400,7 +390,7 @@ class SoftStartAnnealingLearningRateScheduler(keras.callbacks.Callback):
     def __init__(self, max_iterations, base_lr=5e-4, min_lr_ratio=0.01, soft_start=0.1,
                  annealing_start=0.7):
         """__init__ method."""
-        super(SoftStartAnnealingLearningRateScheduler, self).__init__()
+        super().__init__()
 
         if not 0.0 <= soft_start <= 1.0:
             raise ValueError('The soft_start varible should be >= 0.0 or <= 1.0.')
@@ -446,9 +436,7 @@ class SoftStartAnnealingLearningRateScheduler(keras.callbacks.Callback):
     def get_learning_rate(self, progress):
         """Compute learning rate according to progress to reach max_iterations."""
         if not 0. <= progress <= 1.:
-            raise ValueError('SoftStartAnnealingLearningRateScheduler '
-                             'does not support a progress value < 0.0 or > 1.0 '
-                             'received (%f)' % progress)
+            raise ValueError(f'SoftStartAnnealingLearningRateScheduler does not support a progress value < 0.0 or > 1.0 received ({progress})')
 
         if not self.base_lr:
             return self.base_lr
@@ -476,7 +464,7 @@ class OneIndexedCSVLogger(keras.callbacks.CSVLogger):
 
     def on_epoch_end(self, epoch, logs=None):
         """On epoch end."""
-        super(OneIndexedCSVLogger, self).on_epoch_end(epoch+1, logs)
+        super().on_epoch_end(epoch + 1, logs)
 
 
 class SoftStartCosineAnnealingScheduler(keras.callbacks.Callback):
@@ -499,7 +487,7 @@ class SoftStartCosineAnnealingScheduler(keras.callbacks.Callback):
 
     def __init__(self, base_lr, min_lr_ratio, soft_start, max_iterations):
         """Initalize global parameters."""
-        super(SoftStartCosineAnnealingScheduler, self).__init__()
+        super().__init__()
 
         if not 0.0 <= soft_start <= 1.0:
             raise ValueError('The soft_start varible should be >= 0.0 or <= 1.0.')
@@ -542,9 +530,7 @@ class SoftStartCosineAnnealingScheduler(keras.callbacks.Callback):
             raise ValueError('Optimizer must have a "lr" attribute.')
 
         if not 0. <= progress <= 1.:
-            raise ValueError('SoftStartCosineAnnealingScheduler '
-                             'does not support a progress value < 0.0 or > 1.0 '
-                             'received (%f)' % progress)
+            raise ValueError(f'SoftStartCosineAnnealingScheduler does not support a progress value < 0.0 or > 1.0 received ({progress})')
 
         if not self.base_lr:
             return self.base_lr
@@ -575,7 +561,7 @@ class TensorBoard(keras.callbacks.Callback):
             write_graph is set to True.
           weight_hist: whether plot histogram of weights.
         """
-        super(TensorBoard, self).__init__()
+        super().__init__()
         self.log_dir = log_dir
         self.write_graph = write_graph
         self._merged = None
