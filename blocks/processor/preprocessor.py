@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 
 class Preprocessor(ABC):
     """Base class of Input processor."""
+
     @abstractmethod
     def __init__(self, images, output_size):
         """Initializes a new `InputProcessor`.

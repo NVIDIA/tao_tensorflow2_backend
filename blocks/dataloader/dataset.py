@@ -28,5 +28,3 @@ class Dataset(ABC):
     def process_example(self, values, config=None):
         """Processes one batch of data."""
         pass
-
-    
