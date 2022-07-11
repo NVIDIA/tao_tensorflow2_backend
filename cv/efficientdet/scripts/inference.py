@@ -6,10 +6,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import logging
-from multiprocessing.sharedctypes import Value
 import os
-
 import tensorflow as tf
 # from tensorflow.python.framework.ops import disable_eager_execution
 from tensorflow.python.util import deprecation
@@ -31,10 +28,9 @@ supported_img_format = ['.jpg', '.jpeg', '.JPG', '.JPEG', '.png', '.PNG']
 
 def get_label_dict(label_txt):
     """Create label dict from txt file."""
-
-    with open(label_txt, 'r') as f:
+    with open(label_txt, 'r', encoding='utf-8') as f:
         labels = f.readlines()
-        return {i+1 : label[:-1] for i, label in enumerate(labels)}
+        return {i + 1: label[:-1] for i, label in enumerate(labels)}
 
 
 def batch_generator(iterable, batch_size=1):
@@ -69,7 +65,7 @@ def infer_tlt(cfg, label_id_mapping, min_score_thresh):
                                            cfg.inference.batch_size,
                                            label_id_mapping=label_id_mapping,
                                            min_score_thresh=min_score_thresh,
-                                           max_boxes_to_draw=100) # TODO(@yuw): make it configurable
+                                           max_boxes_to_draw=100)  # TODO(@yuw): make it configurable
     imgpath_list = [os.path.join(cfg.inference.image_dir, imgname)
                     for imgname in sorted(os.listdir(cfg.inference.image_dir))
                     if os.path.splitext(imgname)[1].lower()
@@ -98,13 +94,14 @@ def infer_trt(cfg, label_id_mapping, min_score_thresh):
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
     config_name="inference", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig):
-    """Wrapper function for EfficientDet inference.
-    """
+    """Wrapper function for EfficientDet inference."""
     label_id_mapping = {}
     if cfg.evaluate.label_map:
         label_id_mapping = get_label_dict(cfg.evaluate.label_map)
@@ -118,6 +115,7 @@ def main(cfg: ExperimentConfig):
     else:
         # TODO(@yuw): add internal inference for un-encrypted?
         raise ValueError("Only .engine and .eff models are supported for inference.")
+
 
 if __name__ == '__main__':
     main()

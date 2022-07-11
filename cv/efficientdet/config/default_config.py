@@ -2,13 +2,15 @@
 
 """Default config file"""
 
-from typing import Optional, List, Dict
+from typing import List
 from dataclasses import dataclass, field
 from omegaconf import MISSING
 
 
 @dataclass
 class LoaderConfig:
+    """Dataloader config."""
+
     shuffle_buffer: int = 10000
     cycle_length: int = 32
     block_length: int = 16
@@ -18,7 +20,9 @@ class LoaderConfig:
 
 @dataclass
 class LRConfig:
-    name: str = 'cosine' # soft_anneal
+    """LR config."""
+
+    name: str = 'cosine'  # soft_anneal
     warmup_epoch: int = 5
     warmup_init: float = 0.0001
     learning_rate: float = 0.2
@@ -26,6 +30,8 @@ class LRConfig:
 
 @dataclass
 class OptConfig:
+    """Optimizer config."""
+
     name: str = 'sgd'
     momentum: float = 0.9
 
@@ -33,6 +39,7 @@ class OptConfig:
 @dataclass
 class TrainConfig:
     """Train config."""
+
     optimizer: OptConfig = OptConfig()
     lr_schedule: LRConfig = LRConfig()
     iterations_per_loop: int = 10
@@ -65,23 +72,24 @@ class ModelConfig:
     max_level: int = 7
     num_scales: int = 3
     freeze_bn: bool = False
-    freeze_blocks: List[int] = field(default_factory=lambda: []) # TODO
+    freeze_blocks: List[int] = field(default_factory=lambda: [])  # TODO
 
 
 @dataclass
 class DataConfig:
     """Data config."""
-    train_tfrecords: List[str] = field(default_factory=lambda: []) # TODO
-    train_dirs: List[str] = field(default_factory=lambda: []) # TODO
-    val_tfrecords: List[str] = field(default_factory=lambda: []) # TODO
-    val_dirs: List[str] = field(default_factory=lambda: []) # TODO
+
+    train_tfrecords: List[str] = field(default_factory=lambda: [])  # TODO
+    train_dirs: List[str] = field(default_factory=lambda: [])  # TODO
+    val_tfrecords: List[str] = field(default_factory=lambda: [])  # TODO
+    val_dirs: List[str] = field(default_factory=lambda: [])  # TODO
     val_json_file: str = ""
     testdev_dir: str = ''
     num_classes: int = 91
     max_instances_per_image: int = 200
     skip_crowd_during_training: bool = True
     use_fake_data: bool = False
-    image_size: str = '512x512' # TODO
+    image_size: str = '512x512'  # TODO
     loader: LoaderConfig = LoaderConfig()
 
 
@@ -108,6 +116,7 @@ class AugmentationConfig:
     random_crop_min_scale: float = 0.1
     random_crop_max_scale: float = 2
 
+
 @dataclass
 class ExportConfig:
     """Export config."""
@@ -117,26 +126,28 @@ class ExportConfig:
     output_path: str = MISSING
     engine_file: str = ""
     data_type: str = "fp32"
-    max_workspace_size: int = 2 # G
+    max_workspace_size: int = 2  # in Gb
     cal_image_dir: str = ""
     cal_cache_file: str = ""
     cal_batch_size: int = 16
     cal_batches: int = 10
 
+
 @dataclass
 class InferenceConfig:
     """Inference config."""
-    
+
     model_path: str = MISSING
     image_dir: str = MISSING
     output_dir: str = MISSING
     dump_label: bool = False
     batch_size: int = 1
 
+
 @dataclass
 class PruneConfig:
     """Pruning config."""
-    
+
     model_path: str = MISSING
     normalizer: str = 'max'
     output_path: str = MISSING
@@ -145,6 +156,7 @@ class PruneConfig:
     threshold: float = MISSING
     min_num_filters: int = 16
     excluded_layers: List[str] = field(default_factory=lambda: [])
+
 
 @dataclass
 class ExperimentConfig:

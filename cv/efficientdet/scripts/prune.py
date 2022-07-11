@@ -7,7 +7,6 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
-import json
 import os
 import tempfile
 import tensorflow as tf
@@ -25,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 def run_pruning(cfg):
     """Prune an encrypted Keras model."""
-
     output_dir = os.path.dirname(cfg.prune.output_path)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
@@ -53,18 +51,18 @@ def run_pruning(cfg):
     # Convert to EFF
     encode_eff(tmp_dir, cfg.prune.output_path, cfg.key, is_pruned=True)
     pruning_ratio = pruned_model.count_params() / pruner.model.count_params()
-    logger.info(
-        f"Pruning ratio (pruned model / original model): {pruning_ratio}")
+    print(f"Pruning ratio (pruned model / original model): {pruning_ratio}")
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
     config_name="prune", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
-    """Wrapper function for EfficientDet pruning.
-    """
+    """Wrapper function for EfficientDet pruning."""
     run_pruning(cfg=cfg)
 
 

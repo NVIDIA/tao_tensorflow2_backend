@@ -1,9 +1,10 @@
+"""EfficientDet Preprocessing."""
 from blocks.processor.preprocessor import Preprocessor
 
 
 class EfficientDetPreprocessor(Preprocessor):
-    def __init__(self, images, output_size):
-        pass
+    """EfficientDet Preprocessor."""
 
-    def transform(self):
-        return super().transform()
+    def __init__(self, images, output_size):
+        """Init."""
+        pass

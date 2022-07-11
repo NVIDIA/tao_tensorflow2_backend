@@ -7,7 +7,6 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
-import os
 import six
 from cv.efficientdet.utils import model_utils
 logger = logging.getLogger(__name__)
@@ -15,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 def eval_str(s):
     """If s is a string, return the eval results. Else return itself."""
-
     if isinstance(s, six.string_types):
         if len(s) > 0:
             return eval(s)
@@ -58,7 +56,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         shuffle_buffer=cfg['data']['loader']['shuffle_buffer'] or 1024,
         cycle_length=cfg['data']['loader']['cycle_length'] or 32,
         block_length=cfg['data']['loader']['block_length'] or 16,
-        prefetch_size=cfg['data']['loader']['prefetch_size'] or 2, # set to 0 for AUTOTUNE
+        prefetch_size=cfg['data']['loader']['prefetch_size'] or 2,  # set to 0 for AUTOTUNE
         # augmentation config
         input_rand_hflip=cfg['augment']['rand_hflip'],
         jitter_min=cfg['augment']['random_crop_min_scale'] or 0.1,
@@ -69,14 +67,14 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         checkpoint=cfg['train']['checkpoint'],
         ckpt=None,
         mode=mode,
-        is_training_bn=mode=='train',
+        is_training_bn=mode == 'train',
         checkpoint_period=cfg['train']['checkpoint_period'],
         train_batch_size=cfg['train']['batch_size'],
         tf_random_seed=cfg['train']['tf_random_seed'] or 42,
         pruned_model_path=cfg['train']['pruned_model_path'],
         moving_average_decay=cfg['train']['moving_average_decay'],
         amp=cfg['train']['amp'],
-        mixed_precision=cfg['train']['amp'] and not cfg['train']['qat'], #TODO(@yuw): whether raise error when qat and amp both True?
+        mixed_precision=cfg['train']['amp'] and not cfg['train']['qat'],  # TODO(@yuw): whether raise error when qat and amp both True?
         data_format=cfg['data_format'],
         l2_weight_decay=cfg['train']['l2_weight_decay'],
         l1_weight_decay=cfg['train']['l1_weight_decay'],

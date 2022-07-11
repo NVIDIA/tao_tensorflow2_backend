@@ -1,9 +1,7 @@
 """Callback related utils."""
-from concurrent import futures
 import os
 from mpi4py import MPI
 import numpy as np
-import time
 import tensorflow as tf
 from tensorflow_addons.optimizers import MovingAverage
 
@@ -13,12 +11,14 @@ from cv.efficientdet.utils import label_utils
 from cv.efficientdet.utils.helper import fetch_optimizer
 from cv.efficientdet.utils.horovod_utils import is_main_process
 from cv.efficientdet.visualize import vis_utils
-from cv.efficientdet.utils.helper import dump_json
 
 
 class COCOEvalCallback(tf.keras.callbacks.Callback):
+    """COCO Evaluation Callback."""
+
     def __init__(self, eval_dataset, eval_model, eval_freq, start_eval_epoch, eval_params, **kwargs):
-        super(COCOEvalCallback, self).__init__(**kwargs)
+        """Init."""
+        super().__init__(**kwargs)
         self.dataset = eval_dataset
         self.eval_model = eval_model
         self.eval_freq = eval_freq
@@ -34,12 +34,14 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         self.pbar = tf.keras.utils.Progbar(eval_params.evaluate.num_samples)
 
     def set_model(self, model):
+        """Set model."""
         if self.eval_params.train.moving_average_decay > 0:
             self.ema_opt = fetch_optimizer(model, MovingAverage)
         return super().set_model(model)
 
     @tf.function
     def eval_model_fn(self, images, labels):
+        """Evaluation model function."""
         cls_outputs, box_outputs = self.eval_model(images, training=False)
         detections = self.postpc.generate_detections(
             cls_outputs, box_outputs,
@@ -47,8 +49,8 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
             labels['source_ids'])
 
         def transform_detections(detections):
-            """A transforms detections in [id, x1, y1, x2, y2, score, class]
-               form to [id, x, y, w, h, score, class]."""
+            # A transforms detections in [id, x1, y1, x2, y2, score, class]
+            # form to [id, x, y, w, h, score, class]."""
             return tf.stack([
                 detections[:, :, 0],
                 detections[:, :, 1],
@@ -65,8 +67,9 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         return detections, labels['image_scales']
 
     def evaluate(self, epoch):
+        """Run evalution at Nth epoch."""
         if self.eval_params.train.moving_average_decay > 0:
-            self.ema_opt.swap_weights() # get ema weights
+            self.ema_opt.swap_weights()  # get ema weights
         self.eval_model.set_weights(self.model.get_weights())
         self.evaluator.reset_states()
         # evaluate all images.
@@ -97,7 +100,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
                     max_boxes_to_draw=100,
                     line_thickness=2)
                 with self.file_writer.as_default():
-                    tf.summary.image(f'Image Preview', tf.expand_dims(image, axis=0), step=epoch)
+                    tf.summary.image('Image Preview', tf.expand_dims(image, axis=0), step=epoch)
             # draw detections
             if is_main_process():
                 self.pbar.update(i)
@@ -115,15 +118,16 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
                     metric_dict[name] = metrics[i]
 
             # csv format
-            csv_metrics = ['AP','AP50','AP75','APs','APm','APl']
-            csv_format = ",".join([str(epoch+1)] + [str(round(metric_dict[key] * 100, 2)) for key in csv_metrics])
+            csv_metrics = ['AP', 'AP50', 'AP75', 'APs', 'APm', 'APl']
+            csv_format = ",".join([str(epoch + 1)] + [str(round(metric_dict[key] * 100, 2)) for key in csv_metrics])
             print(metric_dict, "csv format:", csv_format)
 
         if self.eval_params.train.moving_average_decay > 0:
-            self.ema_opt.swap_weights() # get base weights
-        
+            self.ema_opt.swap_weights()  # get base weights
+
         MPI.COMM_WORLD.Barrier()
 
     def on_epoch_end(self, epoch, logs=None):
+        """on_epoch_end with eval_freq."""
         if (epoch + 1) >= self.start_eval_epoch and (epoch + 1) % self.eval_freq == 0:
             self.evaluate(epoch)

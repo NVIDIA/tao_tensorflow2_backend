@@ -11,18 +11,18 @@ from tensorflow import keras
 
 
 class ImageResizeLayer(keras.layers.Layer):
-    '''A Keras layer to wrap tf.image.resize_nearst_neighbor function.'''
+    """A Keras layer to wrap tf.image.resize_nearst_neighbor function."""
 
     def __init__(self,
                  target_height=128,
                  target_width=128,
                  data_format='channels_last',
                  **kwargs):
-        '''Init function.'''
+        """Init function."""
         self.height = target_height
         self.width = target_width
         self.data_format = data_format
-        super(ImageResizeLayer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def call(self, inputs):
         """Resize."""
@@ -35,11 +35,11 @@ class ImageResizeLayer(keras.layers.Layer):
         return resized
 
     def get_config(self):
-        '''Keras layer get config.'''
+        """Keras layer get config."""
         config = {
             'target_height': self.height,
             'target_width': self.width,
             'data_format': self.data_format,
         }
-        base_config = super(ImageResizeLayer, self).get_config()
+        base_config = super().get_config()
         return dict(list(base_config.items()) + list(config.items()))

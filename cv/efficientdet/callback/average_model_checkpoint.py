@@ -31,7 +31,7 @@ class AverageModelCheckpoint(tf.keras.callbacks.ModelCheckpoint):
                  mode: str = 'auto',
                  save_freq: str = 'epoch',
                  **kwargs):
-
+        """Init."""
         super().__init__(
             filepath,
             monitor,
@@ -45,10 +45,12 @@ class AverageModelCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         self.ema_opt = None
 
     def set_model(self, model):
+        """Set model."""
         self.ema_opt = fetch_optimizer(model, MovingAverage)
-        return  super().set_model(model)
+        return super().set_model(model)
 
     def _save_model(self, epoch, batch, logs):
+        """Save model."""
         assert isinstance(self.ema_opt, MovingAverage)
 
         if self.update_weights:

@@ -23,8 +23,7 @@ log = logging.getLogger("EfficientDetHelper")
 
 @gs.Graph.register()
 def elt_const(self, op, name, input, value): # noqa pylint: disable=W0622
-    """
-    Element-wise operation.
+    """Element-wise operation.
 
     Add an element-wise operation to the graph which will operate
     on the input tensor with the value(s) given.
@@ -34,8 +33,8 @@ def elt_const(self, op, name, input, value): # noqa pylint: disable=W0622
     :param name: The name to use for the node.
     """
     input_tensor = input if type(input) is gs.Variable else input[0]
-    log.debug("Created {} node '{}': {}".format(op, name, value.squeeze()))
-    const = gs.Constant(name="{}_value:0".format(name), values=value)
+    log.debug("Created {} node '{}': {}".format(op, name, value.squeeze()))  # noqa pylint: disable=C0209
+    const = gs.Constant(name=f"{name}_value:0", values=value)
     return self.layer(
         name=name, op=op,
         inputs=[input_tensor, const], outputs=[name + ":0"])
@@ -43,8 +42,7 @@ def elt_const(self, op, name, input, value): # noqa pylint: disable=W0622
 
 @gs.Graph.register()
 def unsqueeze(self, name, input, axes=None): # noqa pylint: disable=W0622
-    """
-    Adds to the graph an Unsqueeze node for the given axes and to the given input.
+    """Adds to the graph an Unsqueeze node for the given axes and to the given input.
 
     :param self: The gs.Graph object being extended.
     :param name: The name to use for the node.
@@ -53,7 +51,7 @@ def unsqueeze(self, name, input, axes=None): # noqa pylint: disable=W0622
     :return: The first output tensor, to allow chained graph construction.
     """
     input_tensor = input if type(input) is gs.Variable else input[0]
-    log.debug("Created Unsqueeze node '{}': {}".format(name, axes))
+    log.debug("Created Unsqueeze node '{}': {}".format(name, axes))  # noqa pylint: disable=C0209
     return self.layer(
         name=name, op="Unsqueeze",
         inputs=[input_tensor], outputs=[name + ":0"], attrs={'axes': axes})
@@ -61,8 +59,7 @@ def unsqueeze(self, name, input, axes=None): # noqa pylint: disable=W0622
 
 @gs.Graph.register()
 def transpose(self, name, input, perm): # noqa pylint: disable=W0622
-    """
-    Adds to the graph a Transpose node for the given axes permutation and to the given input.
+    """Adds to the graph a Transpose node for the given axes permutation and to the given input.
 
     :param self: The gs.Graph object being extended.
     :param name: The name to use for the node.
@@ -71,7 +68,7 @@ def transpose(self, name, input, perm): # noqa pylint: disable=W0622
     :return: The first output tensor, to allow chained graph construction.
     """
     input_tensor = input if type(input) is gs.Variable else input[0]
-    log.debug("Created Transpose node '{}': {}".format(name, perm))
+    log.debug("Created Transpose node '{}': {}".format(name, perm))  # noqa pylint: disable=C0209
     return self.layer(
         name=name, op="Transpose",
         inputs=[input_tensor], outputs=[name + ":0"], attrs={'perm': perm})
@@ -79,8 +76,7 @@ def transpose(self, name, input, perm): # noqa pylint: disable=W0622
 
 @gs.Graph.register()
 def sigmoid(self, name, input): # noqa pylint: disable=W0622
-    """
-    Adds to the graph a Sigmoid node for the given input.
+    """Adds to the graph a Sigmoid node for the given input.
 
     :param self: The gs.Graph object being extended.
     :param name: The name to use for the node.
@@ -88,7 +84,7 @@ def sigmoid(self, name, input): # noqa pylint: disable=W0622
     :return: The first output tensor, to allow chained graph construction.
     """
     input_tensor = input if type(input) is gs.Variable else input[0]
-    log.debug("Created Sigmoid node '{}'".format(name))
+    log.debug("Created Sigmoid node '{}'".format(name))   # noqa pylint: disable=C0209
     return self.layer(
         name=name, op="Sigmoid",
         inputs=[input_tensor], outputs=[name + ":0"])
@@ -96,8 +92,7 @@ def sigmoid(self, name, input): # noqa pylint: disable=W0622
 
 @gs.Graph.register()
 def plugin(self, op, name, inputs, outputs, attrs): # noqa pylint: disable=W0622
-    """
-    Adds to the graph a TensorRT plugin node with the given name, inputs and outputs.
+    """Adds to the graph a TensorRT plugin node with the given name, inputs and outputs.
 
     The attrs dictionary holds attributes to be added to the plugin node.
     :param self: The gs.Graph object being extended.
@@ -109,7 +104,7 @@ def plugin(self, op, name, inputs, outputs, attrs): # noqa pylint: disable=W0622
     :return: The first output tensor, to allow chained graph construction.
     """
     input_tensors = inputs if type(inputs) is list else [inputs]
-    log.debug("Created TRT Plugin node '{}': {}".format(name, attrs))
+    log.debug("Created TRT Plugin node '{}': {}".format(name, attrs))   # noqa pylint: disable=C0209
     return self.layer(
         op=op, name=name,
         inputs=input_tensors, outputs=outputs, attrs=attrs)
@@ -117,8 +112,7 @@ def plugin(self, op, name, inputs, outputs, attrs): # noqa pylint: disable=W0622
 
 @gs.Graph.register()
 def find_node_by_op(self, op):
-    """
-    Finds the first node in the graph with the given operation name.
+    """Finds the first node in the graph with the given operation name.
 
     :param self: The gs.Graph object being extended.
     :param op: The operation name to search for.
@@ -132,8 +126,7 @@ def find_node_by_op(self, op):
 
 @gs.Graph.register()
 def find_descendant_by_op(self, node, op, depth=10):
-    """
-    Find lower node by matching op name.
+    """Find lower node by matching op name.
 
     Starting from the given node, finds a node lower in the graph
     matching the given operation name. This is not an
@@ -154,8 +147,7 @@ def find_descendant_by_op(self, node, op, depth=10):
 
 @gs.Graph.register()
 def find_ancestor_by_op(self, node, op, depth=10):
-    """
-    Find higher node by matching op name.
+    """Find higher node by matching op name.
 
     Starting from the given node, finds a node higher in the graph
     matching the given operation name. This is not an

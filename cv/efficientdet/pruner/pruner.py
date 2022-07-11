@@ -16,11 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 class EfficientDetPruner(Pruner):
-    
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    """EfficientDet Pruner."""
 
     def _load_model(self):
+        """Load model."""
         self.model = load_model(self.model_path, self.cfg)
         self.excluded_layers = self.model.output_names
         # self.model.summary()

@@ -1,3 +1,5 @@
+# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+"""EfficientDet Trainer."""
 from blocks.trainer import Trainer
 import re
 import tensorflow as tf
@@ -7,10 +9,13 @@ from cv.efficientdet.utils.keras_utils import get_mixed_precision_policy
 
 
 class EfficientDetTrainer(Trainer):
+    """EfficientDet Trainer."""
+
     def __init__(self, model, config=None, callbacks=None):
+        """Init."""
         self.model = model
         self.callbacks = callbacks
-        self.config=config
+        self.config = config
 
     def fit(self, train_dataset, eval_dataset,
             num_epochs,
@@ -18,6 +23,7 @@ class EfficientDetTrainer(Trainer):
             initial_epoch,
             validation_steps,
             verbose) -> None:
+        """Run model.fit with custom steps."""
         self.model.train_step = self.train_step
         self.model.test_step = self.test_step
         history = self.model.fit(
@@ -77,8 +83,8 @@ class EfficientDetTrainer(Trainer):
                 scaled_loss = total_loss
                 optimizer = self.model.optimizer
         compress = get_mixed_precision_policy().compute_dtype == 'float16'
-        tape = hvd.DistributedGradientTape(tape, compression=hvd.Compression.fp16 \
-            if compress else hvd.Compression.none)
+        tape = hvd.DistributedGradientTape(
+            tape, compression=hvd.Compression.fp16 if compress else hvd.Compression.none)
 
         loss_vals['loss'] = total_loss
         loss_vals['learning_rate'] = optimizer.learning_rate(optimizer.iterations)
@@ -146,13 +152,13 @@ class EfficientDetTrainer(Trainer):
         loss_vals['loss'] = total_loss
         return loss_vals
 
-
     def _freeze_vars(self):
+        """Get trainable variables."""
         if self.config.var_freeze_expr:
             return [
-            v for v in self.model.trainable_variables
-            if not re.match(self.config.var_freeze_expr, v.name)
-        ]
+                v for v in self.model.trainable_variables
+                if not re.match(self.config.var_freeze_expr, v.name)
+            ]
         return self.model.trainable_variables
 
     def _reg_l2_loss(self, weight_decay, regex=r'.*(kernel|weight):0$'):
@@ -166,6 +172,7 @@ class EfficientDetTrainer(Trainer):
 
     def _reg_l1_loss(self, weight_decay, regex=r'.*(kernel|weight):0$'):
         """Return regularization l1 loss loss."""
+        var_match = re.compile(regex)
         return tf.contrib.layers.apply_regularization(
             tf.keras.regularizers.l1(weight_decay / 2.0),
             [v for v in self._freeze_vars()
@@ -205,24 +212,27 @@ class EfficientDetTrainer(Trainer):
 
         for level in levels:
             # Onehot encoding for classification labels.
-            cls_targets_at_level = tf.one_hot(labels['cls_targets_%d' % (level + 3)],
-                                            self.config.num_classes)
+            cls_targets_at_level = tf.one_hot(
+                labels[f'cls_targets_{level + 3}'],
+                self.config.num_classes)
 
             if self.config.data_format == 'channels_first':
                 targets_shape = tf.shape(cls_targets_at_level)
                 bs = targets_shape[0]
                 width = targets_shape[2]
                 height = targets_shape[3]
-                cls_targets_at_level = tf.reshape(cls_targets_at_level,
-                                                [bs, -1, width, height])
+                cls_targets_at_level = tf.reshape(
+                    cls_targets_at_level,
+                    [bs, -1, width, height])
             else:
                 targets_shape = tf.shape(cls_targets_at_level)
                 bs = targets_shape[0]
                 width = targets_shape[1]
                 height = targets_shape[2]
-                cls_targets_at_level = tf.reshape(cls_targets_at_level,
-                                                [bs, width, height, -1])
-            box_targets_at_level = labels['box_targets_%d' % (level + 3)]
+                cls_targets_at_level = tf.reshape(
+                    cls_targets_at_level,
+                    [bs, width, height, -1])
+            box_targets_at_level = labels[f'box_targets_{level + 3}']
 
             class_loss_layer = self.model.loss.get('class_loss', None)
             if class_loss_layer:
@@ -237,21 +247,21 @@ class EfficientDetTrainer(Trainer):
                         cls_loss, [bs, width, height, -1, self.config.num_classes])
                 cls_loss *= tf.cast(
                     tf.expand_dims(
-                        tf.not_equal(labels['cls_targets_%d' % (level + 3)], -2), -1),
+                        tf.not_equal(labels[f'cls_targets_{level + 3}'], -2), -1),
                     tf.float32)
                 cls_losses.append(tf.reduce_sum(cls_loss))
 
             if self.config.box_loss_weight and self.model.loss.get('box_loss', None):
                 box_loss_layer = self.model.loss['box_loss']
                 box_losses.append(
-                    box_loss_layer([num_positives_sum, box_targets_at_level],
-                                box_outputs[level]))
+                    box_loss_layer(
+                        [num_positives_sum, box_targets_at_level],
+                        box_outputs[level]))
 
         if self.config.iou_loss_type:
-            box_outputs = tf.concat([tf.reshape(v, [-1, 4]) for v in box_outputs],
-                                    axis=0)
-            box_targets = tf.concat([
-                tf.reshape(labels['box_targets_%d' % (level + 3)], [-1, 4])
+            box_outputs = tf.concat([tf.reshape(v, [-1, 4]) for v in box_outputs], axis=0)  # noqa pylint: disable=E1123
+            box_targets = tf.concat([  # noqa pylint: disable=E1123
+                tf.reshape(labels[f'box_targets_{level + 3}'], [-1, 4])
                 for level in levels], axis=0)
             box_iou_loss_layer = self.model.loss['box_iou_loss']
             box_iou_loss = box_iou_loss_layer([num_positives_sum, box_targets],

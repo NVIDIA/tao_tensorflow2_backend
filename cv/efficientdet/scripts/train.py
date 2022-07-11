@@ -19,15 +19,15 @@ from cv.efficientdet.model import optimizer_builder
 from cv.efficientdet.trainer.efficientdet_trainer import EfficientDetTrainer
 from cv.efficientdet.utils import hparams_config, keras_utils
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
-from cv.efficientdet.utils.helper import dump_json, decode_eff, load_model, load_json_model
+from cv.efficientdet.utils.helper import decode_eff, load_model, load_json_model
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
 
 
 def run_experiment(cfg):
-
+    """Run training experiment."""
     # get e2e training time
-    begin = time.time()
-    logging.info("Training started at: {}".format(time.asctime()))
+    # begin = time.time()
+    logging.info(f"Training started at: {time.asctime()}")
 
     hvd.init()
 
@@ -46,15 +46,16 @@ def run_experiment(cfg):
             StdOutBackend(verbosity=Verbosity.DEFAULT)]
     DLLogger.init(backends=backends)
 
-    steps_per_epoch = (cfg.train.num_examples_per_epoch + 
+    steps_per_epoch = (
+        cfg.train.num_examples_per_epoch +
         (cfg.train.batch_size * get_world_size()) - 1) // \
-            (cfg.train.batch_size * get_world_size())
+        (cfg.train.batch_size * get_world_size())
 
     # Set up dataloader
     train_sources = datasource.DataSource(
         cfg.data.train_tfrecords,
         cfg.data.train_dirs)
-    train_dl= dataloader.CocoDataset(
+    train_dl = dataloader.CocoDataset(
         train_sources,
         is_training=True,
         use_fake_data=cfg.data.use_fake_data,
@@ -146,7 +147,7 @@ def run_experiment(cfg):
         loss={
             'box_loss':
                 losses.BoxLoss(
-                    config.delta, # TODO(@yuw): add to default config
+                    config.delta,  # TODO(@yuw): add to default config
                     reduction=tf.keras.losses.Reduction.NONE),
             'box_iou_loss':
                 losses.BoxIouLoss(
@@ -172,7 +173,7 @@ def run_experiment(cfg):
         ckpt_path, _ = decode_eff(resume_ckpt_path, cfg.key)
         train_from_epoch = keras_utils.restore_ckpt(
             model,
-            ckpt_path, 
+            ckpt_path,
             config.moving_average_decay,
             steps_per_epoch=steps_per_epoch,
             expect_partial=False)
@@ -184,13 +185,8 @@ def run_experiment(cfg):
     cfg.evaluate.num_samples = num_samples
 
     callbacks = callback_builder.get_callbacks(
-        cfg, 'traineval', eval_dataset.shard(get_world_size(), get_rank()).take(num_samples),
-        DLLogger,
-        profile=False, 
-        time_history=False,
-        log_steps=1,
-        lr_tb=False,
-        benchmark=False,
+        cfg,
+        eval_dataset.shard(get_world_size(), get_rank()).take(num_samples),
         eval_model=eval_model)
 
     trainer = EfficientDetTrainer(model, config, callbacks)
@@ -205,13 +201,14 @@ def run_experiment(cfg):
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
     config_name="train", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
-    """Wrapper function for EfficientDet training.
-    """
+    """Wrapper function for EfficientDet training."""
     run_experiment(cfg=cfg)
 
 
