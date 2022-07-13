@@ -73,16 +73,14 @@ class TensorRTInfer:
         assert len(self.allocations) > 0
 
     def input_spec(self):
-        """
-        Get the specs for the input tensor of the network. Useful to prepare memory allocations.
+        """Get the specs for the input tensor of the network. Useful to prepare memory allocations.
 
         :return: Two items, the shape of the input tensor and its (numpy) datatype.
         """
         return self.inputs[0]['shape'], self.inputs[0]['dtype']
 
     def output_spec(self):
-        """
-        Get the specs for the output tensors of the network. Useful to prepare memory allocations.
+        """Get the specs for the output tensors of the network. Useful to prepare memory allocations.
 
         :return: A list with two items per element,
         the shape and (numpy) datatype of each output tensor.
@@ -93,8 +91,7 @@ class TensorRTInfer:
         return specs
 
     def infer(self, batch, scales=None, nms_threshold=None):
-        """
-        Execute inference on a batch of images.
+        """Execute inference on a batch of images.
 
         The images should already be batched and preprocessed, as prepared by
         the ImageBatcher class. Memory copying to and from the GPU device will be performed here.
@@ -147,12 +144,13 @@ class TensorRTInfer:
         if self.engine:
             del self.engine
 
-
     def visualize_detections(self, image_dir, output_dir, dump_label=False):
+        """Visualize detection."""
+        # TODO(@yuw): to use vis_utils function.
         labels = [i[1] for i in sorted(self.label_id_mapping.items(), key=lambda x: x[0])]
         batcher = ImageBatcher(image_dir, *self.input_spec())
         for batch, images, scales in batcher.get_batch():
-            print("Processing Image {} / {}".format(batcher.image_index, batcher.num_images), end="\r")
+            print(f"Processing Image {batcher.image_index} / {batcher.num_images}", end="\r")
             detections = self.infer(batch, scales, self.min_score_thresh)
             for i in range(len(images)):
                 basename = os.path.splitext(os.path.basename(images[i]))[0]
@@ -166,8 +164,8 @@ class TensorRTInfer:
                     # Generate KITTI labels
                     kitti_txt = ""
                     for d in detections[i]:
-                        kitti_txt += label_id_mapping[int(d['class'])+1] + ' 0 0 0 ' + ' '.join(
+                        kitti_txt += self.label_id_mapping[int(d['class']) + 1] + ' 0 0 0 ' + ' '.join(
                             [str(d['xmin']), str(d['ymin']), str(d['xmax']), str(d['ymax'])]) + \
-                                ' 0 0 0 0 0 0 0 ' + str(d['score']) + '\n'
-                    with open(os.path.join(args.out_label_path, f"{basename}.txt"), "w") as f:
+                            ' 0 0 0 0 0 0 0 ' + str(d['score']) + '\n'
+                    with open(os.path.join(out_label_path, f"{basename}.txt"), "w", encoding='utf-8') as f:
                         f.write(kitti_txt)

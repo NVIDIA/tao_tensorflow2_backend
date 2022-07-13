@@ -1,9 +1,7 @@
 # Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
 """EfficientDet standalone evaluation script."""
 import os
-import time
 from mpi4py import MPI
-from absl import logging
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
 
@@ -65,8 +63,8 @@ def run_experiment(cfg):
             labels['source_ids'])
 
         def transform_detections(detections):
-            """A transforms detections in [id, x1, y1, x2, y2, score, class] 
-               form to [id, x, y, w, h, score, class]."""
+            # A transforms detections in [id, x1, y1, x2, y2, score, class]
+            # form to [id, x, y, w, h, score, class]."""
             return tf.stack([
                 detections[:, :, 0],
                 detections[:, :, 1],
@@ -101,19 +99,20 @@ def run_experiment(cfg):
 
         if label_map:
             for i, cid in enumerate(sorted(label_map.keys())):
-                name = 'AP_/%s' % label_map[cid]
+                name = f'AP_/{label_map[cid]}'
                 metric_dict[name] = metrics[i + len(evaluator.metric_names)]
-    MPI.COMM_WORLD.Barrier()
+    MPI.COMM_WORLD.Barrier()  # noqa pylint: disable=I1101
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
     config_name="eval", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
-    """Wrapper function for EfficientDet evaluation.
-    """
+    """Wrapper function for EfficientDet evaluation."""
     run_experiment(cfg)
 
 

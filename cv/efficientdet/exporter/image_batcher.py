@@ -55,7 +55,8 @@ class ImageBatcher:
                 self.images.append(input)
         self.num_images = len(self.images)
         if self.num_images < 1:
-            print("No valid {} images found in {}".format("/".join(extensions), input))
+            exts = "/".join(extensions)
+            print(f"No valid {exts} images found in {input}")
             sys.exit(1)
 
         # Handle Tensor Shape
@@ -102,8 +103,7 @@ class ImageBatcher:
         self.preprocessor = preprocessor
 
     def preprocess_image(self, image_path):
-        """
-        The image preprocessor loads an image from disk and prepares it as needed for batching.
+        """The image preprocessor loads an image from disk and prepares it as needed for batching.
 
         This includes padding, resizing, normalization, data type casting, and transposing.
         This Image Batcher implements one algorithm for now:
@@ -114,8 +114,7 @@ class ImageBatcher:
         """
 
         def resize_pad(image, pad_color=(0, 0, 0)):
-            """
-            Resize and Pad.
+            """Resize and Pad.
 
             A subroutine to implement padding and resizing. This will resize the image to fit
             fully within the input size, and pads the remaining bottom-right portions with
@@ -148,15 +147,14 @@ class ImageBatcher:
             # [0-1] Normalization, Mean subtraction and Std Dev scaling are
             # part of the EfficientDet graph, so no need to do it during preprocessing here
         else:
-            print("Preprocessing method {} not supported".format(self.preprocessor))
+            print(f"Preprocessing method {self.preprocessor} not supported.")
             sys.exit(1)
         if self.format == "NCHW":
             image = np.transpose(image, (2, 0, 1))
         return image, scale
 
     def get_batch(self):
-        """
-        Retrieve the batches.
+        """Retrieve the batches.
 
         This is a generator object, so you can use it within a loop as:
         for batch, images in batcher.get_batch():

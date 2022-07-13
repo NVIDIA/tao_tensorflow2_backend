@@ -32,7 +32,7 @@ mappings = {
         'block1b_project_bn', 'block2e_add', 'block3e_add', 'block5g_add', 'block7c_project_bn'],
     'resdet18': ['stem_activation', 'block_1b_relu', 'block_2b_relu', 'block_3b_relu', 'block_4b_relu'],
     'resdet34': ['stem_activation', 'block_1c_relu', 'block_2d_relu', 'block_3f_relu', 'block_4c_relu'],
-    }
+}
 
 
 def swish(features, use_native=True, use_hard=False):
@@ -109,7 +109,7 @@ def build_model_base(images, model_name='efficientdet-d0',
         kernel_regularizer=None,
         bias_regularizer=None,
         stride16=False,
-        activation_type=None) # TODO(@yuw): swish -> option to use relu?
+        activation_type=None)  # TODO(@yuw): swish -> option to use relu?
     return [model.get_layer(fmap).output for fmap in mappings[model_name]]
 
 

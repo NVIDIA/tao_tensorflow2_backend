@@ -13,26 +13,28 @@ CLASS_OFFSET = 1
 
 
 def to_list(inputs):
+    """Convert to list."""
     if isinstance(inputs, dict):
         return [inputs[k] for k in sorted(inputs.keys())]
     if isinstance(inputs, list):
         return inputs
-    raise ValueError('Unrecognized inputs : {}'.format(inputs))
+    raise ValueError(f'Unrecognized inputs : {inputs}')
 
 
 class EfficientDetPostprocessor(Postprocessor):
+    """EfficientDet Postprocessor."""
+
     def __init__(self, params):
+        """Init."""
         self.params = params
 
-    def generate_detections(
-        self,
-        cls_outputs,
-        box_outputs,
-        image_scales,
-        image_ids,
-        flip=False,
-        use_pyfunc=True):
-
+    def generate_detections(self,
+                            cls_outputs,
+                            box_outputs,
+                            image_scales,
+                            image_ids,
+                            flip=False,
+                            use_pyfunc=True):
         """A legacy interface for generating [id, x, y, w, h, score, class]."""
         _, width = model_utils.parse_image_size(self.params.data.image_size)
 
@@ -189,8 +191,8 @@ class EfficientDetPostprocessor(Postprocessor):
             A tuple (boxes, scores, classes, valid_lens), where valid_lens is a scalar
             denoting the valid length of boxes/scores/classes outputs.
         """
-        eval_config= self.params['evaluate']
-        method = 'hard' # nms_configs['method']
+        eval_config = self.params['evaluate']
+        method = 'hard'  # nms_configs['method'] TODO(@yuw): configurable?
         max_output_size = eval_config['max_detections_per_image']
 
         if method == 'hard' or not method:
@@ -281,7 +283,6 @@ class EfficientDetPostprocessor(Postprocessor):
     def merge_class_box_level_outputs(self, cls_outputs: List[T],
                                       box_outputs: List[T]) -> Tuple[T, T]:
         """Concatenates class and box of all levels into one tensor."""
-
         cls_outputs_all, box_outputs_all = [], []
         batch_size = tf.shape(cls_outputs[0])[0]
         for level in range(0, self.params.model.max_level - self.params.model.min_level + 1):
@@ -328,4 +329,3 @@ class EfficientDetPostprocessor(Postprocessor):
             box_outputs_topk = box_outputs
 
         return cls_outputs_topk, box_outputs_topk, classes, indices
-    

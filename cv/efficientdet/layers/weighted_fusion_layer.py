@@ -13,7 +13,7 @@ class WeightedFusion(tf.keras.layers.Layer):
 
     def __init__(self, epsilon=1e-4, **kwargs):
         """Init."""
-        super(WeightedFusion, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.epsilon = epsilon
 
     def build(self, input_shape):
@@ -38,7 +38,7 @@ class WeightedFusion(tf.keras.layers.Layer):
 
     def get_config(self):
         """Config."""
-        config = super(WeightedFusion, self).get_config()
+        config = super().get_config()
         config.update({
             'epsilon': self.epsilon
         })

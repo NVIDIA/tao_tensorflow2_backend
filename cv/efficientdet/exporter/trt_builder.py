@@ -44,8 +44,7 @@ class EngineCalibrator(trt.IInt8EntropyCalibrator2):
         self.batch_generator = None
 
     def set_image_batcher(self, image_batcher: ImageBatcher):
-        """
-        Define the image batcher to use, if any.
+        """Define the image batcher to use, if any.
 
         If using only the cache file,
         an image batcher doesn't need to be defined.
@@ -57,8 +56,7 @@ class EngineCalibrator(trt.IInt8EntropyCalibrator2):
         self.batch_generator = self.image_batcher.get_batch()
 
     def get_batch_size(self):
-        """
-        Overrides from trt.IInt8EntropyCalibrator2.
+        """Overrides from trt.IInt8EntropyCalibrator2.
 
         Get the batch size to use for calibration.
         :return: Batch size.
@@ -68,8 +66,7 @@ class EngineCalibrator(trt.IInt8EntropyCalibrator2):
         return 1
 
     def get_batch(self, names):
-        """
-        Overrides from trt.IInt8EntropyCalibrator2.
+        """Overrides from trt.IInt8EntropyCalibrator2.
 
         Get the next batch to use for calibration, as a list of device memory pointers.
         :param names: The names of the inputs, if useful to define the order of inputs.
@@ -79,7 +76,7 @@ class EngineCalibrator(trt.IInt8EntropyCalibrator2):
             return None
         try:
             batch, _, _ = next(self.batch_generator)
-            log.info("Calibrating image {} / {}".format(
+            log.info("Calibrating image {} / {}".format(   # noqa pylint: disable=C0209
                 self.image_batcher.image_index, self.image_batcher.num_images))
             cuda.memcpy_htod(self.batch_allocation, np.ascontiguousarray(batch))
             return [int(self.batch_allocation)]
@@ -88,27 +85,25 @@ class EngineCalibrator(trt.IInt8EntropyCalibrator2):
             return None
 
     def read_calibration_cache(self):
-        """
-        Overrides from trt.IInt8EntropyCalibrator2.
+        """Overrides from trt.IInt8EntropyCalibrator2.
 
         Read the calibration cache file stored on disk, if it exists.
         :return: The contents of the cache file, if any.
         """
         if os.path.exists(self.cache_file):
             with open(self.cache_file, "rb") as f:
-                log.info("Using calibration cache file: {}".format(self.cache_file))
+                log.info("Using calibration cache file: {}".format(self.cache_file))   # noqa pylint: disable=C0209
                 return f.read()
         return None
 
     def write_calibration_cache(self, cache):
-        """
-        Overrides from trt.IInt8EntropyCalibrator2.
+        """Overrides from trt.IInt8EntropyCalibrator2.
 
         Store the calibration cache to a file on disk.
         :param cache: The contents of the calibration cache to store.
         """
         with open(self.cache_file, "wb") as f:
-            log.info("Writing calibration cache data to: {}".format(self.cache_file))
+            log.info("Writing calibration cache data to: {}".format(self.cache_file))  # noqa pylint: disable=C0209
             f.write(cache)
 
 
@@ -136,8 +131,7 @@ class EngineBuilder:
         self.parser = None
 
     def create_network(self, onnx_path, batch_size, dynamic_batch_size=None):
-        """
-        Parse the ONNX graph and create the corresponding TensorRT network definition.
+        """Parse the ONNX graph and create the corresponding TensorRT network definition.
 
         :param onnx_path: The path to the ONNX graph to load.
         """
@@ -149,7 +143,7 @@ class EngineBuilder:
         onnx_path = os.path.realpath(onnx_path)
         with open(onnx_path, "rb") as f:
             if not self.parser.parse(f.read()):
-                log.error("Failed to load ONNX file: {}".format(onnx_path))
+                log.error("Failed to load ONNX file: {}".format(onnx_path))  # noqa pylint: disable=C0209
                 for error in range(self.parser.num_errors):
                     log.error(self.parser.get_error(error))
                 sys.exit(1)
@@ -159,45 +153,31 @@ class EngineBuilder:
         log.info("Network Description")
         profile = self.builder.create_optimization_profile()
         dynamic_inputs = False
-        for input in inputs:
-            log.info("Input '{}' with shape {} and dtype {}".format(input.name, input.shape, input.dtype))
-            if input.shape[0] == -1:
+        for inp in inputs:
+            log.info("Input '{}' with shape {} and dtype {}".format(inp.name, inp.shape, inp.dtype))  # noqa pylint: disable=C0209
+            if inp.shape[0] == -1:
                 dynamic_inputs = True
                 if dynamic_batch_size:
                     if type(dynamic_batch_size) is str:
                         dynamic_batch_size = [int(v) for v in dynamic_batch_size.split(",")]
                     assert len(dynamic_batch_size) == 3
-                    min_shape = [dynamic_batch_size[0]] + list(input.shape[1:])
-                    opt_shape = [dynamic_batch_size[1]] + list(input.shape[1:])
-                    max_shape = [dynamic_batch_size[2]] + list(input.shape[1:])
-                    profile.set_shape(input.name, min_shape, opt_shape, max_shape)
-                    log.info("Input '{}' Optimization Profile with shape MIN {} / OPT {} / MAX {}".format(
-                        input.name, min_shape, opt_shape, max_shape))
+                    min_shape = [dynamic_batch_size[0]] + list(inp.shape[1:])
+                    opt_shape = [dynamic_batch_size[1]] + list(inp.shape[1:])
+                    max_shape = [dynamic_batch_size[2]] + list(inp.shape[1:])
+                    profile.set_shape(inp.name, min_shape, opt_shape, max_shape)
+                    log.info("Input '{}' Optimization Profile with shape MIN {} / OPT {} / MAX {}".format(  # noqa pylint: disable=C0209
+                        inp.name, min_shape, opt_shape, max_shape))
                 else:
-                    shape = [batch_size] + list(input.shape[1:])
-                    profile.set_shape(input.name, shape, shape, shape)
-                    log.info("Input '{}' Optimization Profile with shape {}".format(input.name, shape))
+                    shape = [batch_size] + list(inp.shape[1:])
+                    profile.set_shape(inp.name, shape, shape, shape)
+                    log.info("Input '{}' Optimization Profile with shape {}".format(inp.name, shape))  # noqa pylint: disable=C0209
         if dynamic_inputs:
             self.config.add_optimization_profile(profile)
-
-        outputs = [self.network.get_output(i) for i in range(self.network.num_outputs)]
-
-        # log.info("Network Description")
-        # for input in inputs: # noqa pylint: disable=W0622
-        #     self.batch_size = input.shape[0]
-        #     log.info("Input '{}' with shape {} and dtype {}".format(
-        #         input.name, input.shape, input.dtype))
-        # for output in outputs:
-        #     log.info("Output '{}' with shape {} and dtype {}".format(
-        #         output.name, output.shape, output.dtype))
-        # assert self.batch_size > 0
-        # self.builder.max_batch_size = self.batch_size
 
     def create_engine(self, engine_path, precision,
                       calib_input=None, calib_cache=None, calib_num_images=5000,
                       calib_batch_size=8):
-        """
-        Build the TensorRT engine and serialize it to disk.
+        """Build the TensorRT engine and serialize it to disk.
 
         :param engine_path: The path where to serialize the engine to.
         :param precision: The datatype to use for the engine, either 'fp32', 'fp16' or 'int8'.
@@ -210,7 +190,7 @@ class EngineBuilder:
         engine_path = os.path.realpath(engine_path)
         engine_dir = os.path.dirname(engine_path)
         os.makedirs(engine_dir, exist_ok=True)
-        log.debug("Building {} Engine in {}".format(precision, engine_path))
+        log.debug("Building {} Engine in {}".format(precision, engine_path))  # noqa pylint: disable=C0209
 
         inputs = [self.network.get_input(i) for i in range(self.network.num_inputs)]
 
@@ -245,11 +225,5 @@ class EngineBuilder:
             del engine
         assert engine_bytes
         with open(engine_path, "wb") as f:
-            log.info("Serializing engine to file: {:}".format(engine_path))
+            log.info("Serializing engine to file: {:}".format(engine_path))  # noqa pylint: disable=C0209
             f.write(engine_bytes)
-
-        # with self.builder.build_engine(self.network, self.config) as engine, \
-        #         open(engine_path, "wb") as f:
-        #     log.debug("Serializing engine to file: {:}".format(engine_path))
-        #     f.write(engine.serialize())
-

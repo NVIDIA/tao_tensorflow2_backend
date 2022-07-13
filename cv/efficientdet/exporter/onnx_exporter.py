@@ -60,8 +60,8 @@ def tf_to_onnx_tensor(tensor, name=""):
         except UnicodeDecodeError:
             decode = np.vectorize(lambda x: x.decode('UTF-8'))
             np_data = decode(np_data).astype(np.object)
-        except:  # noqa pylint: disable=W0611
-            raise RuntimeError("Not support type: {}".format(type(np_data.flat[0])))
+        except Exception as e:  # noqa pylint: disable=W0611
+            raise RuntimeError(f"Not support type: {type(np_data.flat[0])}") from e
     return numpy_helper.from_array(np_data, name=name)
 
 
@@ -72,8 +72,7 @@ class EfficientDetGraphSurgeon:
     """EfficientDet GraphSurgeon Class."""
 
     def __init__(self, saved_model_path, legacy_plugins=False):
-        """
-        Constructor of the EfficientDet Graph Surgeon object.
+        """Constructor of the EfficientDet Graph Surgeon object.
 
         :param saved_model_path: The path pointing to the TensorFlow saved model to load.
         :param legacy_plugins: If using TensorRT version < 8.0.1,
@@ -85,14 +84,14 @@ class EfficientDetGraphSurgeon:
         # Use tf2onnx to convert saved model to an initial ONNX graph.
         graph_def, inputs, outputs = tf_loader.from_saved_model(
             saved_model_path, None, None, "serve", ["serving_default"])
-        log.info("Loaded saved model from {}".format(saved_model_path))
+        print(f"Loaded saved model from {saved_model_path}")
         with tf.Graph().as_default() as tf_graph:
             tf.import_graph_def(graph_def, name="")
         with tf_loader.tf_session(graph=tf_graph):
             onnx_graph = tfonnx.process_tf_graph(
                 tf_graph, input_names=inputs, output_names=outputs, opset=13)
         onnx_model = optimizer.optimize_graph(onnx_graph).make_model(
-            "Converted from {}".format(saved_model_path))
+            f"Converted from {saved_model_path}")
         self.graph = gs.import_onnx(onnx_model)
         assert self.graph
         log.info("TF2ONNX graph created successfully")
@@ -107,8 +106,7 @@ class EfficientDetGraphSurgeon:
         os.close(os_handle)
 
     def infer(self):
-        """
-        Sanitize the graph by cleaning any unconnected nodes.
+        """Sanitize the graph by cleaning any unconnected nodes.
 
         do a topological resort and fold constant inputs values.
         When possible, run shape inference on the ONNX graph to determine tensor shapes.
@@ -125,13 +123,12 @@ class EfficientDetGraphSurgeon:
                 model = shape_inference.infer_shapes(model)
                 self.graph = gs.import_onnx(model)
             except Exception as e:
-                log.info("Shape inference could not be performed at this time:\n{}".format(e))
+                raise RuntimeError("Shape inference could not be performed at this time") from e
             try:
                 self.graph.fold_constants(fold_shapes=True)
             except TypeError as e:
-                log.error("This version of ONNX GraphSurgeon does not support folding shapes, "
-                          "please upgrade your onnx_graphsurgeon module. Error:\n{}".format(e))
-                raise
+                raise TypeError("This version of ONNX GraphSurgeon does not support folding shapes, "
+                                "please upgrade your onnx_graphsurgeon module.") from e
 
             count_after = len(self.graph.nodes)
             if count_before == count_after:
@@ -139,8 +136,7 @@ class EfficientDetGraphSurgeon:
                 break
 
     def save(self, output_path=None):
-        """
-        Save the ONNX model to the given location.
+        """Save the ONNX model to the given location.
 
         :param output_path: Path pointing to the location where to
         write out the updated ONNX model.
@@ -152,8 +148,8 @@ class EfficientDetGraphSurgeon:
         return output_path
 
     def update_preprocessor(self, input_format, input_size, preprocessor="imagenet"):
-        """
-        Remove all the pre-processing nodes in the ONNX graph and leave only the image normalization essentials.
+        """Remove all the pre-processing nodes in the ONNX graph and leave only the image normalization essentials.
+
         :param input_format: The input data format, either "NCHW" or "NHWC".
         :param input_size: The input size as a comma-separated string in H,W format, e.g. "512,512".
         :param preprocessor: The preprocessor to use, either "imagenet" for imagenet mean and stdev normalization,
@@ -172,7 +168,7 @@ class EfficientDetGraphSurgeon:
             self.graph.inputs[0].shape = ['N', input_size[0], input_size[1], 3]
         self.graph.inputs[0].dtype = np.float32
         self.graph.inputs[0].name = "input"
-        log.info("ONNX graph input shape: {} [{} format]".format(self.graph.inputs[0].shape, input_format))
+        print("ONNX graph input shape: {self.graph.inputs[0].shape} [{input_format} format]")
         self.infer()
 
         # Find the initial nodes of the graph, whatever the input is first connected to, and disconnect them
@@ -210,17 +206,18 @@ class EfficientDetGraphSurgeon:
             stem_name = "stem_conv"
         stem = [node for node in self.graph.nodes
                 if node.op == "Conv" and stem_name in node.name][0]
-        log.info("Found {} node '{}' as stem entry".format(stem.op, stem.name))
+        print(f"Found {stem.op} node '{stem.name}' as stem entry")
         stem.inputs[0] = preprocessed_tensor
 
         self.infer()
 
     def update_shapes(self):
+        """Update shapes."""
         # Reshape nodes have the batch dimension as a fixed value of 1, they should use the batch size instead
         # Output-Head reshapes use [1, -1, C], corrected reshape value should be [-1, V, C]
         for node in [node for node in self.graph.nodes if node.op == "Reshape"]:
             shape_in = node.inputs[0].shape
-            if shape_in is None or len(shape_in) not in [4,5]: # TFOD graphs have 5-dim inputs on this Reshape
+            if shape_in is None or len(shape_in) not in [4, 5]:  # TFOD graphs have 5-dim inputs on this Reshape
                 continue
             if type(node.inputs[1]) != gs.Constant:
                 continue
@@ -231,15 +228,15 @@ class EfficientDetGraphSurgeon:
             if len(shape_in) == 5:
                 volume *= shape_in[4]
             shape_corrected = np.asarray([-1, volume, shape_out[2]], dtype=np.int64)
-            node.inputs[1] = gs.Constant("{}_shape".format(node.name), values=shape_corrected)
-            log.info("Updating Output-Head Reshape node {} to {}".format(node.name, node.inputs[1].values))
+            node.inputs[1] = gs.Constant(f"{node.name}_shape", values=shape_corrected)
+            print(f"Updating Output-Head Reshape node {node.name} to {node.inputs[1].values}")
 
         # Other Reshapes only need to change the first dim to -1, as long as there are no -1's already
         for node in [node for node in self.graph.nodes if node.op == "Reshape"]:
             if type(node.inputs[1]) != gs.Constant or node.inputs[1].values[0] != 1 or -1 in node.inputs[1].values:
                 continue
             node.inputs[1].values[0] = -1
-            log.info("Updating Reshape node {} to {}".format(node.name, node.inputs[1].values))
+            print(f"Updating Reshape node {node.name} to {node.inputs[1].values}")
 
         # Resize nodes try to calculate the output shape dynamically, it's more optimal to pre-compute the shape
         if self.api == "AutoML":
@@ -265,14 +262,13 @@ class EfficientDetGraphSurgeon:
                     scale_w = concat.inputs[1].values[1] / node.inputs[0].shape[3]
                 scales = np.asarray([1, 1, scale_h, scale_w], dtype=np.float32)
                 del node.inputs[3]
-                node.inputs[2] = gs.Constant(name="{}_scales".format(node.name), values=scales)
-                log.info("Updating Resize node {} to {}".format(node.name, scales))
+                node.inputs[2] = gs.Constant(name=f"{node.name}_scales", values=scales)
+                print(f"Updating Resize node {node.name} to {scales}")
 
         self.infer()
 
     def update_network(self):
-        """
-        Updates the graph.
+        """Updates the graph.
 
         To replace certain nodes in the main EfficientDet network
         """
@@ -287,8 +283,7 @@ class EfficientDetGraphSurgeon:
         # self.graph.cleanup()
 
     def update_nms(self, threshold=None, detections=None):
-        """
-        Updates the graph to replace the NMS op by BatchedNMS_TRT TensorRT plugin node.
+        """Updates the graph to replace the NMS op by BatchedNMS_TRT TensorRT plugin node.
 
         :param threshold: Override the score threshold attribute. If set to None,
         use the value in the graph.
@@ -309,7 +304,7 @@ class EfficientDetGraphSurgeon:
                          if node.op == "Transpose" and name_scope in node.name]:
                 concat = self.graph.find_descendant_by_op(node, "Concat")
                 assert concat and len(concat.inputs) == 5
-                log.info("Found {} node '{}' as the tip of {}".format(
+                log.info("Found {} node '{}' as the tip of {}".format(  # noqa pylint: disable=C0209
                     concat.op, concat.name, name_scope))
                 return concat
 
@@ -366,7 +361,7 @@ class EfficientDetGraphSurgeon:
         # 4. Find the concat node at the end of the box decoder.
         box_decoder = self.graph.find_descendant_by_op(box_net_split, "Concat")
         assert box_decoder and len(box_decoder.inputs) == 4
-        box_decoder_tensor = box_decoder.outputs[0]
+        # box_decoder_tensor = box_decoder.outputs[0]
 
         # 5. Find the NMS node.
         nms_node = self.graph.find_node_by_op("NonMaxSuppression")
@@ -375,8 +370,8 @@ class EfficientDetGraphSurgeon:
         num_detections = int(nms_node.inputs[2].values) if detections is None else detections
         iou_threshold = float(nms_node.inputs[3].values)
         score_threshold = float(nms_node.inputs[4].values) if threshold is None else threshold
-        num_classes = class_net.i().inputs[1].values[-1]
-        normalized = False
+        # num_classes = class_net.i().inputs[1].values[-1]
+        # normalized = False
 
         # NMS Inputs and Attributes
         # NMS expects these shapes for its input tensors:
@@ -445,7 +440,7 @@ class EfficientDetGraphSurgeon:
             inputs=nms_inputs,
             outputs=nms_outputs,
             attrs=nms_attrs)
-        log.info("Created NMS plugin '{}' with attributes: {}".format(nms_op, nms_attrs))
+        log.info("Created NMS plugin '{}' with attributes: {}".format(nms_op, nms_attrs))  # noqa pylint: disable=C0209
 
         self.graph.outputs = nms_outputs
 

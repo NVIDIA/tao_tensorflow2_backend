@@ -1,5 +1,5 @@
 # Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
-""" utility class to work with hydra config files """
+"""Utility class to work with hydra config files."""
 
 import functools
 import os
@@ -15,8 +15,8 @@ from omegaconf import DictConfig
 def hydra_runner(
     config_path: Optional[str] = None, config_name: Optional[str] = None, schema: Optional[Any] = None
 ) -> Callable[[TaskFunction], Any]:
-    """
-    Decorator used for passing the Config paths to main function.
+    """Decorator used for passing the Config paths to main function.
+
     Optionally registers a schema used for validation/providing default values.
 
     Args:
@@ -34,7 +34,7 @@ def hydra_runner(
             args = get_args_parser()
 
             # Parse arguments in order to retrieve overrides
-            parsed_args = args.parse_args()  # type: argparse.Namespace
+            parsed_args = args.parse_args()
 
             # Get overriding args in dot string format
             overrides = parsed_args.overrides  # type: list
@@ -60,7 +60,7 @@ def hydra_runner(
                     # Make sure the path is not set - as this will disable validation scheme.
                     if path != '':
                         sys.stderr.write(
-                            f"ERROR Cannot set config file path using `--config-name` when "
+                            "ERROR Cannot set config file path using `--config-name` when "
                             "using schema. Please set path using `--config-path` and file name using "
                             "`--config-name` separately.\n"
                         )

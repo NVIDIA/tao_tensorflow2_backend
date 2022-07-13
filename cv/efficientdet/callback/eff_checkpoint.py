@@ -25,7 +25,7 @@ class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
                  mode: str = 'auto',
                  save_freq: str = 'epoch',
                  **kwargs):
-
+        """Init."""
         super().__init__(
             eff_dir,
             monitor=monitor,
@@ -47,13 +47,13 @@ class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
     def on_epoch_end(self, epoch, logs=None):
         """Override on_epoch_end."""
         self.epochs_since_last_save += 1
-        eff_epoch = epoch + 1 # eff name started with 001
+        eff_epoch = epoch + 1  # eff name started with 001
         checkpoint_dir = tempfile.mkdtemp()
-        self.filepath = os.path.join(checkpoint_dir, f'ckpt-{epoch:03d}') # override filepath
+        self.filepath = os.path.join(checkpoint_dir, f'ckpt-{epoch:03d}')  # override filepath
 
         # pylint: disable=protected-access
         if self.save_freq == 'epoch' and self.epochs_since_last_save >= self.period:
-            self._save_model(epoch=epoch, batch=None, logs=logs) # To self.filepath
+            self._save_model(epoch=epoch, batch=None, logs=logs)  # To self.filepath
             if self.graph_only:
                 eff_filename = f"{self.model.name}.resume"
             else:

@@ -32,7 +32,7 @@ def run_export(cfg):
     """Launch EfficientDet export."""
     # disable_eager_execution()
     tf.autograph.set_verbosity(0)
-    
+
     gpus = tf.config.experimental.list_physical_devices('GPU')
     for gpu in gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
@@ -90,13 +90,14 @@ def run_export(cfg):
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
     config_name="export", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig):
-    """Wrapper function for EfficientDet exporter.
-    """
+    """Wrapper function for EfficientDet exporter."""
     run_export(cfg=cfg)
 
 

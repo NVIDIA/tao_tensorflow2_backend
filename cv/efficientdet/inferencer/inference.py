@@ -125,7 +125,7 @@ def build_inputs(image_path_pattern: Text, image_size: Union[int, Tuple[int, int
         fnames.append(fname)
     if not raw_images:
         raise ValueError(
-                'Cannot find any images for pattern {}'.format(image_path_pattern))
+            f'Cannot find any images for pattern {image_path_pattern}')
     return raw_images, fnames
 
 
@@ -294,10 +294,13 @@ def visualize_image_prediction(image,
                            **kwargs)
 
 
-class InferenceModel(tf.Module): 
+class InferenceModel(tf.Module):
+    """EfficientDet Inference Model."""
+
     def __init__(self, model, input_shape, params,
                  batch_size=1, label_id_mapping=None,
                  min_score_thresh=0.3, max_boxes_to_draw=100):
+        """Init."""
         super().__init__()
         self.model = model
         self.input_shape = input_shape
@@ -309,6 +312,7 @@ class InferenceModel(tf.Module):
         self.max_boxes_to_draw = max_boxes_to_draw or 100
 
     def infer(self, imgs):
+        """Run inference on a batch of images."""
         images, scales = batch_image_preprocess(imgs, self.input_shape, self.batch_size)
         cls_outputs, box_outputs = self.model(images, training=False)
 
@@ -321,6 +325,8 @@ class InferenceModel(tf.Module):
         return detections
 
     def visualize_detections(self, image_paths, output_dir, dump_label=False, **kwargs):
+        """Visualize detections."""
+        # TODO(@yuw): to use vis_utils function.
         raw_images, fnames = build_inputs(image_paths, self.input_shape)
         self.batch_size = min(len(raw_images), self.batch_size)
         if self.batch_size < 1:
@@ -350,7 +356,7 @@ class InferenceModel(tf.Module):
                     if d[5] >= self.min_score_thresh:
                         kitti_txt += self.label_id_mapping[int(d[6])] + ' 0 0 0 ' + ' '.join(
                             [str(i) for i in [d[2], d[1], d[4], d[3]]]) + ' 0 0 0 0 0 0 0 ' + \
-                                str(d[5]) + '\n'
+                            str(d[5]) + '\n'
                 basename = os.path.splitext(os.path.basename(fnames[i]))[0]
-                with open(os.path.join(out_label_path, "{}.txt".format(basename)), "w") as f:
+                with open(os.path.join(out_label_path, f"{basename}.txt"), "w", encoding='utf-8') as f:
                     f.write(kitti_txt)

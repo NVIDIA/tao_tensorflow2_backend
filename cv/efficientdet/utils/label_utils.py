@@ -133,16 +133,16 @@ waymo = {
 
 
 def get_label_map(mapping):
-  """Get label id map based on the name, filename, or dict."""
-  # case 1: if it is None or dict, just return it.
-  if not mapping or isinstance(mapping, dict):
-    return mapping
+    """Get label id map based on the name, filename, or dict."""
+    # case 1: if it is None or dict, just return it.
+    if not mapping or isinstance(mapping, dict):
+        return mapping
 
-  # case 2: if it is a yaml file, load it to a dict and return the dict.
-  assert isinstance(mapping, str), 'mapping must be dict or str.'
-  if mapping.endswith('.yaml'):
-    with tf.io.gfile.GFile(mapping) as f:
-      return yaml.load(f, Loader=yaml.FullLoader)
+    # case 2: if it is a yaml file, load it to a dict and return the dict.
+    assert isinstance(mapping, str), 'mapping must be dict or str.'
+    if mapping.endswith('.yaml'):
+        with tf.io.gfile.GFile(mapping) as f:
+            return yaml.load(f, Loader=yaml.FullLoader)
 
-  # case 3: it is a name of a predefined dataset.
-  return {'coco': coco, 'voc': voc, 'waymo': waymo}[mapping]
+    # case 3: it is a name of a predefined dataset.
+    return {'coco': coco, 'voc': voc, 'waymo': waymo}[mapping]
