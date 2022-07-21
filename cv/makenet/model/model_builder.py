@@ -65,9 +65,10 @@ def get_resnet(nlayers=18,
                retain_head=False,
                use_bias=True,
                freeze_bn=False,
-               freeze_blocks=None):
+               freeze_blocks=None,
+               input_name="Input"):
     """Wrapper to get ResNet backbone."""
-    input_image = Input(shape=input_shape)
+    input_image = Input(shape=input_shape, name=input_name)
     final_model = ResNet(nlayers=nlayers,
                          input_tensor=input_image,
                          data_format=data_format,
@@ -126,10 +127,11 @@ def get_efficientnet_b0(
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
-    activation_type=None
+    activation_type=None,
+    input_name="Input"
 ):
     """Get an EfficientNet B0 model."""
-    input_image = Input(shape=input_shape)
+    input_image = Input(shape=input_shape, name=input_name)
     final_model = EfficientNetB0(
         input_tensor=input_image,
         input_shape=input_shape,
@@ -165,10 +167,11 @@ def get_efficientnet_b1(
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
-    activation_type=None
+    activation_type=None,
+    input_name="Input"
 ):
     """Get an EfficientNet B1 model."""
-    input_image = Input(shape=input_shape)
+    input_image = Input(shape=input_shape, name=input_name)
     final_model = EfficientNetB1(
         input_tensor=input_image,
         input_shape=input_shape,
@@ -204,10 +207,11 @@ def get_efficientnet_b2(
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
-    activation_type=None
+    activation_type=None,
+    input_name="Input"
 ):
     """Get an EfficientNet B2 model."""
-    input_image = Input(shape=input_shape)
+    input_image = Input(shape=input_shape, name=input_name)
     final_model = EfficientNetB2(
         input_tensor=input_image,
         input_shape=input_shape,
@@ -243,10 +247,11 @@ def get_efficientnet_b3(
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
-    activation_type=None
+    activation_type=None,
+    input_name="Input"
 ):
     """Get an EfficientNet B3 model."""
-    input_image = Input(shape=input_shape)
+    input_image = Input(shape=input_shape, name=input_name)
     final_model = EfficientNetB3(
         input_tensor=input_image,
         input_shape=input_shape,
@@ -282,10 +287,11 @@ def get_efficientnet_b4(
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
-    activation_type=None
+    activation_type=None,
+    input_name="Input"
 ):
     """Get an EfficientNet B4 model."""
-    input_image = Input(shape=input_shape)
+    input_image = Input(shape=input_shape, name=input_name)
     final_model = EfficientNetB4(
         input_tensor=input_image,
         input_shape=input_shape,
@@ -321,10 +327,11 @@ def get_efficientnet_b5(
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
-    activation_type=None
+    activation_type=None,
+    input_name="Input"
 ):
     """Get an EfficientNet B5 model."""
-    input_image = Input(shape=input_shape)
+    input_image = Input(shape=input_shape, name=input_name)
     final_model = EfficientNetB5(
         input_tensor=input_image,
         input_shape=input_shape,
@@ -360,10 +367,11 @@ def get_efficientnet_b6(
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
-    activation_type=None
+    activation_type=None,
+    input_name="Input"
 ):
     """Get an EfficientNet B6 model."""
-    input_image = Input(shape=input_shape)
+    input_image = Input(shape=input_shape, name=input_name)
     final_model = EfficientNetB6(
         input_tensor=input_image,
         input_shape=input_shape,
@@ -399,10 +407,11 @@ def get_efficientnet_b7(
     freeze_bn=False,
     freeze_blocks=None,
     stride16=False,
-    activation_type=None
+    activation_type=None,
+    input_name="Input"
 ):
     """Get an EfficientNet B7 model."""
-    input_image = Input(shape=input_shape)
+    input_image = Input(shape=input_shape, name=input_name)
     final_model = EfficientNetB7(
         input_tensor=input_image,
         input_shape=input_shape,
@@ -437,9 +446,10 @@ def get_mobilenet(input_shape=None,
                   use_bias=True,
                   freeze_bn=False,
                   freeze_blocks=None,
-                  stride=32):
+                  stride=32,
+                  input_name="Input"):
     """Wrapper to get MobileNet model from IVA templates."""
-    input_image = Input(shape=input_shape)
+    input_image = Input(shape=input_shape, name=input_name)
     final_model = MobileNet(inputs=input_image,
                             input_shape=input_shape,
                             dropout=0.0,
@@ -473,9 +483,10 @@ def get_mobilenet_v2(input_shape=None,
                      use_bias=True,
                      freeze_bn=False,
                      freeze_blocks=None,
-                     stride=32):
+                     stride=32,
+                     input_name="Input"):
     """Wrapper to get MobileNet V2 model from IVA templates."""
-    input_image = Input(shape=input_shape)
+    input_image = Input(shape=input_shape, name=input_name)
     final_model = MobileNetV2(inputs=input_image,
                               input_shape=input_shape,
                               add_head=retain_head,
@@ -560,5 +571,6 @@ def get_model(arch="resnet",
                                bias_regularizer=bias_regularizer,
                                retain_head=retain_head,
                                freeze_blocks=freeze_blocks,
+                               input_name='Input',
                                **kwa)
     return model
