@@ -1,6 +1,6 @@
 export_config:
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18/weights/resnet18_bn_003.eff'
-  output_path: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18/weights/resnet18_bn_003.onnx'
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/imagenet/tf2_effnet_b0/weights/efficientnet-b0_500.eff'
+  output_path: '/home/scratch.p3/yuw/tlt3_experiments/imagenet/tf2_effnet_b0/weights/efficientnet-b0_500.onnx'
   save_engine: True
   dtype: 'fp16'
 key: 'nvidia_tlt'

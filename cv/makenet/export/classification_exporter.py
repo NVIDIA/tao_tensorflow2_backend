@@ -147,9 +147,9 @@ class Exporter:
                     builder,
                     network,
                     profile_shapes={
-                        "input_1": [(self.min_batch_size,) + self.input_shape,
-                                (self.opt_batch_size,) + self.input_shape,
-                                (self.max_batch_size,) + self.input_shape]
+                        "Input": [(self.min_batch_size,) + self.input_shape,
+                                  (self.opt_batch_size,) + self.input_shape,
+                                  (self.max_batch_size,) + self.input_shape]
                     },
                 )
             )

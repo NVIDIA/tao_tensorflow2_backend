@@ -76,7 +76,7 @@ def ResNet(nlayers,
         input_shape = (None, None, 3)
 
     if input_tensor is None:
-        inputs = keras.layers.Input(shape=input_shape)
+        inputs = keras.layers.Input(shape=input_shape, name='Input')
     else:
         inputs = input_tensor
 

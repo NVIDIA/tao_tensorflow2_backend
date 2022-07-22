@@ -71,10 +71,10 @@ def MobileNet(inputs,
             input_shape = (224, 224, 3)
 
     if inputs is None:
-        img_input = layers.Input(shape=input_shape)
+        img_input = layers.Input(shape=input_shape, name='Input')
     else:
         if not backend.is_keras_tensor(inputs):
-            img_input = layers.Input(tensor=inputs, shape=input_shape)
+            img_input = layers.Input(tensor=inputs, shape=input_shape, name='Input')
         else:
             img_input = inputs
 
@@ -200,10 +200,10 @@ def MobileNetV2(inputs,
             input_shape = (224, 224, 3)
 
     if inputs is None:
-        img_input = layers.Input(shape=input_shape)
+        img_input = layers.Input(shape=input_shape, name='Input')
     else:
         if not backend.is_keras_tensor(inputs):
-            img_input = layers.Input(tensor=inputs, shape=input_shape)
+            img_input = layers.Input(tensor=inputs, shape=input_shape, name='Input')
         else:
             img_input = inputs
 

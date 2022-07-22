@@ -119,9 +119,9 @@ def EfficientNet(width_coefficient,
         freeze_blocks = []
 
     if input_tensor is None:
-        img_input = Input(shape=input_shape)
+        img_input = Input(shape=input_shape, name='Input')
     else:
-        img_input = Input(tensor=input_tensor, shape=input_shape)
+        img_input = Input(tensor=input_tensor, shape=input_shape, name='Input')
 
     bn_axis = 3 if K.image_data_format() == 'channels_last' else 1
     # Build stem
