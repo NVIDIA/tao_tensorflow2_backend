@@ -1,4 +1,4 @@
-ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:22.05-tf2-py3
+ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:22.07-tf2-py3
 FROM ${FROM_IMAGE_NAME}
 
 RUN apt-get update
@@ -15,8 +15,10 @@ RUN pip install -r requirements.txt && \
 
 COPY . /workspace/tao-tf2
 
-COPY docker/tensorrt_qat /tmp/tensorrt_qat
-WORKDIR /tmp/tensorrt_qat
+# install public version of Nvidia QAT Toolkit
+RUN git clone https://github.com/NVIDIA/TensorRT.git
+COPY docker/tensorflow_quantization/setup.py /workspace/TensorRT/tools/tensorflow-quantization
+WORKDIR /workspace/TensorRT/tools/tensorflow-quantization
 RUN python -m pip install .
 
 RUN cd /opt
