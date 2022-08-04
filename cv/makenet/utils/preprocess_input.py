@@ -161,10 +161,10 @@ def _preprocess_symbolic_input(x, data_format, mode, color_mode, img_mean, **kwa
         x /= 255.
         if color_mode == "rgb":
             mean = [0.485, 0.456, 0.406]
-            std = [0.229, 0.224, 0.225]
+            std = [0.224, 0.224, 0.224]
         elif color_mode == "grayscale":
             mean = [0.449]
-            std = [0.226]
+            std = [0.224]
         else:
             raise NotImplementedError("Invalid color mode: {}".format(color_mode))
     else:
