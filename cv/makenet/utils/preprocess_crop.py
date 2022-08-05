@@ -1,6 +1,7 @@
 # Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
-"""Patch keras_preprocessing.image.utils.load_img() with cropping support."""
+"""Patch keras.utils.image_utils.load_img() with cropping support."""
 import random
+import keras
 import keras_preprocessing.image
 
 from cv.makenet.utils.helper import color_augmentation
@@ -23,7 +24,7 @@ def _set_color_augmentation(flag):
 
 
 def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
-                      interpolation='nearest'):
+                      interpolation='nearest', keep_aspect_ratio=False):
     """Wraps keras_preprocessing.image.utils.load_img() and adds cropping.
 
     Cropping method enumarated in interpolation
@@ -106,7 +107,7 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
 
             if crop == 'center':
                 # Resize keeping aspect ratio
-                # result should be no smaller than the targer size, include crop fraction overhead
+                # result should be no smaller than the larger size, include crop fraction overhead
                 target_size_before_crop = (
                     target_width + CROP_PADDING,
                     target_height + CROP_PADDING
@@ -146,5 +147,5 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
     return img
 
 
-# Monkey patch
-keras_preprocessing.image.iterator.load_img = load_and_crop_img
+# Monkey patch for TF2.9.1
+keras.utils.image_utils.load_img = load_and_crop_img

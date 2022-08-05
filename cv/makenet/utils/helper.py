@@ -6,11 +6,14 @@ import os
 import cv2
 import importlib
 import json
+import warnings
 
 from tensorflow import keras
 import tensorflow as tf
+from numba import errors
 from numba import jit, njit
 import numpy as np
+
 from PIL import Image
 import tempfile
 import zipfile
@@ -24,6 +27,11 @@ from common.utils import (
     SoftStartCosineAnnealingScheduler,
     StepLRScheduler
 )
+
+warnings.filterwarnings(action="ignore", category=UserWarning)
+warnings.simplefilter('ignore', category=errors.NumbaWarning)
+warnings.simplefilter('ignore', category=errors.NumbaDeprecationWarning)
+warnings.simplefilter('ignore', category=errors.NumbaPendingDeprecationWarning)
 
 opt_dict = {
     'sgd': keras.optimizers.SGD,

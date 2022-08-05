@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
 
 """Makenet training script with protobuf configuration."""
@@ -11,14 +10,13 @@ import json
 import logging
 import os
 
-from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase, ResNetQDQCase
+from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase, ResNetV1QDQCase
 from tensorflow_quantization.quantize import quantize_model
 
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import CSVLogger, TensorBoard
 from PIL import Image, ImageFile
-import six
 
 import horovod.tensorflow.keras as hvd
 # Horovod: initialize Horovod.
@@ -96,6 +94,7 @@ def setup_callbacks(ckpt_freq, results_dir, lr_config,
 def load_data(train_data, val_data, preprocessing_func,
               image_height, image_width, batch_size,
               enable_random_crop=False, enable_center_crop=False,
+              enable_color_augmentation=False,
               interpolation=0, color_mode="rgb",
               mixup_alpha=0.0, no_horizontal_flip=False, data_format='channels_first'):
     """Load training and validation data with default data augmentation.
@@ -122,7 +121,20 @@ def load_data(train_data, val_data, preprocessing_func,
         0: "bilinear",
         1: "bicubic"
     }
+    preprocess_crop._set_color_augmentation(enable_color_augmentation)
     interpolation = interpolation_map[interpolation]
+    # WARNING!!!
+    # Deprecated: `tf.keras.preprocessing.image.ImageDataGenerator` is not
+    # recommended for new code. Prefer loading images with
+    # `tf.keras.utils.image_dataset_from_directory` and transforming the output
+    # `tf.data.Dataset` with preprocessing layers. For more information, see the
+    # tutorials for [loading images](
+    # https://www.tensorflow.org/tutorials/load_data/images) and
+    # [augmenting images](
+    # https://www.tensorflow.org/tutorials/images/data_augmentation), as well as
+    # the [preprocessing layer guide](
+    # https://www.tensorflow.org/guide/keras/preprocessing_layers).
+
     # set color augmentation properly for train.
     # this global var will not affect validation dataset because
     # the crop method is either "none" or "center" for val dataset,
@@ -158,7 +170,7 @@ def load_data(train_data, val_data, preprocessing_func,
         interpolation=interpolation + ':center' if enable_center_crop else interpolation,
         shuffle=False,
         class_mode='categorical')
-    logger.info('Processing dataset (validation): {}'.format(val_data))
+    logger.info(f'Processing dataset (validation): {val_data}')
 
     # Check if the number of classes is > 1
     assert train_iterator.num_classes > 1, \
@@ -197,11 +209,6 @@ def run_experiment(cfg, results_dir=None,
         format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
         level='DEBUG' if verbosity else 'INFO')
 
-    # Set random seed.
-    logger.debug("Random seed is set to {}".format(cfg['train_config']['random_seed']))
-    
-    # initialize()
-
     nchannels, image_height, image_width = cfg['model_config']['input_image_size']
     assert nchannels in [1, 3], "Invalid input image dimension."
     assert image_height >= 16, "Image height should be greater than 15 pixels."
@@ -225,6 +232,7 @@ def run_experiment(cfg, results_dir=None,
                   batch_size=cfg['train_config']['batch_size_per_gpu'],
                   enable_random_crop=cfg['train_config']['enable_random_crop'],
                   enable_center_crop=cfg['train_config']['enable_center_crop'],
+                  enable_color_augmentation=cfg['train_config']['enable_color_augmentation'],
                   color_mode=color_mode,
                   mixup_alpha=cfg['train_config']['mixup_alpha'],
                   no_horizontal_flip=cfg['train_config']['disable_horizontal_flip'],
@@ -272,7 +280,7 @@ def run_experiment(cfg, results_dir=None,
         bn_config=bn_config,
         custom_objs=custom_objs
     )
-    
+
     if cfg['train_config']['pretrained_model_path']:
         # Decrypt and load pretrained model
         pretrained_model = load_model(
@@ -300,12 +308,13 @@ def run_experiment(cfg, results_dir=None,
                         bn_config=bn_config
                     )
     if cfg['train_config']['qat']:
-        qdq_cases = [EfficientNetQDQCase(), ResNetQDQCase()] \
-            if 'efficientnet' in cfg['model_config']['arch'] else [ResNetQDQCase()]
+        qdq_cases = [EfficientNetQDQCase(), ResNetV1QDQCase()] \
+            if 'efficientnet' in cfg['model_config']['arch'] else [ResNetV1QDQCase()]
         final_model = quantize_model(final_model, custom_qdq_cases=qdq_cases)
-        pass
+
     # Printing model summary
-    final_model.summary()
+    if hvd.rank() == 0:
+        final_model.summary()
 
     if cfg['init_epoch'] > 1 and not cfg['train_config']['pretrained_model_path']:
         raise ValueError("Make sure to load the correct model when setting initial epoch > 1.")
@@ -323,7 +332,7 @@ def run_experiment(cfg, results_dir=None,
     cc = tf.keras.losses.CategoricalCrossentropy(
         label_smoothing=cfg['train_config']['label_smoothing'])
     final_model.compile(
-        loss=cc, # tf.keras.losses.CategoricalCrossentropy()
+        loss=cc,
         metrics=[tf.keras.metrics.CategoricalAccuracy(name='accuracy')],
         optimizer=opt,
         experimental_run_tf_function=False)
@@ -337,7 +346,7 @@ def run_experiment(cfg, results_dir=None,
                                 hvd)
     # Writing out class-map file for inference mapping
     if hvd.rank() == 0:
-        with open(os.path.join(results_dir, "classmap.json"), "w") as f:
+        with open(os.path.join(results_dir, "classmap.json"), "w", encoding='utf-8') as f:
             json.dump(train_iterator.class_indices, f)
 
     # Commencing Training
@@ -353,20 +362,13 @@ def run_experiment(cfg, results_dir=None,
         callbacks=callbacks,
         initial_epoch=init_epoch - 1)
 
-    # Evaluate the model on the full data set.
-    score = hvd.allreduce(
-        final_model.evaluate_generator(val_iterator,
-                                       len(val_iterator),
-                                       workers=cfg['train_config']['n_workers']))
-    if verbose:
-        logger.info('Total Val Loss: {}'.format(score[0]))
-        logger.info('Total Val accuracy: {}'.format(score[1]))
+    print("Training finished successfully.")
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
-    config_name="train_byom", schema=ExperimentConfig
+    config_name="train", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for continuous training of MakeNet application.
