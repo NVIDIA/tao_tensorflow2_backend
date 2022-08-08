@@ -48,7 +48,7 @@ tao_tf --
 Once you are able to download/instantiate the docker, you may launch the script you wish to run by simply appending the command and its args to the end of the `tao_tf` command. For example, to launch the classification train entrypoint, you may use the sample command below.
 
 ```sh
-tao_tf --volume /path/to/output/results_dir:/path/to/output/results_dir -- python cv/makenet/scripts/train.pys
+tao_tf --volume /path/to/output/results_dir:/path/to/output/results_dir -- python cv/classification/scripts/train.py
 ```
 
 Please note that the `tao_tf` command requires a `--` separator to separate the args for the `tao_tf` command and the script to be run in the docker and it's respective args.
@@ -74,10 +74,10 @@ The build script tags the newly built base docker with the username of the accou
 tao_tf --tag $USER -- script args
 ```
 
-For example, to run makenet, you may use:
+For example, to run classification, you may use:
 
 ```sh
-tao_tf --tag $USER -- python cv/makenet/scripts/train.py --help
+tao_tf --tag $USER -- python cv/classification/scripts/train.py --help
 ```
 
 ### 3. Update the new docker

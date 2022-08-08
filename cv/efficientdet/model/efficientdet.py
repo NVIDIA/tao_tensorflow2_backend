@@ -56,7 +56,7 @@ class FNode:
                     self.is_training_bn,
                     self.conv_after_downsample,
                     data_format=self.data_format,
-                    name=self.name + 'resample_{}_{}'.format(i, input_offset)))
+                    name=self.name + f'resample_{i}_{input_offset}'))
 
         self.op_after_combine = OpAfterCombine(
             self.is_training_bn,
@@ -67,7 +67,7 @@ class FNode:
             self.data_format,
             name=f'{self.name}_op_after_combine_{feat_level}')
 
-        self.fuse_layer = WeightedFusion(name='fusion_{}'.format(self.name))
+        self.fuse_layer = WeightedFusion(name=f'fusion_{self.name}')
 
     def __call__(self, feats, training):
         """Call."""
@@ -165,20 +165,17 @@ class ResampleFeatureMap:
         """Pool the inputs to target height and width."""
         height_stride_size = int((height - 1) // target_height + 1)
         width_stride_size = int((width - 1) // target_width + 1)
-        if self.pooling_type == 'max':
-            return tf.keras.layers.MaxPooling2D(
-                pool_size=[height_stride_size + 1, width_stride_size + 1],
-                strides=[height_stride_size, width_stride_size],
-                padding='SAME',
-                data_format=self.data_format)(inputs)
-        elif self.pooling_type == 'avg':
-            return tf.keras.layers.AveragePooling2D(
-                pool_size=[height_stride_size + 1, width_stride_size + 1],
-                strides=[height_stride_size, width_stride_size],
-                padding='SAME',
-                data_format=self.data_format)(inputs)
+        if self.pooling_type == "max":
+            model_class = tf.keras.layers.MaxPooling2D
+        elif self.pooling_type == "avg":
+            model_class = tf.keras.layers.AveragePooling2D
         else:
-            raise ValueError('Unsupported pooling type {}.'.format(self.pooling_type))
+            raise NotImplementedError(f"Unsupported pooling type {self.pooling_type}")
+        return model_class(
+            pool_size=[height_stride_size + 1, width_stride_size + 1],
+            strides=[height_stride_size, width_stride_size],
+            padding='SAME',
+            data_format=self.data_format)(inputs)
 
     def _maybe_apply_1x1(self, feat, training, num_channels):
         """Apply 1x1 conv to change layer width if necessary."""
@@ -214,8 +211,9 @@ class ResampleFeatureMap:
                     target_height, target_width, self.data_format)(feat)
         else:
             raise ValueError(
-                'Incompatible Resampling : feat shape {}x{} target_shape: {}x{}'
-                .format(height, width, target_height, target_width))
+                f'Incompatible Resampling : feat shape {height}x{width} '
+                f'target_shape: {target_height}x{target_width}'
+            )
 
         return feat
 
@@ -288,7 +286,9 @@ class ClassNet:
                     bias_initializer=tf.zeros_initializer(),
                     activation=None,
                     padding='same',
-                    name='class-%d' % i))
+                    name=f'class-{i}'
+                )
+            )
 
             bn_per_level = []
             for level in range(self.min_level, self.max_level + 1):
@@ -296,8 +296,9 @@ class ClassNet:
                     keras_utils.build_batch_norm(
                         is_training_bn=self.is_training_bn,
                         data_format=self.data_format,
-                        name='class-%d-bn-%d' % (i, level),
-                    ))
+                        name=f'class-{i}-bn-{level}',
+                    )
+                )
             self.bns.append(bn_per_level)
 
         self.classes = conv2d_layer(
@@ -387,7 +388,7 @@ class BoxNet:
                         activation=None,
                         bias_initializer=tf.zeros_initializer(),
                         padding='same',
-                        name='box-%d' % i))
+                        name=f'box-{i}'))
             # If using Conv2d
             else:
                 self.conv_ops.append(
@@ -399,7 +400,7 @@ class BoxNet:
                         activation=None,
                         bias_initializer=tf.zeros_initializer(),
                         padding='same',
-                        name='box-%d' % i))
+                        name=f'box-{i}'))
 
             bn_per_level = []
             for level in range(self.min_level, self.max_level + 1):
@@ -407,7 +408,9 @@ class BoxNet:
                     keras_utils.build_batch_norm(
                         is_training_bn=self.is_training_bn,
                         data_format=self.data_format,
-                        name='box-%d-bn-%d' % (i, level)))
+                        name=f'box-{i}-bn-{level}'
+                    )
+                )
             self.bns.append(bn_per_level)
 
         if self.separable_conv:
@@ -564,7 +567,7 @@ class FPNCell:
                                                          config.fpn_weight_method)
         self.fnodes = []
         for i, fnode_cfg in enumerate(self.fpn_config.nodes):
-            logging.debug('fnode %d : %s', i, fnode_cfg)
+            logging.debug(f'fnode {i} : {fnode_cfg}')
             fnode = FNode(
                 fnode_cfg['feat_level'] - self.config.min_level,
                 fnode_cfg['inputs_offsets'],
@@ -607,7 +610,7 @@ def efficientdet(input_shape, inputs=None, training=True, model_name=None, confi
                 is_training_bn=config.is_training_bn,
                 conv_after_downsample=config.conv_after_downsample,
                 data_format=config.data_format,
-                name='resample_p%d' % level,
+                name=f'resample_p{level}',
             ))
     fpn_cells = FPNCells(config)
 

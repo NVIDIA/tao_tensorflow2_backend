@@ -1,0 +1,25 @@
+FROM gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:837083d61569ed92bb14e7ebef49552951f9de94baad079c3a008a9ad48ded55
+
+# Installing the TAO Toolkit source code packages.
+WORKDIR /opt/nvidia
+COPY dist/*.whl /opt/nvidia/wheels/
+RUN python -m pip install pip --upgrade \
+    && cd wheels && ls ./*.whl|xargs -I'{}' python -m pip install '{}' \
+    && rm *.whl
+
+RUN rm -rf /opt/nvidia/entrypoint.d/*.txt
+COPY release/docker/entrypoint.d/* /opt/nvidia/entrypoint.d/
+
+# Installing NGC CLI.
+RUN mkdir -p /opt/ngccli && \
+    wget "https://ngc.nvidia.com/downloads/ngccli_reg_linux.zip" -P /opt/ngccli && \
+    unzip -u "/opt/ngccli/ngccli_reg_linux.zip" -d /opt/ngccli/ && \
+    rm /opt/ngccli/*.zip && \
+    chmod u+x /opt/ngccli/ngc-cli/ngc
+ENV PATH="/opt/ngccli/ngc-cli:$PATH"
+
+ENV NVIDIA_PRODUCT_NAME "TAO Toolkit"
+ENV TAO_TOOLKIT_VERSION="3.22.10"
+ENV NVIDIA_TAO_TOOLKIT_VERSION="${TAO_TOOLKIT_VERSION}-TF2"
+
+CMD [ "/bin/bash" ]

@@ -47,8 +47,8 @@ def bifpn_config(min_level, max_level, weight_method):
     num_levels = max_level - min_level + 1
     node_ids = {min_level + i: [i] for i in range(num_levels)}
 
-    level_last_id = lambda level: node_ids[level][-1]  # noqa pylint: disable=E731
-    level_all_ids = lambda level: node_ids[level]  # noqa pylint: disable=E731
+    level_last_id = lambda level: node_ids[level][-1]  # noqa pylint: disable=E731,C3001
+    level_all_ids = lambda level: node_ids[level]  # noqa pylint: disable=E731,C3001
     id_cnt = itertools.count(num_levels)
 
     p.nodes = []
@@ -81,9 +81,9 @@ def qufpn_config(min_level, max_level, weight_method=None):
     p.quad_method = 'fastattn'
     num_levels = max_level - min_level + 1
     node_ids = {min_level + i: [i] for i in range(num_levels)}
-    level_last_id = lambda level: node_ids[level][-1]  # noqa pylint: disable=E731
-    level_all_ids = lambda level: node_ids[level]  # noqa pylint: disable=E731
-    level_first_id = lambda level: node_ids[level][0]  # noqa pylint: disable=E731
+    level_last_id = lambda level: node_ids[level][-1]  # noqa pylint: disable=E731,C3001
+    level_all_ids = lambda level: node_ids[level]  # noqa pylint: disable=E731,C3001
+    level_first_id = lambda level: node_ids[level][0]  # noqa pylint: disable=E731,C3001
     id_cnt = itertools.count(num_levels)
 
     p.nodes = []

@@ -1,5 +1,7 @@
 # Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+
 """Tensorboard callback for learning rate schedules."""
+
 import tensorflow as tf
 
 

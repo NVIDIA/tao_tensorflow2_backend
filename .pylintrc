@@ -73,7 +73,7 @@ disable=import-error,no-name-in-module,method-hidden,
        duplicate-code,too-many-public-methods,too-many-statements,blacklisted-name,bare-except,
        wrong-import-position,unreachable,logging-format-interpolation,unused-format-string-argument,
        not-callable,too-many-function-args,unnecessary-lambda,len-as-condition,wrong-import-order,
-       import-self,dangerous-default-value
+       import-self,dangerous-default-value,unexpected-keyword-arg
 
 # Python 2/3 compatibility flags.
 enable=assert-on-tuple,return-in-init,return-outside-function
