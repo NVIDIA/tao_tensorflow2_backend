@@ -125,7 +125,7 @@ def instantiate_dev_docker(gpus, mount_file,
 
     assert check_mounts(formatted_mounts), "Mounts don't exists, Please make sure the paths all exist."
 
-    mount_string = "-v {}:/workspace/tao-tf2 ".format(os.getenv("NV_TLT_PYTORCH_TOP", os.getcwd()))
+    mount_string = "-v {}:/workspace/tao-tf2 ".format(os.getenv("NV_TAO_TF2_TOP", os.getcwd()))
 
     # Defining env variables.
     env_variables = "-e PYTHONPATH={}:$PYTHONPATH ".format("/workspace/tao-tf2")

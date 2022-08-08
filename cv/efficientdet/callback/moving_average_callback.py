@@ -1,4 +1,7 @@
-"""Callback related utils."""
+# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+
+"""Moving average callback implementation."""
+
 import tensorflow as tf
 from tensorflow_addons.optimizers import MovingAverage
 from typing import Any, MutableMapping, Text

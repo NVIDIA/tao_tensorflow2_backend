@@ -1,3 +1,5 @@
+# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+
 """Callback related utils."""
 
 import tensorflow as tf
@@ -56,13 +58,12 @@ class AverageModelCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         if self.update_weights:
             self.ema_opt.assign_average_vars(self.model.variables)
             return super()._save_model(epoch, batch, logs)
-        else:
-            # Note: `model.get_weights()` gives us the weights (non-ref)
-            # whereas `model.variables` returns references to the variables.
-            non_avg_weights = self.model.get_weights()
-            self.ema_opt.assign_average_vars(self.model.variables)
-            # result is currently None, since `super._save_model` doesn't
-            # return anything, but this may change in the future.
-            result = super()._save_model(epoch, batch, logs)
-            self.model.set_weights(non_avg_weights)
-            return result
+        # Note: `model.get_weights()` gives us the weights (non-ref)
+        # whereas `model.variables` returns references to the variables.
+        non_avg_weights = self.model.get_weights()
+        self.ema_opt.assign_average_vars(self.model.variables)
+        # result is currently None, since `super._save_model` doesn't
+        # return anything, but this may change in the future.
+        result = super()._save_model(epoch, batch, logs)
+        self.model.set_weights(non_avg_weights)
+        return result

@@ -205,7 +205,7 @@ class EfficientDetPostprocessor(Postprocessor):
             iou_thresh = 1.0
             score_thresh = eval_config['min_score_thresh'] or 0.001
         else:
-            raise ValueError('Inference has invalid nms method {}'.format(method))
+            raise ValueError(f'Inference has invalid nms method {method}')
 
         # TF API's sigma is twice as the paper's value, so here we divide it by 2:
         # https://github.com/tensorflow/tensorflow/issues/40253.

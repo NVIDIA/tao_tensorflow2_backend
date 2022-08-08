@@ -1,4 +1,7 @@
+# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+
 """Callback related utils."""
+
 import os
 from mpi4py import MPI
 import numpy as np
@@ -125,7 +128,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         if self.eval_params.train.moving_average_decay > 0:
             self.ema_opt.swap_weights()  # get base weights
 
-        MPI.COMM_WORLD.Barrier()
+        MPI.COMM_WORLD.Barrier()   # noqa pylint: disable=I1101
 
     def on_epoch_end(self, epoch, logs=None):
         """on_epoch_end with eval_freq."""

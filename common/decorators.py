@@ -1,5 +1,5 @@
-# Copyright (c) 2017-2018, NVIDIA CORPORATION.  All rights reserved.
-"""Modulus decorators."""
+# Copyright (c) 2017-2022, NVIDIA CORPORATION.  All rights reserved.
+"""Common decorators used in TAO Toolkit."""
 
 from __future__ import absolute_import
 from __future__ import division

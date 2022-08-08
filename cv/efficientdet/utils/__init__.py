@@ -1,6 +1,6 @@
 # Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
 
-"""IVA EfficientDet utils module."""
+"""TAO Toolkit EfficientDet utils module."""
 
 from __future__ import absolute_import
 from __future__ import division
