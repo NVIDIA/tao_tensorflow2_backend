@@ -45,6 +45,9 @@ class Exporter:
             self._dtype = trt.DataType.FLOAT
         else:
             raise ValueError("Unsupported data type: %s" % self._dtype)
+        
+        if config.train_config.qat and config.export_config.dtype != "int8":
+            raise ValueError("QAT only supports int8 export")
         self.backend = "onnx"
         self.input_shape = None
         self.max_batch_size = max_batch_size
