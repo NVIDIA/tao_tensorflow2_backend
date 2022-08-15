@@ -5,7 +5,8 @@ from mpi4py import MPI
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
 
-from cv.efficientdet.config.hydra_runner import hydra_runner
+from common.hydra.hydra_runner import hydra_runner
+
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.dataloader import dataloader, datasource
 from cv.efficientdet.processor.postprocessor import EfficientDetPostprocessor

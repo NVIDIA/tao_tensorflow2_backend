@@ -3,7 +3,7 @@ all: build install
 build:
 	python3 setup.py bdist_wheel
 
-clean: uninstall
+clean:
 	rm -rf dist
 	rm -rf build
 	rm -rf *.egg-info

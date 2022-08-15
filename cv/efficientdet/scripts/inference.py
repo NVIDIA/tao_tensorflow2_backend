@@ -11,7 +11,8 @@ import tensorflow as tf
 # from tensorflow.python.framework.ops import disable_eager_execution
 from tensorflow.python.util import deprecation
 
-from cv.efficientdet.config.hydra_runner import hydra_runner
+from common.hydra.hydra_runner import hydra_runner
+
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.inferencer import inference, inference_trt
 from cv.efficientdet.utils import helper, hparams_config

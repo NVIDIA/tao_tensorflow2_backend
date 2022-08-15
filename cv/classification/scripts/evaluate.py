@@ -18,7 +18,8 @@ import tensorflow as tf
 
 from eff.core import Archive
 
-from cv.classification.config.hydra_runner import hydra_runner
+from common.hydra.hydra_runner import hydra_runner
+
 from cv.classification.config.default_config import ExperimentConfig
 from cv.classification.utils import preprocess_crop  # noqa pylint: disable=unused-import
 from cv.classification.utils.preprocess_input import preprocess_input

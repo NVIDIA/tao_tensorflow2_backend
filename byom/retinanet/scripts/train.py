@@ -10,7 +10,6 @@ import horovod.tensorflow.keras as hvd
 from dllogger import StdOutBackend, JSONStreamBackend, Verbosity
 import dllogger as DLLogger
 
-from byom.retinanet.config.hydra_runner import hydra_runner
 from byom.retinanet.config.default_config import ExperimentConfig
 from byom.retinanet.dataloader import dataloader
 from byom.retinanet.losses import losses
@@ -21,6 +20,8 @@ from byom.retinanet.trainer.retinanet_trainer import RetinaNetTrainer
 from byom.retinanet.utils.config_utils import generate_params_from_cfg
 from byom.retinanet.utils import hparams_config
 from byom.retinanet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
+
+from common.hydra.hydra_runner import hydra_runner
 
 
 def run_experiment(cfg, results_dir, key):

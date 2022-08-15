@@ -22,8 +22,9 @@ import horovod.tensorflow.keras as hvd
 # Horovod: initialize Horovod.
 hvd.init()
 
+from common.hydra.hydra_runner import hydra_runner
+
 from cv.classification.callback.eff_checkpoint import EffCheckpoint
-from cv.classification.config.hydra_runner import hydra_runner
 from cv.classification.config.default_config import ExperimentConfig
 from cv.classification.model.model_builder import get_model
 from cv.classification.utils.mixup_generator import MixupImageDataGenerator
