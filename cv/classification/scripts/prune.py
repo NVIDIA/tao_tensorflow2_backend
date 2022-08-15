@@ -11,8 +11,9 @@ import os
 import tempfile
 import tensorflow as tf
 
+from common.hydra.hydra_runner import hydra_runner
+
 from cv.classification.config.default_config import ExperimentConfig
-from cv.classification.config.hydra_runner import hydra_runner
 from cv.classification.pruner.pruner import ClassificationPruner
 from cv.classification.utils.helper import encode_eff
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'

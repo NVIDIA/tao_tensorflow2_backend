@@ -11,8 +11,9 @@ import os
 import tempfile
 import tensorflow as tf
 
+from common.hydra.hydra_runner import hydra_runner
+
 from cv.efficientdet.config.default_config import ExperimentConfig
-from cv.efficientdet.config.hydra_runner import hydra_runner
 from cv.efficientdet.pruner.pruner import EfficientDetPruner
 from cv.efficientdet.utils.helper import dump_eval_json, dump_json, encode_eff
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'

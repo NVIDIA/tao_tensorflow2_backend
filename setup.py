@@ -41,7 +41,8 @@ setuptools.setup(
     zip_safe=False,
     entry_points={
         'console_scripts': [
-            'train=cv.efficientdet.scripts.train:main',
+            'classification=cv.classification.entrypoint.classification:main',
+            'efficientdet=cv.efficientdet.entrypoint.efficientdet:main',
         ]
     }
 )

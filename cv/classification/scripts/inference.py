@@ -8,8 +8,9 @@ import os
 import numpy as np
 import pandas as pd
 
+from common.hydra.hydra_runner import hydra_runner
+
 from cv.classification.inferencer.keras_inferencer import KerasInferencer
-from cv.classification.config.hydra_runner import hydra_runner
 from cv.classification.config.default_config import ExperimentConfig
 
 logger = logging.getLogger(__name__)

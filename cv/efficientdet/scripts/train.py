@@ -9,7 +9,8 @@ from dllogger import StdOutBackend, JSONStreamBackend, Verbosity
 import dllogger as DLLogger
 from tensorflow_quantization.quantize import quantize_model
 
-from cv.efficientdet.config.hydra_runner import hydra_runner
+from common.hydra.hydra_runner import hydra_runner
+
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.dataloader import dataloader, datasource
 from cv.efficientdet.losses import losses
@@ -40,6 +41,8 @@ def run_experiment(cfg):
     # dllogger setup
     backends = []
     if is_main_process():
+        if not os.path.exists(cfg.train.results_dir):
+            os.makedirs(cfg.train.results_dir)
         log_path = os.path.join(cfg.train.results_dir, 'log.txt')
         backends += [
             JSONStreamBackend(verbosity=Verbosity.VERBOSE, filename=log_path),

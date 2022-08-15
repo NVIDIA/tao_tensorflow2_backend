@@ -4,7 +4,8 @@
 import os
 import logging
 
-from cv.classification.config.hydra_runner import hydra_runner
+from common.hydra.hydra_runner import hydra_runner
+
 from cv.classification.config.default_config import ExperimentConfig
 from cv.classification.export.classification_exporter import Exporter
 logger = logging.getLogger(__name__)
