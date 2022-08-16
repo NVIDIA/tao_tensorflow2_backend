@@ -7,6 +7,8 @@ from __future__ import print_function
 import os
 from functools import partial
 import logging
+import json
+import sys
 import zipfile
 
 import numpy as np
@@ -84,12 +86,43 @@ def run_evaluate(cfg):
                                        color_mode=color_mode),
         horizontal_flip=False,
         data_format=cfg['data_format'])
+
+    if cfg['eval_config']['classmap']:
+        # If classmap is provided, then we explicitly set it in ImageDataGenerator
+        with open(cfg['eval_config']['classmap'], "r") as cmap_file:
+            try:
+                data = json.load(cmap_file)
+            except json.decoder.JSONDecodeError as e:
+                print(f"Loading the {cfg['eval_config']['classmap']} failed with error\n{e}")
+                sys.exit(-1)
+            except Exception as e:
+                if e.output is not None:
+                    print(f"Evaluation failed with error {e.output}")
+                sys.exit(-1)
+        if not data:
+            class_names = None
+        else:
+            class_names = [""] * len(list(data.keys()))
+            if not all([class_index < len(class_names)
+                        and isinstance(class_index, int)
+                        for class_index in data.values()]):
+                raise RuntimeError(
+                    "Invalid data in the json file. The class index must "
+                    "be < number of classes and an integer value.")
+            for class_name, class_index in data.items():
+                class_names[class_index] = class_name
+
+        print("Class name = {}".format(class_names))
+    else:
+        class_names = None
+
     # Initializing data iterator
     target_iterator = target_datagen.flow_from_directory(
         cfg['eval_config']['eval_dataset_path'],
         target_size=(image_height, image_width),
         color_mode=color_mode,
         batch_size=cfg['eval_config']['batch_size'],
+        classes=class_names,
         class_mode='categorical',
         interpolation=interpolation,
         shuffle=False)
