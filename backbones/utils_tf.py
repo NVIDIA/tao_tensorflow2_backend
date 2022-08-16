@@ -307,9 +307,9 @@ class InceptionV1Block(object):
             tensor: the output tensor after applying the ResNet block on top of input `x`.
         """
         nblocks = len(self.subblocks)
-        if(nblocks != 6):
+        if (nblocks != 6):
             print("Inception V1 block must have 6 subblocks")
-            return(x)
+            return (x)
 
         if self.use_batch_norm:
             bn_axis = get_batchnorm_axis(self.data_format)

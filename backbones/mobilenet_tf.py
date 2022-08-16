@@ -87,43 +87,43 @@ def MobileNet(inputs,
                    freeze_bn=freeze_bn,
                    use_bias=use_bias):
         x = _conv_block(img_input, 32, alpha, strides=(2, 2),
-                        trainable=not(0 in freeze_blocks))
+                        trainable=not (0 in freeze_blocks))
         x = _depthwise_conv_block(x, 64, alpha, depth_multiplier, block_id=1,
-                                  trainable=not(1 in freeze_blocks))
+                                  trainable=not (1 in freeze_blocks))
 
         x = _depthwise_conv_block(x, 128, alpha, depth_multiplier,
                                   strides=(2, 2), block_id=2,
-                                  trainable=not(2 in freeze_blocks))
+                                  trainable=not (2 in freeze_blocks))
         x = _depthwise_conv_block(x, 128, alpha, depth_multiplier, block_id=3,
-                                  trainable=not(3 in freeze_blocks))
+                                  trainable=not (3 in freeze_blocks))
 
         x = _depthwise_conv_block(x, 256, alpha, depth_multiplier,
                                   strides=(2, 2), block_id=4,
-                                  trainable=not(4 in freeze_blocks))
+                                  trainable=not (4 in freeze_blocks))
         x = _depthwise_conv_block(x, 256, alpha, depth_multiplier, block_id=5,
-                                  trainable=not(5 in freeze_blocks))
+                                  trainable=not (5 in freeze_blocks))
 
         x = _depthwise_conv_block(x, 512, alpha, depth_multiplier,
                                   strides=(2, 2), block_id=6,
-                                  trainable=not(6 in freeze_blocks))
+                                  trainable=not (6 in freeze_blocks))
         x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=7,
-                                  trainable=not(7 in freeze_blocks))
+                                  trainable=not (7 in freeze_blocks))
         x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=8,
-                                  trainable=not(8 in freeze_blocks))
+                                  trainable=not (8 in freeze_blocks))
         x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=9,
-                                  trainable=not(9 in freeze_blocks))
+                                  trainable=not (9 in freeze_blocks))
         x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=10,
-                                  trainable=not(10 in freeze_blocks))
+                                  trainable=not (10 in freeze_blocks))
         x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=11,
-                                  trainable=not(11 in freeze_blocks))
+                                  trainable=not (11 in freeze_blocks))
 
         # make it a network with a stride of 32, otherwise, the stride is 16.
         if stride == 32:
             x = _depthwise_conv_block(x, 1024, alpha, depth_multiplier,
                                       strides=(2, 2), block_id=12,
-                                      trainable=not(12 in freeze_blocks))
+                                      trainable=not (12 in freeze_blocks))
             x = _depthwise_conv_block(x, 1024, alpha, depth_multiplier, block_id=13,
-                                      trainable=not(13 in freeze_blocks))
+                                      trainable=not (13 in freeze_blocks))
         if add_head:
             x = layers.AveragePooling2D(pool_size=(7, 7),
                                         data_format=data_format, padding='valid')(x)
@@ -218,7 +218,7 @@ def MobileNetV2(inputs,
                       name='conv1',
                       kernel_regularizer=kernel_regularizer,
                       bias_regularizer=bias_regularizer,
-                      trainable=not(0 in freeze_blocks))(x)
+                      trainable=not (0 in freeze_blocks))(x)
 
     if use_batch_norm:
         if freeze_bn:
@@ -249,61 +249,61 @@ def MobileNetV2(inputs,
                    freeze_bn=freeze_bn):
         x = _inverted_res_block(x, filters=16, alpha=alpha, stride=1,
                                 expansion=1, block_id=0,
-                                trainable=not(1 in freeze_blocks))
+                                trainable=not (1 in freeze_blocks))
 
         x = _inverted_res_block(x, filters=24, alpha=alpha, stride=2,
                                 expansion=6, block_id=1,
-                                trainable=not(2 in freeze_blocks))
+                                trainable=not (2 in freeze_blocks))
         x = _inverted_res_block(x, filters=24, alpha=alpha, stride=1,
                                 expansion=6, block_id=2,
-                                trainable=not(3 in freeze_blocks))
+                                trainable=not (3 in freeze_blocks))
 
         x = _inverted_res_block(x, filters=32, alpha=alpha, stride=2,
                                 expansion=6, block_id=3,
-                                trainable=not(4 in freeze_blocks))
+                                trainable=not (4 in freeze_blocks))
         x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1,
                                 expansion=6, block_id=4,
-                                trainable=not(5 in freeze_blocks))
+                                trainable=not (5 in freeze_blocks))
         x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1,
                                 expansion=6, block_id=5,
-                                trainable=not(6 in freeze_blocks))
+                                trainable=not (6 in freeze_blocks))
 
         x = _inverted_res_block(x, filters=64, alpha=alpha, stride=2,
                                 expansion=6, block_id=6,
-                                trainable=not(7 in freeze_blocks))
+                                trainable=not (7 in freeze_blocks))
         x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1,
                                 expansion=6, block_id=7,
-                                trainable=not(8 in freeze_blocks))
+                                trainable=not (8 in freeze_blocks))
         x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1,
                                 expansion=6, block_id=8,
-                                trainable=not(9 in freeze_blocks))
+                                trainable=not (9 in freeze_blocks))
         x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1,
                                 expansion=6, block_id=9,
-                                trainable=not(10 in freeze_blocks))
+                                trainable=not (10 in freeze_blocks))
 
         x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1,
                                 expansion=6, block_id=10,
-                                trainable=not(11 in freeze_blocks))
+                                trainable=not (11 in freeze_blocks))
         x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1,
                                 expansion=6, block_id=11,
-                                trainable=not(12 in freeze_blocks))
+                                trainable=not (12 in freeze_blocks))
         x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1,
                                 expansion=6, block_id=12,
-                                trainable=not(13 in freeze_blocks))
+                                trainable=not (13 in freeze_blocks))
 
         if stride == 32:
             x = _inverted_res_block(x, filters=160, alpha=alpha, stride=2,
                                     expansion=6, block_id=13,
-                                    trainable=not(14 in freeze_blocks))
+                                    trainable=not (14 in freeze_blocks))
             x = _inverted_res_block(x, filters=160, alpha=alpha, stride=1,
                                     expansion=6, block_id=14,
-                                    trainable=not(15 in freeze_blocks))
+                                    trainable=not (15 in freeze_blocks))
             x = _inverted_res_block(x, filters=160, alpha=alpha, stride=1,
                                     expansion=6, block_id=15,
-                                    trainable=not(16 in freeze_blocks))
+                                    trainable=not (16 in freeze_blocks))
             x = _inverted_res_block(x, filters=320, alpha=alpha, stride=1,
                                     expansion=6, block_id=16,
-                                    trainable=not(17 in freeze_blocks))
+                                    trainable=not (17 in freeze_blocks))
 
             # no alpha applied to last conv as stated in the paper:
             # if the width multiplier is greater than 1 we
@@ -319,7 +319,7 @@ def MobileNetV2(inputs,
                               name='conv_1',
                               kernel_regularizer=kernel_regularizer,
                               bias_regularizer=bias_regularizer,
-                              trainable=not(18 in freeze_blocks))(x)
+                              trainable=not (18 in freeze_blocks))(x)
 
             if use_batch_norm:
                 if freeze_bn:
