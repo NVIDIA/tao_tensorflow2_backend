@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Create a Keras model for Quantization-Aware Training (QAT)."""
 
 from __future__ import absolute_import
@@ -92,8 +92,8 @@ def create_quantized_keras_model(model):
             network_dict["input_layers_of"].update({layer.name: inbound_layers})
 
     input_layers = [
-        l for l in model.layers
-        if len(_convert_to_list(l._inbound_nodes[0].inbound_layers)) == 0
+        layer_i for layer_i in model.layers
+        if len(_convert_to_list(layer_i._inbound_nodes[0].inbound_layers)) == 0
     ]
     assert len(input_layers) > 0, "No input layer was found."
     assert len(input_layers) == len(
@@ -150,8 +150,8 @@ def create_quantized_keras_model(model):
                     new_layer = QuantizedDepthwiseConv2D.from_config(layer_config)
                 else:
                     raise NotImplementedError(
-                        "Quantization for "+layer.__class__.__name__+" is not implemented"
-                        )
+                        "Quantization for " + layer.__class__.__name__ + " is not implemented"
+                    )
                 if layer.use_bias:
                     kernels, biases = layer.get_weights()
                     x = new_layer(x)
@@ -165,9 +165,7 @@ def create_quantized_keras_model(model):
                     # So if the output of this Conv. layer goes to only
                     # a BN layer, then don't add a QDQ layer.
                     if (
-                        len(layer._outbound_nodes) != 1
-                        or type(layer._outbound_nodes[0].outbound_layer)
-                        != BatchNormalization
+                        len(layer._outbound_nodes) != 1 or type(layer._outbound_nodes[0].outbound_layer) != BatchNormalization
                     ):
                         x = QDQ(name=layer.name + "_qdq")(x)
                 else:
@@ -213,8 +211,8 @@ def create_quantized_keras_model(model):
                         if next_layer_cfg["activation"] == "relu":
                             next_layer_is_relu = True
                 prev_layer_is_conv = (
-                    len(_convert_to_list(layer._inbound_nodes[0].inbound_layers)) == 1
-                    and type(_convert_to_list(layer._inbound_nodes[0].inbound_layers)[0]) in
+                    len(_convert_to_list(layer._inbound_nodes[0].inbound_layers)) == 1 and
+                    type(_convert_to_list(layer._inbound_nodes[0].inbound_layers)[0]) in
                     [Conv2D, Conv2DTranspose, DepthwiseConv2D]
                 )
                 if not (next_layer_is_relu and prev_layer_is_conv):

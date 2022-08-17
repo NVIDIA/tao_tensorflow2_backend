@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Quantized DepthwiseConv2D for Keras."""
 
@@ -113,7 +113,7 @@ class QuantizedDepthwiseConv2D(DepthwiseConv2D):
                  per_channel=True,
                  **kwargs):
         """Init function."""
-        super(QuantizedDepthwiseConv2D, self).__init__(
+        super().__init__(
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
@@ -136,9 +136,8 @@ class QuantizedDepthwiseConv2D(DepthwiseConv2D):
 
     def build(self, input_shape):
         """Keras layer build."""
-
         # The parent class build function should be called first so quantize input is weights[-1]
-        super(QuantizedDepthwiseConv2D, self).build(input_shape)
+        super().build(input_shape)
 
         if self.quantize_input:
             self.scaling_factor = self.add_weight(
@@ -228,7 +227,7 @@ class QuantizedDepthwiseConv2D(DepthwiseConv2D):
 
     def get_config(self):
         """get config function."""
-        config = super(QuantizedDepthwiseConv2D, self).get_config()
+        config = super().get_config()
         config["quantize"] = self.quantize_input
         config["bitwidth"] = self.bitwidth
         config["per_channel"] = self.per_channel

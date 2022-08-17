@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Quantized Conv2D for Keras."""
 
@@ -23,13 +23,15 @@ logger = logging.getLogger(__name__)
 
 DATA_FORMAT_MAP = {"channels_first": "NCHW", "channels_last": "NHWC"}
 
+
 def _preprocess_padding(padding):
     """Convert keras' padding to tensorflow's padding.
-    # Arguments
+
+    Arguments
         padding: string, `"same"` or `"valid"`.
-    # Returns
+    Returns
         a string, `"SAME"` or `"VALID"`.
-    # Raises
+    Raises
         ValueError: if `padding` is invalid.
     """
     if padding == 'same':
@@ -288,7 +290,7 @@ class QuantizedConv2D(Conv2D):
         **kwargs
     ):
         """Construct the QuantizedConv2D layer."""
-        super(QuantizedConv2D, self).__init__(
+        super().__init__(
             filters=filters,
             kernel_size=kernel_size,
             strides=strides,
@@ -314,7 +316,7 @@ class QuantizedConv2D(Conv2D):
         """Keras layer call."""
         axis = None
         if self.per_channel:
-            axis = -1 #1 if self.data_format == 'channels_first' else 3
+            axis = -1  # 1 if self.data_format == 'channels_first' else 3
         outputs = _conv2d(
             inputs,
             self.kernel,
@@ -338,7 +340,6 @@ class QuantizedConv2D(Conv2D):
 
     def build(self, input_shape):
         """Keras layer build."""
-
         if self.data_format == "channels_first":
             channel_axis = 1
         else:
@@ -385,7 +386,7 @@ class QuantizedConv2D(Conv2D):
 
     def get_config(self):
         """Get the layer configuration for QuantizedConv2D layer."""
-        config = super(QuantizedConv2D, self).get_config()
+        config = super().get_config()
         config["quantize"] = self.quantize_input
         config["bitwidth"] = self.bitwidth
         config["per_channel"] = self.per_channel
