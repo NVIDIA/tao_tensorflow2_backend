@@ -42,7 +42,6 @@ def run_pruning(cfg):
     pruned_model = pruner.prune(
         threshold=cfg.prune.threshold,
         excluded_layers=list(cfg.prune.excluded_layers))
-    # pruned_model.summary()
 
     # Save the encrypted pruned model
     tmp_dir = tempfile.mkdtemp()

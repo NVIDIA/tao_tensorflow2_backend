@@ -57,7 +57,7 @@ def initialize(config, training=True):
         tf.random.set_seed(config.seed)
 
     if config.mixed_precision:
-        policy = tf.keras.mixed_precision.experimental.Policy('mixed_float16')
-        tf.keras.mixed_precision.experimental.set_policy(policy)
+        policy = tf.keras.mixed_precision.Policy('mixed_float16')
+        tf.keras.mixed_precision.set_global_policy(policy)
     else:
         os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '0'

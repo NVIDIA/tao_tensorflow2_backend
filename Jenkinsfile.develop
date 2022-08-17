@@ -16,7 +16,7 @@ spec:
         - name: DOCKER_TLS_CERTDIR
           value: ""
     - name: cuda
-      image: gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:a478cc798d4f6e8e55ddf811023f1e6068903406756ab6e327920b4516b869eb
+      image: gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:9cc198b69a35e99f408b25f7a1291fb1d0bfe1ff9a8db3b7c7ce789261c9d0b8
       command:
       - cat
       resources:

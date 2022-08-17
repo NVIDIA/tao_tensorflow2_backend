@@ -5,19 +5,26 @@ data:
     - '/home/scratch.p3/yuw/datasets/coco/val-*'
   val_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'
 train:
-  amp: True
+  # amp: True
+  qat: False
   num_examples_per_epoch: 120000
   batch_size: 16
   checkpoint_period: 1
-  results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0'
+  results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp'
 export:
-  max_batch_size: 4
-  output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0/weights/export/efficientdet-d0_070_fp16_nocast.onnx'
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0/weights/efficientdet-d0_070.eff'
-  # model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d2/ema_weights/emackpt-90'
-  engine_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0/weights/export/efficientdet-d0_070.fp16.engine"
-  data_type: "fp16"
+  # QAT
+  # max_batch_size: 4
+  # output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-qat/weights/export/efficientdet-d0_030_int8.onnx'
+  # model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-qat/weights/efficientdet-d0_030.eff'
+  # engine_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-qat/weights/export/efficientdet-d0_030.int8.engine"
+  # nonQAT
+  max_batch_size: 8
+  output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/export/efficientdet-d0_245_b1_int8.onnx'
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/efficientdet-d0_245.eff'
+  engine_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/export/efficientdet-d0_245_b1.int8.engine"
+  data_type: "int8"
   cal_image_dir: "/home/scratch.p3/yuw/datasets/coco/raw-data/val2017"
-  cal_cache_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d4/weights/export/fficientdet-d0_070.cal"
+  cal_cache_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/export/efficientdet-d0_245_b1.cal"
   cal_batch_size: 16
   cal_batches: 10
+data_format: 'channels_last'

@@ -1,7 +1,7 @@
 data:
   loader:
     prefetch_size: 4
-    shuffle_file: True
+    shuffle_file: False
   max_instances_per_image: 100
   train_tfrecords:
     - '/home/scratch.p3/yuw/datasets/coco/train-*'
@@ -10,16 +10,16 @@ data:
   val_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'
 train:
   lr_schedule:
-    learning_rate: 0.3
+    learning_rate: 0.2
   amp: True
   # checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_effnet_b0/weights/efficientnet_b0_300"
   checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/imagenet/tf2_effnet_b0/weights/efficientnet-b0_500.eff"
   num_examples_per_epoch: 120000
-  batch_size: 32
+  batch_size: 20
   checkpoint_period: 5
-  l2_weight_decay: 5e-6
+  l2_weight_decay: 0.00004
   results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp'
 evaluate:
-  batch_size: 32
+  batch_size: 20
   num_samples: 5000
 key: 'nvidia_tlt'

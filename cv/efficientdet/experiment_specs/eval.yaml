@@ -7,10 +7,10 @@ data:
 train:
   amp: True
   num_examples_per_epoch: 120000
-  train_batch_size: 16
+  batch_size: 16
   checkpoint_period: 1
   results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0'
 evaluate:
   batch_size: 16
-  num_samples: 500
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0/weights/efficientdet-d0_001.eff'
+  num_samples: 5000
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/efficientdet-d0_245.eff'

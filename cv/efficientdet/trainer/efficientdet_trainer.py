@@ -26,7 +26,7 @@ class EfficientDetTrainer(Trainer):
         """Run model.fit with custom steps."""
         self.model.train_step = self.train_step
         self.model.test_step = self.test_step
-        history = self.model.fit(
+        self.model.fit(
             train_dataset,
             epochs=num_epochs,
             steps_per_epoch=steps_per_epoch,
@@ -35,7 +35,7 @@ class EfficientDetTrainer(Trainer):
             verbose=verbose,
             validation_data=eval_dataset,
             validation_steps=validation_steps)
-        print(history)
+        print("Training finished successfully.")
 
     def train_step(self, data):
         """Train step.
