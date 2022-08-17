@@ -97,7 +97,7 @@ class EvalConfig:
     n_workers: int = 64
     enable_center_crop: bool = True
     top_k: int = 3
-    classmap: str = MISSING
+    classmap: str = ""
 
 
 @dataclass
