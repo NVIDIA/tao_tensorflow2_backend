@@ -122,6 +122,8 @@ class ExportConfig:
     """Export config."""
 
     max_batch_size: int = 8
+    dynamic_batch_size: bool = True
+    min_score_thresh: float = 0.4
     model_path: str = MISSING
     output_path: str = MISSING
     engine_file: str = ""
@@ -170,6 +172,6 @@ class ExperimentConfig:
     export: ExportConfig = ExportConfig()
     inference: InferenceConfig = InferenceConfig()
     prune: PruneConfig = PruneConfig()
-    key: str = ''
+    key: str = MISSING
     data_format: str = 'channels_last'
     verbose: bool = False

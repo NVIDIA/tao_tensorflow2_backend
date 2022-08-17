@@ -59,7 +59,7 @@ def infer_tlt(cfg, label_id_mapping, min_score_thresh):
     if not os.path.exists(cfg.inference.output_dir):
         os.makedirs(cfg.inference.output_dir, exist_ok=True)
     # Load model from graph json
-    model = helper.load_model(cfg.inference.model_path, cfg, MODE)
+    model = helper.load_model(cfg.inference.model_path, cfg, MODE, is_qat=cfg.train.qat)
 
     # TODO(@yuw): amp changes dtype?
     infer_model = inference.InferenceModel(model, config.image_size, params,

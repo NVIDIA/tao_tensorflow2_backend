@@ -63,7 +63,7 @@ class InputProcessor:
         offset = tf.expand_dims(offset, axis=0)
         self._image -= offset
 
-        scale = tf.constant([0.229, 0.224, 0.225])  # TODO(@yuw): change all to 0.224
+        scale = tf.constant([0.224, 0.224, 0.224])
         scale = tf.expand_dims(scale, axis=0)
         scale = tf.expand_dims(scale, axis=0)
         self._image /= scale
@@ -146,7 +146,8 @@ class InputProcessor:
         self._image = tf.image.pad_to_bounding_box(scaled_image, 0, 0,
                                                    self._output_size[0],
                                                    self._output_size[1])
-        # self._image = tf.cast(output_image, dtype)
+        # self._image = tf.cast(output_image, dtype) # TODO(@yuw): verify
+        # self._image = tf.transpose(self._image, [2, 0, 1])
         return self._image
 
 

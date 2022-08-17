@@ -1380,22 +1380,10 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
         x = inputs
 
     # Depthwise Convolution
-    if strides == 2:
-        layer = keras.layers.ZeroPadding2D(
-            padding=correct_pad(x, kernel_size),
-            data_format=data_format,
-            name=name + 'dwconv_pad'
-        )
-        if use_td:
-            layer = keras.layers.TimeDistributed(layer)
-        x = layer(x)
-        conv_pad = 'valid'
-    else:
-        conv_pad = 'same'
     layer = keras.layers.DepthwiseConv2D(
         kernel_size,
         strides=strides,
-        padding=conv_pad,
+        padding='same',
         use_bias=use_bias,
         depthwise_initializer=CONV_KERNEL_INITIALIZER,
         kernel_regularizer=kernel_regularizer,

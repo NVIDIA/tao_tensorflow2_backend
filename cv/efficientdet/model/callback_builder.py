@@ -31,7 +31,8 @@ def get_callbacks(params, eval_dataset, eval_model=None):
                 verbose=0,
                 save_freq='epoch',
                 save_weights_only=True,
-                period=params['train']['checkpoint_period'])
+                period=params['train']['checkpoint_period'],
+                is_qat=params['train']['qat'])
         else:
             ckpt_callback = EffCheckpoint(
                 eff_dir=ckpt_dir,
@@ -39,7 +40,8 @@ def get_callbacks(params, eval_dataset, eval_model=None):
                 verbose=0,
                 save_freq='epoch',
                 save_weights_only=True,
-                period=params['train']['checkpoint_period'])
+                period=params['train']['checkpoint_period'],
+                is_qat=params['train']['qat'])
         callbacks.append(ckpt_callback)
 
         model_callback = EffCheckpoint(

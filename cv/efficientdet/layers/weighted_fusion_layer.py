@@ -11,35 +11,37 @@ import tensorflow as tf
 class WeightedFusion(tf.keras.layers.Layer):
     """Weighted Fusion Layer."""
 
-    def __init__(self, epsilon=1e-4, **kwargs):
+    def __init__(self, inputs_offsets=None, **kwargs):
         """Init."""
         super().__init__(**kwargs)
-        self.epsilon = epsilon
+        self.inputs_offsets = inputs_offsets
+        self.vars = []
 
-    def build(self, input_shape):
+    def build(self, input_shape=None):
         """Build."""
-        num_in = len(input_shape)
-        self.w = self.add_weight(name=self.name,
-                                 shape=(num_in,),
-                                 initializer=tf.keras.initializers.constant(1 / num_in),
-                                 trainable=True,
-                                 dtype=tf.float32)
+        for i, _ in enumerate(self.inputs_offsets):
+            name = 'WSM' + ('' if i == 0 else '_' + str(i))
+            self.vars.append(self.add_weight(initializer='ones', name=name))
 
-    def call(self, inputs, **kwargs):
+    def call(self, nodes):
         """Call."""
-        w = tf.keras.activations.relu(self.w)
-        x = tf.reduce_sum([w[i] * inputs[i] for i in range(len(inputs))], axis=0)
-        x = x / (tf.reduce_sum(w) + self.epsilon)
-        return x
-
-    def compute_output_shape(self, input_shape):
-        """Compute output shape."""
-        return input_shape[0]
+        dtype = nodes[0].dtype
+        edge_weights = []
+        for var in self.vars:
+            var = tf.cast(var, dtype=dtype)
+            edge_weights.append(var)
+        weights_sum = tf.add_n(edge_weights)
+        nodes = [
+            nodes[i] * edge_weights[i] / (weights_sum + 1e-4)
+            for i in range(len(nodes))
+        ]
+        new_node = tf.add_n(nodes)
+        return new_node
 
     def get_config(self):
         """Config."""
         config = super().get_config()
         config.update({
-            'epsilon': self.epsilon
+            'inputs_offsets': self.inputs_offsets
         })
         return config

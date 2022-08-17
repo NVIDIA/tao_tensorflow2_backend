@@ -17,7 +17,6 @@ from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.exporter.onnx_exporter import EfficientDetGraphSurgeon
 from cv.efficientdet.exporter.trt_builder import EngineBuilder
 from cv.efficientdet.inferencer import inference
-
 from cv.efficientdet.utils import helper, hparams_config
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 
@@ -49,14 +48,20 @@ def run_export(cfg):
     # TODO(@yuw): change to EFF
     assert str(cfg.export.output_path).endswith('.onnx'), "ONNX!!!"
     output_dir = os.path.dirname(cfg.export.output_path)
+    tf.keras.backend.set_learning_phase(0)
 
     # Load model from graph json
-    model = helper.load_model(cfg.export.model_path, cfg, MODE)
+    model = helper.load_model(cfg.export.model_path, cfg, MODE, is_qat=cfg.train.qat)
     model.summary()
-    input_shape = list(model.layers[0].input_shape[0][1:3])
-    max_batch_size = cfg.export.max_batch_size
-    # fake_images = tf.keras.Input(shape=[None, None, None], batch_size=max_batch_size)
-    export_model = inference.InferenceModel(model, config.image_size, params, max_batch_size)
+    # Get input shape from model
+    input_shape = list(model.layers[0].input_shape[0])
+    max_batch_size = 1 if cfg.export.dynamic_batch_size else cfg.export.max_batch_size
+    input_shape[0] = max_batch_size
+    # Build inference model
+    export_model = inference.InferenceModel(
+        model, config.image_size, params, max_batch_size,
+        min_score_thresh=0.001,  # a small value
+        max_boxes_to_draw=cfg.evaluate.max_detections_per_image)
     export_model.infer = tf.function(export_model.infer)
     tf.saved_model.save(
         export_model,
@@ -64,17 +69,19 @@ def run_export(cfg):
         signatures=export_model.infer.get_concrete_function(
             tf.TensorSpec(shape=(None, None, None, 3), dtype=tf.uint8)))
 
-    print("Generating ONNX.....")
+    print("Generating ONNX model...")
     # convert to onnx
-    effdet_gs = EfficientDetGraphSurgeon(output_dir, legacy_plugins=False)
+    effdet_gs = EfficientDetGraphSurgeon(
+        output_dir,
+        legacy_plugins=False,
+        dynamic_batch=cfg.export.dynamic_batch_size,
+        is_qat=cfg.train.qat)
     effdet_gs.update_preprocessor('NHWC', input_shape, preprocessor="imagenet")
     effdet_gs.update_shapes()
-    effdet_gs.update_network()
-    effdet_gs.update_nms()
+    effdet_gs.update_nms(threshold=cfg.export.min_score_thresh)
     # TODO(@yuw): convert onnx to eff
     onnx_file = effdet_gs.save(cfg.export.output_path)
-
-    print("Generating Engine.....")
+    print("Generating TensorRT engine...")
     # convert to engine
     if cfg.export.engine_file is not None or cfg.export.data_type == 'int8':
 

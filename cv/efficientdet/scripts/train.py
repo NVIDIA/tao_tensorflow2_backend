@@ -7,6 +7,7 @@ import tensorflow as tf
 import horovod.tensorflow.keras as hvd
 from dllogger import StdOutBackend, JSONStreamBackend, Verbosity
 import dllogger as DLLogger
+from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase
 from tensorflow_quantization.quantize import quantize_model
 
 from common.hydra.hydra_runner import hydra_runner
@@ -20,7 +21,7 @@ from cv.efficientdet.model import optimizer_builder
 from cv.efficientdet.trainer.efficientdet_trainer import EfficientDetTrainer
 from cv.efficientdet.utils import hparams_config, keras_utils
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
-from cv.efficientdet.utils.helper import decode_eff, load_model, load_json_model
+from cv.efficientdet.utils.helper import decode_eff, dump_json, load_model, load_json_model
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
 
 
@@ -96,6 +97,10 @@ def run_experiment(cfg):
         eval_model = load_model(cfg.train.pruned_model_path, cfg, mode='eval')
         tf.keras.backend.set_learning_phase(original_learning_phase)
 
+    # save nonQAT nonAMP graph in results_dir
+    dump_json(model, os.path.join(cfg.train.results_dir, 'train_graph.json'))
+    dump_json(eval_model, os.path.join(cfg.train.results_dir, 'eval_graph.json'))
+
     # Load pretrained weights
     # TODO(@yuw): move weight loading to master rank
     resume_ckpt_path = os.path.join(cfg.train.results_dir, f'{config.name}.resume')
@@ -105,9 +110,9 @@ def run_experiment(cfg):
         pretrained_ckpt_path = cfg.train.checkpoint
     if pretrained_ckpt_path and not os.path.exists(resume_ckpt_path):
         if not cfg.train.pruned_model_path:
-            print("Loading pretrained weight....")
+            print("Loading pretrained weight...")
             if 'train_graph.json' in os.listdir(pretrained_ckpt_path):
-                print("from detection:")
+                print("Loading EfficientDet mdoel...")
                 pretrained_model = load_json_model(
                     os.path.join(pretrained_ckpt_path, 'train_graph.json'))
                 keras_utils.restore_ckpt(
@@ -117,24 +122,26 @@ def run_experiment(cfg):
                     steps_per_epoch=0,
                     expect_partial=True)
             else:
-                print("from backbone:")
+                print("Loading EfficientNet backbone...")
                 pretrained_model = tf.keras.models.load_model(pretrained_ckpt_path)
             for layer in pretrained_model.layers[1:]:
                 # The layer must match up to prediction layers.
+                l_return = None
                 try:
                     l_return = model.get_layer(layer.name)
                 except ValueError:
                     # Some layers are not there
                     print(f"Skipping as {layer.name} is not found.")
-                try:
-                    l_return.set_weights(layer.get_weights())
-                except ValueError:
-                    print(f"Skipping {layer.name} due to shape mismatch.")
+                if l_return is not None:
+                    try:
+                        l_return.set_weights(layer.get_weights())
+                    except ValueError:
+                        print(f"Skipping {layer.name} due to shape mismatch.")
 
     # TODO(@yuw): Enable QAT
     if cfg.train.qat:
-        model = quantize_model(model)
-        eval_model = quantize_model(eval_model)
+        model = quantize_model(model, custom_qdq_cases=[EfficientNetQDQCase()])
+        eval_model = quantize_model(eval_model, custom_qdq_cases=[EfficientNetQDQCase()])
 
     if is_main_process():
         model.summary()
