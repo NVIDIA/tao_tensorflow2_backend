@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 load("//ci/runtime_resources:extension.bzl", "py_static_analysis")
 load("@pip_deps//:requirements.bzl", "requirement")

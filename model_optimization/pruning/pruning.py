@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Modulus pruning.
 
 This module includes APIs to prune a Keras model.
@@ -119,8 +119,7 @@ class PrunedLayer(object):
 
 @subclass
 class PruneMinWeight(Prune):
-    """
-    A class that implements pruning according to the "min weight method".
+    """A class that implements pruning according to the "min weight method".
 
     This function implements the 'min_weight' filtering method described on:
     [Molchanov et al.] Pruning Convolutional Neural Networks for Resource Efficient Inference,
@@ -184,7 +183,7 @@ class PruneMinWeight(Prune):
             return -3
         if data_format == "channels_last":
             return -1
-        raise ValueError("Unknown data format: %s" % str(data_format))
+        raise ValueError(f"Unknown data format: {data_format}")
 
     def _get_data_format(self, layer):
         # Return a layer's data format. Recurse through previous layers
@@ -213,12 +212,11 @@ class PruneMinWeight(Prune):
             # We have not found the data format.
             return None
         # Recurse through inbound layers.
-        data_formats = [self._get_data_format(l) for l in inbound_layers]
+        data_formats = [self._get_data_format(inbound_l) for inbound_l in inbound_layers]
 
         if len(set(data_formats)) > 1:
             raise ValueError(
-                "Found more than 1 data format in "
-                "inbound layers: %s" % repr(data_formats)
+                f"Found more than 1 data format in inbound layers: {repr(data_formats)}"
             )
         return data_formats[0]
 
@@ -230,8 +228,7 @@ class PruneMinWeight(Prune):
 
     @override
     def _get_filter_stats(self, kernels, layer):
-        """
-        Return norms of all kernel filters.
+        """Return norms of all kernel filters.
 
         This function implements the 'min_weight' and returns the norms of the filters
         in the layer.
@@ -246,7 +243,7 @@ class PruneMinWeight(Prune):
         if self._criterion == "L2":
             pruning_stat = get_L2_norm(kernels, layer)
         else:
-            raise NotImplementedError("%s pruning" % self._criterion)
+            raise NotImplementedError(f"{self._criterion} pruning")
 
         # Layer-wise normalization.
         pruning_stat = normalize_stat(pruning_stat, self._normalizer)
@@ -254,8 +251,7 @@ class PruneMinWeight(Prune):
         return pruning_stat
 
     def _merge_layerwise_stats(self, layerwise_stats):
-        """
-        Merge the layerwise pruning stats according to equalization_criterion.
+        """Merge the layerwise pruning stats according to equalization_criterion.
 
         Args:
             layerwise_stats (2-d array): Array of pruning stats for individual kernels
@@ -288,16 +284,14 @@ class PruneMinWeight(Prune):
             merged_stat = np.exp(np.mean(log_stats, axis=0))
         else:
             raise NotImplementedError(
-                "Unknown equalization criterion for element-wise"
-                "operations: {}".format(self._equalization_criterion)
+                f"Unknown equalization criterion for element-wise operations: {self._equalization_criterion}"
             )
 
         return merged_stat
 
     @override
     def _get_retained_idx(self, explored_stat):
-        """
-        Return indices of filters to retain from explored stats (filter norms).
+        """Return indices of filters to retain from explored stats (filter norms).
 
         This function computes the filter indices to be retained at the end of pruning.
         The number ouf filters is clamped to a multiple of the granularity.
@@ -338,7 +332,7 @@ class PruneMinWeight(Prune):
                 return is_pruned
         inbound_layers = _get_inbound_layers(layer)
         if inbound_layers:
-            return any([self._is_layer_pruned(l) for l in inbound_layers])
+            return any([self._is_layer_pruned(l) for l in inbound_layers])  # noqa pylint: disable=R1729
         return False
 
     def _equalize_retained_indices(self, eltwise_prunable_inputs):
@@ -347,9 +341,9 @@ class PruneMinWeight(Prune):
             output_depth = eltwise_prunable_inputs[0].filters
         else:
             output_depth = eltwise_prunable_inputs[0].layer.filters
-        if any(l.name in self._excluded_layers for l in eltwise_prunable_inputs):
+        if any(layer.name in self._excluded_layers for layer in eltwise_prunable_inputs):
             logger.debug(
-                "Skipping equalization of eltwise inputs: "
+                "Skipping equalization of eltwise inputs: "  # noqa pylint: disable=C0209
                 "{}".format(eltwise_prunable_inputs)
             )
             output_idx = range(output_depth)
@@ -378,9 +372,8 @@ class PruneMinWeight(Prune):
             output_depth = dw_layers[0].layer.filters
         else:
             output_depth = dw_layers[0].filters
-        if any(l.name in self._excluded_layers for l in dw_layers):
-            logger.debug("Skipping equalization of depth-wise conv layers: "
-                         "{}".format(dw_layers))
+        if any(layer.name in self._excluded_layers for layer in dw_layers):
+            logger.debug("Skipping equalization of depth-wise conv layers: {}".format(dw_layers))  # noqa pylint: disable=C0209
             output_idx = range(output_depth)
         else:
             cumulative_stat = previous_stat
@@ -401,8 +394,8 @@ class PruneMinWeight(Prune):
                 cumulative_stat = np.power(np.multiply(cumulative_stat,
                                            this_stat), float(1 / 2.0))
             else:
-                raise NotImplementedError("Unknown equalization criterion for depth-wise conv. "
-                                          "operations: {}".format(criterion))
+                raise NotImplementedError(
+                    f"Unknown equalization criterion for depth-wise conv operations: {criterion}")
 
             # Clamp outputs to a multiple of the granularity
             output_idx = self._get_retained_idx(cumulative_stat)
@@ -476,7 +469,7 @@ class PruneMinWeight(Prune):
         # Identify filters to prune.
         if layer.name in self._excluded_layers or not layer.trainable:
             if layer.name not in self._excluded_layers:
-                logger.info("Skipping nontrainable layer: {}".format(layer.name))
+                logger.info("Skipping nontrainable layer: {}".format(layer.name))  # noqa pylint: disable=C0209
             # Infer output channels from first kernel.
             explored_stat = None
             retained_idx = range(weights[0].shape[-1])
@@ -524,11 +517,11 @@ class PruneMinWeight(Prune):
             eltwise_prunable_inputs, layer, byom_custom_layers=self.byom_custom_layers
         )
         logger.debug(
-            "At explore_elmtwise_layer: Prunable parents at layer {}".format(layer.name)
+            "At explore_elmtwise_layer: Prunable parents at layer {}".format(layer.name)  # noqa pylint: disable=C0209
         )
         eltwise_prunable_inputs = list(set(eltwise_prunable_inputs))
-        for l in eltwise_prunable_inputs:
-            logger.debug("Prunable_parents {}".format(l.name))
+        for l in eltwise_prunable_inputs:  # noqa pylint: disable=E741
+            logger.debug("Prunable_parents {}".format(l.name))  # noqa pylint: disable=C0209
             # If any of the parents are broadcast layers, pop them out of prunable input list.
             if type(l) != keras.layers.TimeDistributed and l.filters == 1:
                 # Set retained indices for this layer as 0.
@@ -568,7 +561,7 @@ class PruneMinWeight(Prune):
             self._explored_layers[i.name].is_pruned = pruned_state
         # if the layer is a shared conv
         if type(layer) == keras.layers.Conv2D:
-            logger.debug("Conv2D layer '{}' is shared.".format(layer.name))
+            logger.debug("Conv2D layer '{}' is shared.".format(layer.name))  # noqa pylint: disable=C0209
             retained_idx, _, _ = self._explore_conv_or_fc_layer(layer)
 
         return retained_idx
@@ -594,8 +587,7 @@ class PruneMinWeight(Prune):
             allowed_axes = [channel_index % n_dims, channel_index % -n_dims]
             if layer.axis not in allowed_axes:
                 raise ValueError(
-                    "Concatenation layer only supported on channel axis: "
-                    "data_format=%s axis=%d" % (data_format, layer.axis)
+                    f"Concatenation layer only supported on channel axis: data_format={data_format} axis={layer.axis}"
                 )
         else:
             # The data format is unknown so we must make sure the previous layer was not pruned.
@@ -606,10 +598,10 @@ class PruneMinWeight(Prune):
                 )
             channel_index = layer.axis
 
-        previous_layers = [l for n in layer._inbound_nodes for l in n.inbound_layers]
+        previous_layers = [l for n in layer._inbound_nodes for l in n.inbound_layers]  # noqa pylint: disable=E741
         retained_indices = []
         offset = 0
-        for l in previous_layers:
+        for l in previous_layers:  # noqa pylint: disable=E741
             if self._is_layer_pruned(l):
                 # Retain unpruned channels.
                 retained_idx = self._explored_layers[l.name].retained_idx
@@ -659,8 +651,7 @@ class PruneMinWeight(Prune):
             'Previous retrained index of Flatten layer cannot be None if data format'
             ' is known.'
         if len(previous_layer_shape) != 4 and type(layer) != keras.layers.TimeDistributed:
-            raise ValueError("Expecting 4-dimensional activations got shape=%s" %
-                             (repr(previous_layer_shape)))
+            raise ValueError(f"Expecting 4-dimensional activations got shape={repr(previous_layer_shape)}")
         # Take the spatial size into account and create a mask of activations to
         # retain from previous layer.
         if previous_data_format == "channels_first":
@@ -685,7 +676,7 @@ class PruneMinWeight(Prune):
                     "data format is unknown."
                 )
         else:
-            raise ValueError("Unknown data format: %s" % previous_data_format)
+            raise ValueError(f"Unknown data format: {previous_data_format}")
         if previous_data_format is not None:
             retained_idx = np.where(retained_activation_mask)[0]
         else:
@@ -696,7 +687,7 @@ class PruneMinWeight(Prune):
         # Propagate from previous layer.
         retained_idx = self._get_previous_retained_idx(layer)
         self._explored_layers[layer.name].retained_idx = retained_idx
-        weights = tuple([w[retained_idx] for w in layer.get_weights()])
+        weights = tuple([w[retained_idx] for w in layer.get_weights()])  # noqa pylint: disable=R1728
         return weights
 
     def _prune_explored_conv_or_fc_layer(self, layer):
@@ -718,7 +709,7 @@ class PruneMinWeight(Prune):
 
         # Check if the current layer has been explored
         if layer.name not in self._explored_layers:
-            raise ValueError("{} not explored".format(layer.name))
+            raise ValueError(f"{layer.name} not explored")
 
         # Import retained idx from the explored stage.
         retained_idx = self._explored_layers[layer.name].retained_idx
@@ -749,11 +740,11 @@ class PruneMinWeight(Prune):
         if scale_factor is not None:
             output_weights += (scale_factor,)
 
-        msg = "layer %s: %d -> %d - actions: %s " % (
+        msg = "layer %s: %d -> %d - actions: %s " % (  # noqa pylint: disable=C0209
             layer.name,
             initial_neuron_count,
             retained_neuron_count,
-            "[name: %s]" % layer.name,
+            "[name: %s]" % layer.name,  # noqa pylint: disable=C0209
         )
         logger.debug(msg)
         return output_weights
@@ -764,7 +755,7 @@ class PruneMinWeight(Prune):
         initial_neuron_count = kernels.shape[2]
         # Check if the current layer has been explored
         if layer.name not in self._explored_layers:
-            raise ValueError("{} not explored".format(layer.name))
+            raise ValueError(f"{layer.name} not explored")
 
         # Import retained idx from the explored stage.
         retained_idx = self._explored_layers[layer.name].retained_idx
@@ -781,11 +772,11 @@ class PruneMinWeight(Prune):
         if scale_factor is not None:
             output_weights += (scale_factor,)
 
-        msg = "layer %s: %d -> %d - actions: %s " % (
+        msg = "layer %s: %d -> %d - actions: %s " % (  # noqa pylint: disable=C0209
             layer.name,
             initial_neuron_count,
             retained_neuron_count,
-            "[name: %s]" % layer.name,
+            "[name: %s]" % layer.name,  # noqa pylint: disable=C0209
         )
         logger.debug(msg)
         return output_weights
@@ -814,7 +805,7 @@ class PruneMinWeight(Prune):
 
         # Check if the current layer has been explored
         if layer.name not in self._explored_layers:
-            raise ValueError("{} not explored".format(layer.name))
+            raise ValueError(f"{layer.name} not explored")
 
         # Import retained idx from the explored stage.
         retained_idx = self._explored_layers[layer.name].retained_idx
@@ -838,11 +829,11 @@ class PruneMinWeight(Prune):
         layer.initial_state_shape = list(layer.initial_state_shape)
         layer.initial_state_shape[1] = retained_neuron_count
 
-        msg = "layer %s: %d -> %d - actions: %s " % (
+        msg = "layer %s: %d -> %d - actions: %s " % (  # noqa pylint: disable=C0209
             layer.name,
             initial_neuron_count,
             retained_neuron_count,
-            "[name: %s]" % layer.name,
+            "[name: %s]" % layer.name,  # noqa pylint: disable=C0209
         )
         logger.debug(msg)
         return weights
@@ -883,7 +874,7 @@ class PruneMinWeight(Prune):
         elif len(weights) == 2:
             kernels, biases = weights
         else:
-            raise ValueError("Unhandled number of weights: %d" % len(weights))
+            raise ValueError(f"Unhandled number of weights: {len(weights)}")
         return kernels, biases, scaling_factor
 
     def _convert_to_list(self, obj):
@@ -922,11 +913,11 @@ class PruneMinWeight(Prune):
         while layers_to_explore:
 
             layer = layers_to_explore.pop(0)
-            logger.debug("Exploring layer : {}".format(layer.name))
+            logger.debug("Exploring layer : {}".format(layer.name))  # noqa pylint: disable=C0209
 
-            go_to_another_layer = any([l.name not in self._explored_layers
+            go_to_another_layer = any([l.name not in self._explored_layers  # noqa pylint: disable=R1729
                                        for n in self._convert_to_list(layer._inbound_nodes)
-                                       for l in self._convert_to_list(n.inbound_layers)])
+                                       for l in self._convert_to_list(n.inbound_layers)])  # noqa pylint: disable=E741
 
             if go_to_another_layer:
                 # Some of the inbound layers have not been explored yet.
@@ -954,7 +945,7 @@ class PruneMinWeight(Prune):
                 if len(layer._inbound_nodes) > 1 and len(set(elmtwise_inputs)) > 1:
                     # For eltwise layers check if all the inbound layers have been explored first.
 
-                    if all(l.name in self._explored_layers for l in elmtwise_inputs):
+                    if all(l.name in self._explored_layers for l in elmtwise_inputs):  # noqa pylint: disable=E741
                         retained_idx = self._explore_elmtwise_layer(layer)
                     else:
                         continue
@@ -1022,9 +1013,9 @@ class PruneMinWeight(Prune):
             ]:
                 # For eltwise layers check if all the inbound layers have been explored first.
                 elmtwise_inputs = [
-                    l for n in layer._inbound_nodes for l in n.inbound_layers
+                    l for n in layer._inbound_nodes for l in n.inbound_layers  # noqa pylint: disable=E741
                 ]
-                if all(l.name in self._explored_layers for l in elmtwise_inputs):
+                if all(l.name in self._explored_layers for l in elmtwise_inputs):  # noqa pylint: disable=E741
                     retained_idx = self._explore_elmtwise_layer(layer)
                 else:
                     continue
@@ -1033,7 +1024,7 @@ class PruneMinWeight(Prune):
             elif type(layer) == keras.layers.Lambda:
                 if layer.name not in self._excluded_layers:
                     raise ValueError(
-                        "Lambda layers must be explicitly excluded from pruning. "
+                        "Lambda layers must be explicitly excluded from pruning. "  # noqa pylint: disable=C0209
                         "Met lambda layer with name {} that is not explicitly "
                         "excluded".format(layer.name)
                     )
@@ -1042,7 +1033,7 @@ class PruneMinWeight(Prune):
                 pass
             else:
                 # Raise not implemented error for layers that aren't supported.
-                raise NotImplementedError("Unknown layer type: %s" % type(layer))
+                raise NotImplementedError(f"Unknown layer type: {type(layer)}")
 
             # Explore the input layer.
             if type(layer) in [keras.layers.InputLayer]:
@@ -1054,9 +1045,7 @@ class PruneMinWeight(Prune):
                 # Make sure there are no duplicates in the retained indices.
                 if retained_idx is not None:
                     assert len(retained_idx) == len(set(retained_idx)), (
-                        "Duplicates found in "
-                        "list of retained "
-                        "indices: %s." % repr(retained_idx)
+                        f"Duplicates found in list of retained indices: {repr(retained_idx)}"
                     )
             outbound_nodes = layer._outbound_nodes
             if not outbound_nodes:
@@ -1068,10 +1057,10 @@ class PruneMinWeight(Prune):
                 if node.outbound_layer not in layers_to_explore:
                     layers_to_explore.append(node.outbound_layer)
 
-            names_to_explore = [l.name for l in layers_to_explore]
+            names_to_explore = [l.name for l in layers_to_explore]  # noqa pylint: disable=E741
             logger.debug(
-                "Updating layers to explore at {} to: {}".format(
-                    layer.name, names_to_explore
+                "Updating layers to explore at {} to: {}".format(  # noqa pylint: disable=C0209
+                    layer.name, names_to_explore  # noqa pylint: disable=C0209
                 )
             )
 
@@ -1106,7 +1095,7 @@ class PruneMinWeight(Prune):
             model (Model): the pruned model.
         """
         # get `training` config for BN reconstruction
-        config_map = {l['name'] : l['inbound_nodes'] for l in model.get_config()['layers']}
+        config_map = {l['name'] : l['inbound_nodes'] for l in model.get_config()['layers']}  # noqa pylint: disable=E741
         # Phase 1: Explore the model.
         if not output_layers_with_outbound_nodes:
             output_layers_with_outbound_nodes = []
@@ -1114,10 +1103,10 @@ class PruneMinWeight(Prune):
 
         # Phase 2: Prune the graph in Breadth First Search fashion, starting from the
         # input layer.
-        logger.debug("Explored layers: {}".format(self._explored_layers.keys()))
-        logger.debug("Model layers: {}".format([l.name for l in model.layers]))
+        logger.debug("Explored layers: {}".format(self._explored_layers.keys()))  # noqa pylint: disable=C0209
+        logger.debug("Model layers: {}".format([l.name for l in model.layers]))  # noqa pylint: disable=C0209
 
-        input_layer = [l for l in model.layers if (
+        input_layer = [l for l in model.layers if (  # noqa pylint: disable=E741
             type(l) in [keras.layers.InputLayer])]
         layers_to_explore = input_layer
         model_outputs = {}
@@ -1141,7 +1130,7 @@ class PruneMinWeight(Prune):
                     inbound_layers = n.inbound_layers
                     if not isinstance(inbound_layers, list):
                         inbound_layers = [inbound_layers]
-                    for l in inbound_layers:
+                    for l in inbound_layers:  # noqa pylint: disable=E741
                         # if isinstance(l, dict):
                         #     break
                         if not self._explored_layers[l.name].visited:
@@ -1159,7 +1148,7 @@ class PruneMinWeight(Prune):
                     # yet unvisited layers.
                     continue
 
-                logger.debug("Pruning layer: {}".format(layer.name))
+                logger.debug("Pruning layer: {}".format(layer.name))  # noqa pylint: disable=C0209
                 weights = None
                 outputs = None
 
@@ -1224,7 +1213,7 @@ class PruneMinWeight(Prune):
                     keras.layers.Maximum,
                     keras.layers.UpSampling2D,
                     keras.layers.Cropping2D,
-                    keras.layers.SeparableConv2D, # TODO(@yuw): workaround
+                    keras.layers.SeparableConv2D,
                     ImageResizeLayer,
                     WeightedFusion
                 ]:
@@ -1245,8 +1234,7 @@ class PruneMinWeight(Prune):
                 else:
                     # Other layers are not going through any transformation here.
                     raise NotImplementedError(
-                        "Unsupported layer type for layer names"
-                        "{} of type {}".format(layer.name, type(layer))
+                        f"Unsupported layer type for layer names {layer.name} of type {type(layer)}"
                     )
 
                 # Visit input layer.
@@ -1303,7 +1291,7 @@ class PruneMinWeight(Prune):
                                     new_layer(
                                         prev_outputs,
                                         training=config_map[layer.name][0][0][-1]['training'])
-                                    )
+                                )
                             else:
                                 outputs.append(new_layer(prev_outputs))
                         else:
@@ -1329,7 +1317,7 @@ class PruneMinWeight(Prune):
         # Create new keras model object from pruned specifications.
         # Patch for duplicate outputs
         output_names = []
-        for l in model.outputs:
+        for l in model.outputs:  # noqa pylint: disable=E741
             if l.name in model_outputs:
                 if l.name not in output_names:
                     output_names.append(l.name)
@@ -1412,7 +1400,7 @@ def prune(
         excluded_layers = []
     if method != "min_weight":
         # We don't know how to support other pruning methods.
-        raise NotImplementedError("Unsupported pruning method: %s" % method)
+        raise NotImplementedError(f"Unsupported pruning method: {method}")
 
     pruner = PruneMinWeight(
         normalizer,
@@ -1469,7 +1457,7 @@ def normalize_stat(stat, normalizer):
     elif normalizer == "max":
         stat = stat / np.max(stat)
     elif normalizer != "off":
-        raise NotImplementedError("Invalid pruning normalizer: %s" % normalizer)
+        raise NotImplementedError(f"Invalid pruning normalizer: {normalizer}")
     return stat
 
 
@@ -1491,7 +1479,7 @@ def get_L2_norm(kernels, layer):
         # I.e., axis 3 is always of size 1, kernel shape = (K_h, K_w, C_in, 1)
         norm = np.sqrt(np.sum(kernels**2, axis=(0, 1, 3)))
     else:
-        norm = np.sqrt(np.sum(kernels**2, axis=tuple(range(kernels.ndim-1))))
+        norm = np.sqrt(np.sum(kernels**2, axis=tuple(range(kernels.ndim - 1))))
 
     return norm
 
@@ -1524,8 +1512,8 @@ def find_prunable_parent(prunable_parents,
     # exit if you have encountered a prunable parent.
     if (type(layer) in [keras.layers.Conv2D,
                         keras.layers.Dense,
-                        keras.layers.DepthwiseConv2D]
-        and len(layer._inbound_nodes) == 1) or \
+                        keras.layers.DepthwiseConv2D] and
+        len(layer._inbound_nodes) == 1) or \
         (type(layer) == keras.layers.TimeDistributed and
          type(layer.layer) in [keras.layers.Conv2D,
                                keras.layers.Dense,
@@ -1536,7 +1524,7 @@ def find_prunable_parent(prunable_parents,
     # If you hit a shape manipulation layer, drop an exception.
     if type(layer) not in TRAVERSABLE_LAYERS:
         raise NotImplementedError(
-            "Pruning is not possible with {} layer " "in the way".format(layer.name)
+            f"Pruning is not possible with {layer.name} layer " "in the way"
         )
     # Recurse across all branches to return prunable parents.
     previous_layers = []
@@ -1549,10 +1537,10 @@ def find_prunable_parent(prunable_parents,
         inbound_layers = n.inbound_layers
         if not isinstance(inbound_layers, list):
             inbound_layers = [inbound_layers]
-        for l in inbound_layers:
+        for l in inbound_layers:  # noqa pylint: disable=E741
             previous_layers.append(l)
 
-    for l in previous_layers:
+    for l in previous_layers:  # noqa pylint: disable=E741
         if visited and l in visited:
             prunable_parents.extend(visited[l])
         else:

@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Helper functions for loading engine."""
 import numpy as np
 import pycuda.autoinit  # noqa pylint: disable=unused-import
