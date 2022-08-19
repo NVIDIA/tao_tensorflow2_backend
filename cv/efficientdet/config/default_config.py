@@ -161,6 +161,19 @@ class PruneConfig:
 
 
 @dataclass
+class DatasetConvertConfig:
+    """Dataset Convert config."""
+
+    image_dir: str = MISSING
+    annotations_file: str = MISSING
+    output_dir: str = MISSING
+    tag: str = ''
+    num_shards: int = 256
+    include_masks: bool = False
+    log_dir: str = ''
+
+
+@dataclass
 class ExperimentConfig:
     """Experiment config."""
 
@@ -172,6 +185,7 @@ class ExperimentConfig:
     export: ExportConfig = ExportConfig()
     inference: InferenceConfig = InferenceConfig()
     prune: PruneConfig = PruneConfig()
+    dataset_convert: DatasetConvertConfig = DatasetConvertConfig()
     key: str = MISSING
     data_format: str = 'channels_last'
     verbose: bool = False
