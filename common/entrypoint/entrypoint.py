@@ -217,7 +217,7 @@ def launch(parser, subtasks):
             raise NotImplementedError(
                 f"This {args['subtask']} doesn't support multiGPU. Please set --gpus 1"
             )
-        mpi_command = f'mpirun -np {np} --oversubscribe --bind-to none --allow-run-as-root'
+        mpi_command = f'mpirun -np {np} --oversubscribe --bind-to none --allow-run-as-root -mca pml ob1 -mca btl ^openib'
         if multi_node:
             mpi_command += " " + mpirun_arg
 
