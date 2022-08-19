@@ -1,6 +1,7 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """The main training script."""
 import os
+import sys
 import time
 from absl import logging
 import tensorflow as tf
@@ -81,6 +82,8 @@ def run_experiment(cfg):
 
     # Build models
     if not cfg.train.pruned_model_path:
+        if is_main_process():
+            print("Building unpruned graph...")
         # TODO(@yuw): verify channels_first training or force last
         input_shape = list(config.image_size) + [3] \
             if config.data_format == 'channels_last' else [3] + list(config.image_size)
@@ -90,7 +93,8 @@ def run_experiment(cfg):
         eval_model = efficientdet(input_shape, training=False, config=config)
         tf.keras.backend.set_learning_phase(original_learning_phase)
     else:
-        print("Building pruned graph...")
+        if is_main_process():
+            print("Loading pruned graph...")
         original_learning_phase = tf.keras.backend.learning_phase()
         model = load_model(cfg.train.pruned_model_path, cfg, mode='train')
         tf.keras.backend.set_learning_phase(0)
@@ -178,36 +182,42 @@ def run_experiment(cfg):
 
     # resume from checkpoint or load pretrained backbone
     train_from_epoch = 0
-    if os.path.exists(resume_ckpt_path) and is_main_process():
-        print("Resume training...")
+    if os.path.exists(resume_ckpt_path):
+        if is_main_process():
+            print("Resume training...")
         ckpt_path, _ = decode_eff(resume_ckpt_path, cfg.key)
         train_from_epoch = keras_utils.restore_ckpt(
             model,
             ckpt_path,
             config.moving_average_decay,
             steps_per_epoch=steps_per_epoch,
-            expect_partial=False)
+            expect_partial=True)
         # TODO(@yuw): remove ckpt_path
 
-    # set up callbacks
-    num_samples = (cfg.evaluate.num_samples + get_world_size() - 1) // get_world_size()
-    num_samples = (num_samples + cfg.evaluate.batch_size - 1) // cfg.evaluate.batch_size
-    cfg.evaluate.num_samples = num_samples
+    if train_from_epoch < config.num_epochs:
+        # set up callbacks
+        num_samples = (cfg.evaluate.num_samples + get_world_size() - 1) // get_world_size()
+        num_samples = (num_samples + cfg.evaluate.batch_size - 1) // cfg.evaluate.batch_size
+        cfg.evaluate.num_samples = num_samples
 
-    callbacks = callback_builder.get_callbacks(
-        cfg,
-        eval_dataset.shard(get_world_size(), get_rank()).take(num_samples),
-        eval_model=eval_model)
+        callbacks = callback_builder.get_callbacks(
+            cfg,
+            eval_dataset.shard(get_world_size(), get_rank()).take(num_samples),
+            eval_model=eval_model)
 
-    trainer = EfficientDetTrainer(model, config, callbacks)
-    trainer.fit(
-        train_dataset,
-        eval_dataset,
-        config.num_epochs,
-        steps_per_epoch,
-        initial_epoch=train_from_epoch,
-        validation_steps=num_samples // cfg.evaluate.batch_size,
-        verbose=1 if is_main_process() else 0)
+        trainer = EfficientDetTrainer(model, config, callbacks)
+        trainer.fit(
+            train_dataset,
+            eval_dataset,
+            config.num_epochs,
+            steps_per_epoch,
+            initial_epoch=train_from_epoch,
+            validation_steps=num_samples // cfg.evaluate.batch_size,
+            verbose=1 if is_main_process() else 0)
+    else:
+        if is_main_process():
+            print(f"Training ({train_from_epoch} epochs) has finished.")
+        sys.exit(0)
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
