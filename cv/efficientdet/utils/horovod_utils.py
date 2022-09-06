@@ -28,7 +28,7 @@ def is_main_process():
     return get_rank() == 0
 
 
-def initialize(config, training=True):
+def initialize(config, training=True, ci_run=False):
     """Initialize training."""
     if training and config.set_num_threads:
         os.environ['TF_NUM_INTRAOP_THREADS'] = '1'
@@ -44,13 +44,14 @@ def initialize(config, training=True):
         tf.keras.backend.clear_session()
         tf.config.optimizer.set_jit(True)
 
-    gpus = tf.config.list_physical_devices('GPU')
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
-        assert tf.config.experimental.get_memory_growth(gpu)
-    tf.config.experimental.set_visible_devices(gpus, 'GPU')
-    if gpus and training:
-        tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+    if not ci_run:
+        gpus = tf.config.list_physical_devices('GPU')
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+            assert tf.config.experimental.get_memory_growth(gpu)
+        tf.config.experimental.set_visible_devices(gpus, 'GPU')
+        if gpus and training:
+            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
 
     if training:
         np.random.seed(config.seed)
@@ -61,3 +62,5 @@ def initialize(config, training=True):
         tf.keras.mixed_precision.set_global_policy(policy)
     else:
         os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '0'
+        # policy = tf.keras.mixed_precision.Policy('float32')
+        # tf.keras.mixed_precision.set_global_policy(policy)

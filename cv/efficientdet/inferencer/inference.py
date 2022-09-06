@@ -121,6 +121,7 @@ def build_inputs(image_path_pattern: Text, image_size: Union[int, Tuple[int, int
     raw_images, fnames = [], []
     for fname in tf.io.gfile.glob(image_path_pattern):
         image = Image.open(fname).convert('RGB')
+        image = np.array(image)
         raw_images.append(image)
         fnames.append(fname)
     if not raw_images:

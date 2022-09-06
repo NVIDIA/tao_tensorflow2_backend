@@ -4,8 +4,8 @@ set -eo pipefail
 # cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 registry="nvcr.io"
-tensorflow_version="2.8.0"
-tao_version="3.22.10"
+tensorflow_version="2.9.1"
+tao_version="3.22.11"
 repository="nvidia/tao-toolkit-tf"
 build_id="01"
 tag="v${tao_version}-tf${tensorflow_version}-py3-${build_id}"

@@ -28,16 +28,16 @@ os.environ["TF_CPP_VMODULE"] = 'non_max_suppression_op=0,generate_box_proposals_
 supported_img_format = ['.jpg', '.jpeg', '.JPG', '.JPEG', '.png', '.PNG']
 
 
-def run_export(cfg):
+def run_export(cfg, ci_run=False):
     """Launch EfficientDet export."""
     # disable_eager_execution()
     tf.autograph.set_verbosity(0)
-
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
-    if gpus:
-        tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+    if not ci_run:
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        if gpus:
+            tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
 
     # Parse and update hparams
     MODE = 'export'

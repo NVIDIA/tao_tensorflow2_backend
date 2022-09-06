@@ -84,7 +84,6 @@ class DataConfig:
     val_tfrecords: List[str] = field(default_factory=lambda: [])  # TODO
     val_dirs: List[str] = field(default_factory=lambda: [])  # TODO
     val_json_file: str = ""
-    testdev_dir: str = ''
     num_classes: int = 91
     max_instances_per_image: int = 200
     skip_crowd_during_training: bool = True
@@ -99,7 +98,6 @@ class EvalConfig:
 
     batch_size: int = 8
     min_score_thresh: float = 0.3
-    eval_epoch_cycle: int = 10
     num_samples: int = 5000
     max_detections_per_image: int = 100
     label_map: str = ''

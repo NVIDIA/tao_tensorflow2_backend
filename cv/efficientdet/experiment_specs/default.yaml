@@ -1,0 +1,98 @@
+data:
+  loader:
+    prefetch_size: 4
+    shuffle_file: False
+    shuffle_buffer: 10000
+    cycle_length: 32
+    block_length: 16
+  max_instances_per_image: 100
+  skip_crowd_during_training: True
+  image_size: '512x512'
+  use_fake_data: False
+  num_classes: 91
+  train_tfrecords:
+    - '/home/scratch.p3/yuw/datasets/coco/train-*'
+  val_tfrecords:
+    - '/home/scratch.p3/yuw/datasets/coco/val-*'
+  val_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'
+  train_dirs: []
+  val_dirs: []
+train:
+  optimizer:
+    name: 'sgd'
+    momentum: 0.9
+  lr_schedule:
+    name: 'cosine'
+    warmup_epoch: 5
+    warmup_init: 0.0001
+    learning_rate: 0.2
+  amp: True
+  iterations_per_loop: 100
+  checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/imagenet/tf2_effnet_b0/weights/efficientnet-b0_500.eff"
+  num_examples_per_epoch: 100
+  moving_average_decay: 0.999
+  batch_size: 20
+  checkpoint_period: 5
+  l2_weight_decay: 0.00004
+  l1_weight_decay: 0.0
+  results_dir: '/tmp/'
+  skip_checkpoint_variables: ''
+  clip_gradients_norm: 10.0
+  image_preview: True
+  qat: False
+  tf_random_seed: 42
+  pruned_model_path: ''
+  num_epochs: 2
+model:
+  name: 'efficientdet-d0'
+  aspect_ratios: '[(1.0, 1.0), (1.4, 0.7), (0.7, 1.4)]'
+  anchor_scale: 4
+  min_level: 3
+  max_level: 7
+  num_scales: 3
+  freeze_bn: False
+  freeze_blocks: []
+augment:
+  rand_hflip: True
+  random_crop_min_scale: 0.1
+  random_crop_max_scale: 2
+evaluate:
+  batch_size: 8
+  min_score_thresh: 0.3
+  num_samples: 5
+  max_detections_per_image: 100
+  label_map: ''
+  iou_thresh: 0.5
+  max_nms_inputs: 5000
+  model_path: ''
+export:
+  max_batch_size: 8
+  dynamic_batch_size: True
+  min_score_thresh: 0.4
+  model_path: ""
+  output_path: ""
+  engine_file: ""
+  data_type: "fp32"
+  max_workspace_size: 2  # in Gb
+  cal_image_dir: ""
+  cal_cache_file: ""
+  cal_batch_size: 16
+  cal_batches: 10
+inference:
+  model_path: ""
+  image_dir: ""
+  output_dir: ""
+  dump_label: False
+  batch_size: 1
+prune:
+  model_path: ""
+  normalizer: 'max'
+  output_path: ""
+  equalization_criterion: 'union'
+  granularity: 8
+  threshold: 0.5
+  min_num_filters: 16
+  excluded_layers: []
+key: 'nvidia_tlt'
+data_format: 'channels_last'
+verbose: True

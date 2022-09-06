@@ -4,8 +4,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import keras
-from keras.layers import BatchNormalization
+from tensorflow import keras
+from tensorflow.keras.layers import BatchNormalization
 import numpy as np
 import pytest
 
@@ -30,21 +30,21 @@ bn_config = (False, True)
 def test_freeze_bn(freeze_bn):
     keras.backend.clear_session()
     model = get_model(
-        "vgg",
+        "resnet",
         input_shape=(3, 224, 224),
         data_format="channels_first",
         freeze_bn=freeze_bn,
-        nlayers=16,
+        nlayers=18,
         use_batch_norm=True,
         use_pooling=False,
         dropout=0.0,
         use_bias=False,
+        all_projections=False,
     )
     reg_config = RegConfig("L2", "Conv2D,Dense", 1e-5)
     model = setup_config(
         model,
-        reg_config,
-        freeze_bn=freeze_bn
+        reg_config.__dict__,
     )
     model.compile(
         loss="mse",
