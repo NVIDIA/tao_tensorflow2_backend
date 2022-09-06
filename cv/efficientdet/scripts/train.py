@@ -6,8 +6,6 @@ import time
 from absl import logging
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
-from dllogger import StdOutBackend, JSONStreamBackend, Verbosity
-import dllogger as DLLogger
 from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase
 from tensorflow_quantization.quantize import quantize_model
 
@@ -26,7 +24,7 @@ from cv.efficientdet.utils.helper import decode_eff, dump_json, load_model, load
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
 
 
-def run_experiment(cfg):
+def run_experiment(cfg, ci_run=False):
     """Run training experiment."""
     # get e2e training time
     # begin = time.time()
@@ -39,17 +37,11 @@ def run_experiment(cfg):
     config.update(generate_params_from_cfg(config, cfg, mode='train'))
 
     # initialize
-    initialize(config, training=True)
-    # dllogger setup
-    backends = []
+    initialize(config, training=True, ci_run=ci_run)
+
     if is_main_process():
         if not os.path.exists(cfg.train.results_dir):
             os.makedirs(cfg.train.results_dir)
-        log_path = os.path.join(cfg.train.results_dir, 'log.txt')
-        backends += [
-            JSONStreamBackend(verbosity=Verbosity.VERBOSE, filename=log_path),
-            StdOutBackend(verbosity=Verbosity.DEFAULT)]
-    DLLogger.init(backends=backends)
 
     steps_per_epoch = (
         cfg.train.num_examples_per_epoch +

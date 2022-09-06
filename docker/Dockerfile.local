@@ -48,4 +48,7 @@ ARG groups=developer:1000
 ARG home=/home/developer
 RUN echo "ALL   ALL = (ALL) NOPASSWD: ALL" > /etc/sudoers \
     && mkdir -p "$(dirname $home)"
-WORKDIR /workspace/
+
+COPY . /workspace/tao-tf2
+ENV PYTHONPATH='/workspace/tao-tf2'
+WORKDIR /workspace/tao-tf2

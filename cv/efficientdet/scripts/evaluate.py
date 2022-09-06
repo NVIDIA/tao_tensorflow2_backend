@@ -16,14 +16,15 @@ from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank
 
 
-def run_experiment(cfg):
+def run_experiment(cfg, ci_run=False):
     """Run evaluation."""
     hvd.init()
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
-    if gpus:
-        tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+    if not ci_run:
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        if gpus:
+            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
     MODE = 'eval'
     # Parse and update hparams
     config = hparams_config.get_detection_config(cfg.model.name)
