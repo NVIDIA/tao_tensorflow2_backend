@@ -1,4 +1,4 @@
-FROM gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:ec50b00085a5639b3466dc4139e7904f3dd56a3da0556404e5642c8f57118f98
+FROM gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:45c1d334b78464c43f716e7c952b730595464d6b84f2efcd7e67004297030a93
 
 # Installing the TAO Toolkit source code packages.
 WORKDIR /opt/nvidia

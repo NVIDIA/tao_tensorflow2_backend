@@ -137,7 +137,7 @@ class PruneConfig:
     normalizer: str = 'max'
     output_path: str = MISSING
     equalization_criterion: str = 'union'
-    pruning_granularity: int = 8
+    granularity: int = 8
     pruning_threshold: float = MISSING
     min_num_filters: int = 16
     excluded_layers: List[str] = field(default_factory=lambda: [])

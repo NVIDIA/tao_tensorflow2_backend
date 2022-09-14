@@ -13,7 +13,7 @@ train:
     learning_rate: 0.2
   amp: True
   # checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_effnet_b0/weights/efficientnet_b0_300"
-  checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/imagenet/tf2_effnet_b0/weights/efficientnet-b0_500.eff"
+  checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/imagenet/tf2_effnet_b0/weights/efficientnet-b0_500.tlt"
   num_examples_per_epoch: 120000
   batch_size: 20
   checkpoint_period: 5

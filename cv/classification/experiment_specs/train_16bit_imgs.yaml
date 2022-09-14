@@ -4,7 +4,7 @@ key: nvidia_tlt
 # init_epoch: 16
 train:
   qat: False
-  # pretrained_model_path: '/home/binz/Tao/tao-tf2/results_enb0_16bit_train/weights/efficientnet-b0_004_prune.eff'
+  # pretrained_model_path: '/home/binz/Tao/tao-tf2/results_enb0_16bit_train/weights/efficientnet-b0_004_prune.tlt'
   train_dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
   val_dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
   image_mean: [7834.4968]

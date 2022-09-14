@@ -110,12 +110,12 @@ def main(cfg: ExperimentConfig):
     if cfg.inference.model_path.endswith('.engine'):
         print("Running inference with TensorRT engine...")
         infer_trt(cfg, label_id_mapping, cfg.evaluate.min_score_thresh or 0.4)
-    elif cfg.inference.model_path.endswith('.eff'):
+    elif cfg.inference.model_path.endswith('.tlt'):
         print("Running inference with saved_model...")
         infer_tlt(cfg, label_id_mapping, cfg.evaluate.min_score_thresh or 0.4)
     else:
         # TODO(@yuw): add internal inference for un-encrypted?
-        raise ValueError("Only .engine and .eff models are supported for inference.")
+        raise ValueError("Only .engine and .tlt models are supported for inference.")
 
 
 if __name__ == '__main__':

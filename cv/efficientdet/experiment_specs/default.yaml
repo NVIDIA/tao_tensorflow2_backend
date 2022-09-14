@@ -28,7 +28,7 @@ train:
     learning_rate: 0.2
   amp: True
   iterations_per_loop: 100
-  checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/imagenet/tf2_effnet_b0/weights/efficientnet-b0_500.eff"
+  checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/imagenet/tf2_effnet_b0/weights/efficientnet-b0_500.tlt"
   num_examples_per_epoch: 100
   moving_average_decay: 0.999
   batch_size: 20
@@ -93,6 +93,7 @@ prune:
   threshold: 0.5
   min_num_filters: 16
   excluded_layers: []
+  verbose: True
 key: 'nvidia_tlt'
 data_format: 'channels_last'
 verbose: True

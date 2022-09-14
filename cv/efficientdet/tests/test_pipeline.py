@@ -36,11 +36,9 @@ def cfg():
     return default_cfg
 
 
-# @pytest.mark.script_launch_mode('subprocess')
 @pytest.mark.parametrize("amp, qat, batch_size, num_epochs",
                          [(True, False, 2, 2)])
 def test_train(amp, qat, batch_size, num_epochs, cfg):
-    # env = os.environ.copy()
     results_dir = os.path.join(
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}")
@@ -73,7 +71,7 @@ def test_eval(amp, qat, batch_size, num_epochs, cfg):
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}",
         "weights",
-        f'efficientdet-d0_00{num_epochs}.eff')
+        f'efficientdet-d0_00{num_epochs}.tlt')
     cfg.evaluate.batch_size = batch_size
     run_evaluate(cfg, ci_run=True)
     tf.keras.backend.clear_session()
@@ -96,14 +94,14 @@ def test_export(amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type,
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}",
         "weights",
-        f'efficientdet-d0_00{num_epochs}.eff')
+        f'efficientdet-d0_00{num_epochs}.tlt')
     cfg.export.max_batch_size = max_bs
     cfg.export.dynamic_batch_size = dynamic_bs
     cfg.export.output_path = os.path.join(
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}",
         "weights",
-        f'efficientdet-d0_00{num_epochs}.onnx')
+        f'efficientdet-d0_00{num_epochs}.etlt')
     cfg.export.cal_cache_file = os.path.join(
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}",
@@ -138,7 +136,7 @@ def test_infer(amp, qat, batch_size, num_epochs, cfg):
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}",
         "weights",
-        f'efficientdet-d0_00{num_epochs}.eff')
+        f'efficientdet-d0_00{num_epochs}.tlt')
     infer_tlt(cfg, label_id_mapping=None, min_score_thresh=0.3, ci_run=True)
 
 
@@ -152,10 +150,10 @@ def test_prune(amp, qat, batch_size, num_epochs, cfg):
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}",
         "weights",
-        f'efficientdet-d0_00{num_epochs}.eff')
+        f'efficientdet-d0_00{num_epochs}.tlt')
     cfg.prune.output_path = os.path.join(
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}",
         "weights",
-        f'efficientdet-d0_00{num_epochs}_pruned.eff')
+        f'efficientdet-d0_00{num_epochs}_pruned.tlt')
     run_pruning(cfg)

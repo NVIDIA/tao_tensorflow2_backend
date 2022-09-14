@@ -100,7 +100,7 @@ def run_experiment(cfg, ci_run=False):
     # Load pretrained weights
     # TODO(@yuw): move weight loading to master rank
     resume_ckpt_path = os.path.join(cfg.train.results_dir, f'{config.name}.resume')
-    if str(cfg.train.checkpoint).endswith(".eff"):
+    if str(cfg.train.checkpoint).endswith(".tlt"):
         pretrained_ckpt_path, ckpt_name = decode_eff(str(cfg.train.checkpoint), cfg.key)
     else:
         pretrained_ckpt_path = cfg.train.checkpoint

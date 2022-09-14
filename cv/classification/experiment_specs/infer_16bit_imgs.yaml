@@ -1,5 +1,5 @@
 infer:
-  # model_path: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.eff'
+  # model_path: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.tlt'
   model_path: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.onnx.fp16.engine'
   image_dir: '/home/binz/tao-tf2/dataset/target_chips/T72'
 model:

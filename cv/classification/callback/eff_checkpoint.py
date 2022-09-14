@@ -79,7 +79,7 @@ class EffCheckpoint(ModelCheckpoint):
         # create zipfile from saved_model directory
         self.zipdir(self.filepath, self.temp_zip_file)
         # create artifacts from zipfile
-        eff_filename = f'{self.model.name}_{epoch:03d}.eff'
+        eff_filename = f'{self.model.name}_{epoch:03d}.tlt'
         zip_art = File(
             name=eff_filename,
             description="Artifact from checkpoint",

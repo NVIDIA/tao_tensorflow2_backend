@@ -7,13 +7,17 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
+import os
 import shutil
 import logging
+import tempfile
+
 import tensorrt as trt
 import tensorflow as tf
 
 from tf2onnx import tf_loader, utils, convert
 
+from common.utils import encode_etlt
 from cv.classification.utils.helper import decode_eff
 
 TRT_VERSION = trt.__version__
@@ -60,6 +64,8 @@ class Exporter:
             self._saved_model = decode_eff(
                 str(self.config.export.model_path),
                 self.config.key)
+        _handle, self.tmp_onnx = tempfile.mkstemp(suffix='onnx')
+        os.close(_handle)
     
     def _set_input_shape(self):
         model = tf.keras.models.load_model(self._saved_model, custom_objects=None)
@@ -96,13 +102,14 @@ class Exporter:
             opset=13,
             input_names=inputs,
             output_names=outputs,
-            output_path=self.config.export.output_path,
+            output_path=self.tmp_onnx,
             optimizers=updated_optimizers
         )
 
-        utils.save_protobuf(self.config.export.output_path, model_proto)
-        print("ONNX conversion Done!")
-    
+        utils.save_protobuf(self.tmp_onnx, model_proto)
+        logger.debug("ONNX conversion Done!")
+        encode_etlt(self.tmp_onnx, self.config.export.output_path, "", self.config.key)
+
     def export_engine(self, verbose=True) -> None:
         """Parse the model file through TensorRT and build TRT engine
         """
@@ -173,9 +180,10 @@ class Exporter:
         self._set_input_shape()
         # TODO(@yuw): encrypt with EFF
         self.export_onnx()
-        logger.info(f"ONNX is saved at {self.config.export.output_path}")
-        self.export_engine()
+        logger.info(f"The etlt model is saved at {self.config.export.output_path}")
+        # INTERNAL only: self.export_engine()
         self._del()
+        logger.info("Export finished successfully.")
 
     def _build_profile(self, builder, network, profile_shapes, default_shape_value=1):
         """
