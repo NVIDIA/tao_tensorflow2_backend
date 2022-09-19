@@ -26,8 +26,8 @@ class ClassificationPruner(Pruner):
 
     def _load_model(self):
         self.model_path = decode_eff(self.model_path, self.key)
-        if self.cfg.prune_config.byom_model_path:
-            custom_objs = decode_tltb(self.cfg.prune_config.byom_model_path, self.key)['custom_objs']
+        if self.cfg.prune.byom_model_path:
+            custom_objs = decode_tltb(self.cfg.prune.byom_model_path, self.key)['custom_objs']
             CUSTOM_OBJS.update(custom_objs)
         
         # @scha: Although TF SavedModel can mostly train / eval
@@ -59,7 +59,8 @@ class ClassificationPruner(Pruner):
 
     def prune(self, threshold, excluded_layers):
         self._load_model()
-        if self.cfg.prune_config.byom_model_path:
+        byom_custom_layer = None
+        if self.cfg.prune.byom_model_path:
             logger.info("Loading BYOM information")
             byom_custom_layer, excluded_layers = self._handle_byom_layers(excluded_layers)
         

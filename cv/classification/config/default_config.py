@@ -74,6 +74,7 @@ class ModelConfig:
 
     arch: str = 'resnet'
     input_image_size: List[int] = field(default_factory=lambda: [3, 224, 224])
+    input_image_depth: int = 8
     n_layers: int = 18
     use_batch_norm: bool = True
     use_bias: bool = False
@@ -135,12 +136,12 @@ class PruneConfig:
 class ExperimentConfig:
     """Experiment config."""
 
-    train_config: TrainConfig = TrainConfig()
-    model_config: ModelConfig = ModelConfig()
-    eval_config: EvalConfig = EvalConfig()
-    export_config: ExportConfig = ExportConfig()
-    infer_config: InferConfig = InferConfig()
-    prune_config: PruneConfig = PruneConfig()
+    train: TrainConfig = TrainConfig()
+    model: ModelConfig = ModelConfig()
+    eval: EvalConfig = EvalConfig()
+    export: ExportConfig = ExportConfig()
+    infer: InferConfig = InferConfig()
+    prune: PruneConfig = PruneConfig()
     results_dir: str = MISSING
     key: str = 'nvidia_tlt'
     init_epoch: int = 1

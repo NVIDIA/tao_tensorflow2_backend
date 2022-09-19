@@ -1,0 +1,19 @@
+# train 16 bit images with efficientnet_b0
+results_dir: '/home/binz/tao-tf2/results_enb0_16bit'
+key: nvidia_tlt
+# init_epoch: 16
+train:
+  qat: False
+  # pretrained_model_path: '/home/binz/Tao/tao-tf2/results_enb0_16bit_train/weights/efficientnet-b0_004_prune.eff'
+  train_dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
+  val_dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
+  image_mean: [7834.4968]
+  preprocess_mode: 'caffe'
+  batch_size_per_gpu: 4
+  n_epochs: 3
+  enable_random_crop: True
+model:
+  arch: 'efficientnet_b0'
+  input_image_size: [1,640,640]
+  input_image_depth: 16
+
