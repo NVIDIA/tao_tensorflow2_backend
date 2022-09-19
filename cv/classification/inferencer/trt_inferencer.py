@@ -15,13 +15,15 @@ class TRTInferencer(Inferencer):
     """Manages TensorRT objects for model inference."""
 
     def __init__(self, model_path, input_shape=None, batch_size=None,
-                 img_mean=None, keep_aspect_ratio=False):
+                 img_mean=None, keep_aspect_ratio=False, data_format='channel_first',img_depth=8):
         """Initializes TensorRT objects needed for model inference.
 
         Args:
             model_path (str): path where TensorRT engine should be stored
             input_shape (tuple): (batch, channel, height, width) for dynamic shape engine
             batch_size (int): batch size for dynamic shape engine
+            img_depth (int): depth of images, only support 8-bit or 16-bit
+            data_format (str): 'channel_first' or 'channel_last'
         """
 
         # We first load all custom plugins shipped with TensorRT,
@@ -52,8 +54,17 @@ class TRTInferencer(Inferencer):
                     self.execute_v2 = True
                 self.context.set_binding_shape(binding_idx, shape)
                 self._input_shape = shape
+                if data_format == "channels_first":
+                    self._img_height, self._img_width = self._input_shape[2:4] 
+                    self._nchannels =  self._input_shape[1] 
+                else:
+                    self._img_height, self._img_width = self._input_shape[1:3]
+                    self._nchannels = self._input_shape[3] 
+                self.model_img_mode = 'RGB' if self._nchannels == 3 else 'L'
 
         assert self._input_shape, "Input shape not detected."
+        assert self._nchannels in [1, 3], "Invalid input image dimension."
+
         print(f"TensorRT engine input shape: {self._input_shape}")
         # This allocates memory for network inputs/outputs on both CPU and GPU
         self.inputs, self.outputs, self.bindings, self.stream = allocate_buffers(
@@ -64,8 +75,10 @@ class TRTInferencer(Inferencer):
         self.numpy_array = np.zeros((self.max_batch_size, input_volume))
         self.img_mean = img_mean
         self.keep_aspect_ratio = keep_aspect_ratio
-        self.model_img_mode = 'RGB' if self._input_shape[1] == 3 else 'L'
-
+        self.model_img_mode = 'RGB' if self._nchannels == 3 else 'L'
+        self.img_depth = img_depth  
+        assert self.img_depth in [8, 16], "Only 8-bit and 16-bit images are supported"
+        
     def clear_buffers(self):
         """Simple function to free input, output buffers allocated earlier.
 

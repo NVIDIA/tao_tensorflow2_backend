@@ -210,10 +210,17 @@ def run_experiment(cfg, results_dir=None,
         format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
         level='DEBUG' if verbosity else 'INFO')
 
-    nchannels, image_height, image_width = cfg['model_config']['input_image_size']
+    # Set random seed.
+    logger.debug("Random seed is set to {}".format(cfg['train']['random_seed']))
+    
+    # initialize()
+
+    nchannels, image_height, image_width = cfg['model']['input_image_size']
+    image_depth = cfg['model']['input_image_depth']
     assert nchannels in [1, 3], "Invalid input image dimension."
     assert image_height >= 16, "Image height should be greater than 15 pixels."
     assert image_width >= 16, "Image width should be greater than 15 pixels."
+    assert image_depth in [8, 16], "Only 8-bit and 16-bit images are supported"
 
     if nchannels == 3:
         color_mode = "rgb"
@@ -222,70 +229,71 @@ def run_experiment(cfg, results_dir=None,
 
     # Load augmented data
     train_iterator, val_iterator, nclasses = \
-        load_data(cfg['train_config']['train_dataset_path'],
-                  cfg['train_config']['val_dataset_path'],
+        load_data(cfg['train']['train_dataset_path'],
+                  cfg['train']['val_dataset_path'],
                   partial(preprocess_input,
                           data_format=cfg['data_format'],
-                          mode=cfg['train_config']['preprocess_mode'],
-                          img_mean=list(cfg['train_config']['image_mean']),
-                          color_mode=color_mode),
+                          mode=cfg['train']['preprocess_mode'],
+                          img_mean=list(cfg['train']['image_mean']),
+                          color_mode=color_mode,
+                          img_depth=image_depth),
                   image_height, image_width,
-                  batch_size=cfg['train_config']['batch_size_per_gpu'],
-                  enable_random_crop=cfg['train_config']['enable_random_crop'],
-                  enable_center_crop=cfg['train_config']['enable_center_crop'],
-                  enable_color_augmentation=cfg['train_config']['enable_color_augmentation'],
+                  batch_size=cfg['train']['batch_size_per_gpu'],
+                  enable_random_crop=cfg['train']['enable_random_crop'],
+                  enable_center_crop=cfg['train']['enable_center_crop'],
+                  enable_color_augmentation=cfg['train']['enable_color_augmentation'],
                   color_mode=color_mode,
-                  mixup_alpha=cfg['train_config']['mixup_alpha'],
-                  no_horizontal_flip=cfg['train_config']['disable_horizontal_flip'],
+                  mixup_alpha=cfg['train']['mixup_alpha'],
+                  no_horizontal_flip=cfg['train']['disable_horizontal_flip'],
                   data_format=cfg['data_format'])
 
     # @scha: For BYOM model loading
-    if cfg['model_config']['arch'] in ["byom"] and cfg['model_config']['byom_model'] == '':
-        raise ValueError('{} requires .tltb file to be processed by TAO'.format(cfg['model_config']['arch']))
+    if cfg['model']['arch'] in ["byom"] and cfg['model']['byom_model'] == '':
+        raise ValueError('{} requires .tltb file to be processed by TAO'.format(cfg['model']['arch']))
 
     ka = dict(
-        nlayers=cfg['model_config']['n_layers'],
-        use_batch_norm=cfg['model_config']['use_batch_norm'],
-        use_pooling=cfg['model_config']['use_pooling'],
-        freeze_bn=cfg['model_config']['freeze_bn'],
-        use_bias = cfg['model_config']['use_bias'],
-        all_projections=cfg['model_config']['all_projections'],
-        dropout=cfg['model_config']['dropout'],
-        model_config_path = cfg['model_config']['byom_model'],
+        nlayers=cfg['model']['n_layers'],
+        use_batch_norm=cfg['model']['use_batch_norm'],
+        use_pooling=cfg['model']['use_pooling'],
+        freeze_bn=cfg['model']['freeze_bn'],
+        use_bias = cfg['model']['use_bias'],
+        all_projections=cfg['model']['all_projections'],
+        dropout=cfg['model']['dropout'],
+        model_config_path = cfg['model']['byom_model'],
         passphrase = cfg['key']
     )
     input_shape = (nchannels, image_height, image_width) \
         if cfg['data_format'] == 'channels_first' else (image_height, image_width, nchannels)
 
     final_model = get_model(
-        arch=cfg['model_config']['arch'],
+        arch=cfg['model']['arch'],
         input_shape=input_shape,
         data_format=cfg['data_format'],
         nclasses=nclasses,
-        retain_head=cfg['model_config']['retain_head'],
-        freeze_blocks=cfg['model_config']['freeze_blocks'],
+        retain_head=cfg['model']['retain_head'],
+        freeze_blocks=cfg['model']['freeze_blocks'],
         **ka)
 
     # @scha: Load CUSTOM_OBJS from BYOM
-    if cfg['model_config']['arch'] in ["byom"]:
+    if cfg['model']['arch'] in ["byom"]:
         custom_objs = decode_tltb(ka['model_config_path'], ka['passphrase'])['custom_objs']
     else:
         custom_objs = {}
 
     # Set up BN and regularizer config
     bn_config = None
-    reg_config = cfg['train_config']['reg_config']
+    reg_config = cfg['train']['reg_config']
     final_model = setup_config(
         final_model,
         reg_config,
         bn_config=bn_config,
         custom_objs=custom_objs
     )
-
-    if cfg['train_config']['pretrained_model_path']:
+    
+    if cfg['train']['pretrained_model_path']:
         # Decrypt and load pretrained model
         pretrained_model = load_model(
-            cfg['train_config']['pretrained_model_path'],
+            cfg['train']['pretrained_model_path'],
             passphrase=cfg['key'])
 
         strict_mode = True
@@ -317,21 +325,21 @@ def run_experiment(cfg, results_dir=None,
     if hvd.rank() == 0:
         final_model.summary()
 
-    if cfg['init_epoch'] > 1 and not cfg['train_config']['pretrained_model_path']:
+    if cfg['init_epoch'] > 1 and not cfg['train']['pretrained_model_path']:
         raise ValueError("Make sure to load the correct model when setting initial epoch > 1.")
 
-    if cfg['train_config']['pretrained_model_path'] and cfg['init_epoch'] > 1:
+    if cfg['train']['pretrained_model_path'] and cfg['init_epoch'] > 1:
         final_model = pretrained_model
         opt = pretrained_model.optimizer
     else:
         # Defining optimizer
-        opt = build_optimizer(cfg['train_config']['optim_config'])
+        opt = build_optimizer(cfg['train']['optim_config'])
     # Add Horovod Distributed Optimizer
     opt = hvd.DistributedOptimizer(
         opt, backward_passes_per_step=1, average_aggregated_gradients=True)
     # Compiling model
     cc = tf.keras.losses.CategoricalCrossentropy(
-        label_smoothing=cfg['train_config']['label_smoothing'])
+        label_smoothing=cfg['train']['label_smoothing'])
     final_model.compile(
         loss=cc,
         metrics=[tf.keras.metrics.CategoricalAccuracy(name='accuracy')],
@@ -339,11 +347,11 @@ def run_experiment(cfg, results_dir=None,
         experimental_run_tf_function=False)
 
     # Setup callbacks
-    callbacks = setup_callbacks(cfg['train_config']['checkpoint_freq'],
+    callbacks = setup_callbacks(cfg['train']['checkpoint_freq'],
                                 results_dir,
-                                cfg['train_config']['lr_config'],
+                                cfg['train']['lr_config'],
                                 init_epoch, len(train_iterator) // hvd.size(),
-                                cfg['train_config']['n_epochs'], key,
+                                cfg['train']['n_epochs'], key,
                                 hvd)
     # Writing out class-map file for inference mapping
     if hvd.rank() == 0:
@@ -354,12 +362,12 @@ def run_experiment(cfg, results_dir=None,
     final_model.fit(
         train_iterator,
         steps_per_epoch=len(train_iterator) // hvd.size(),
-        epochs=cfg['train_config']['n_epochs'],
+        epochs=cfg['train']['n_epochs'],
         verbose=verbose,
-        workers=cfg['train_config']['n_workers'],
+        workers=cfg['train']['n_workers'],
         validation_data=val_iterator,
         validation_steps=len(val_iterator), # // hvd.size(),
-        validation_freq=cfg['train_config']['checkpoint_freq'],
+        validation_freq=cfg['train']['checkpoint_freq'],
         callbacks=callbacks,
         initial_epoch=init_epoch - 1)
 

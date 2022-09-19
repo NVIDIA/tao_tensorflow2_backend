@@ -63,7 +63,7 @@ The base dev docker is defined in `$NV_TAO_TF2_TOP/docker/Dockerfile`. The pytho
 
 ```sh
 cd $NV_TAO_TF2_TOP/docker
-./build.sh --build
+./build_and_run.sh --build
 ```
 
 ### 2. Test the newly built base docker

@@ -24,24 +24,24 @@ logger = logging.getLogger(__name__)
 def run_pruning(cfg):
     """Prune an encrypted Keras model."""
 
-    assert cfg.prune_config.equalization_criterion in \
+    assert cfg.prune.equalization_criterion in \
         ['arithmetic_mean', 'geometric_mean', 'union', 'intersection'], \
         "Equalization criterion are [arithmetic_mean, geometric_mean, union, \
          intersection]."
-    assert cfg.prune_config.normalizer in ['L2', 'max'], \
+    assert cfg.prune.normalizer in ['L2', 'max'], \
         "normalizer options are [L2, max]."
 
     pruner = ClassificationPruner(cfg)
 
     # Pruning trained model
     pruned_model = pruner.prune(
-        threshold=cfg.prune_config.pruning_threshold,
-        excluded_layers=list(cfg.prune_config.excluded_layers))
+        threshold=cfg.prune.pruning_threshold,
+        excluded_layers=list(cfg.prune.excluded_layers))
 
     # Save the encrypted pruned model
     tmp_saved_model = tempfile.mkdtemp()
     pruned_model.save(tmp_saved_model)
-    encode_eff(tmp_saved_model, cfg.prune_config.output_path, cfg.key)
+    encode_eff(tmp_saved_model, cfg.prune.output_path, cfg.key)
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
