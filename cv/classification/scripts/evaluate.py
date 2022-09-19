@@ -46,14 +46,14 @@ def run_evaluate(cfg):
     initialize()
     # Decrypt EFF
     final_model = load_model(
-        str(cfg['eval']['model_path']),
+        str(cfg['evaluate']['model_path']),
         cfg['key'])
 
     # Defining optimizer
     opt = keras.optimizers.SGD(lr=0, decay=1e-6, momentum=0.9, nesterov=False)
     # Define precision/recall and F score metrics
     topk_acc = partial(keras.metrics.top_k_categorical_accuracy,
-                       k=cfg['eval']['top_k'])
+                       k=cfg['evaluate']['top_k'])
     topk_acc.__name__ = 'topk_acc'
     # Compile model
     final_model.compile(loss='categorical_crossentropy',
@@ -76,7 +76,7 @@ def run_evaluate(cfg):
     if nchannels == 1:
         color_mode = "grayscale"
     interpolation = cfg['model']['resize_interpolation_method']
-    if cfg['eval']['enable_center_crop']:
+    if cfg['evaluate']['enable_center_crop']:
         interpolation += ":center"
 
     # Initializing data generator
@@ -121,15 +121,15 @@ def run_evaluate(cfg):
 
     # Initializing data iterator
     target_iterator = target_datagen.flow_from_directory(
-        cfg['eval']['eval_dataset_path'],
+        cfg['evaluate']['eval_dataset_path'],
         target_size=(image_height, image_width),
         color_mode=color_mode,
-        batch_size=cfg['eval']['batch_size'],
+        batch_size=cfg['evaluate']['batch_size'],
         class_mode='categorical',
         interpolation=interpolation,
         shuffle=False)
     # target_dataset = tf.data.Dataset.from_generator(target_iterator)
-    logger.info('Processing dataset (evaluation): {}'.format(cfg['eval']['eval_dataset_path']))
+    logger.info('Processing dataset (evaluation): {}'.format(cfg['evaluate']['eval_dataset_path']))
     nclasses = target_iterator.num_classes
     assert nclasses > 1, "Invalid number of classes in the evaluation dataset."
 
@@ -141,16 +141,16 @@ def run_evaluate(cfg):
     # Evaluate the model on the full data set.
     score = final_model.evaluate(target_iterator,
                                  steps=len(target_iterator),
-                                 workers=cfg['eval']['n_workers'],
+                                 workers=cfg['evaluate']['n_workers'],
                                  use_multiprocessing=False)
 
     print('Evaluation Loss: {}'.format(score[0]))
     print('Evaluation Top K accuracy: {}'.format(score[1]))
     # Re-initializing data iterator
     target_iterator = target_datagen.flow_from_directory(
-        cfg['eval']['eval_dataset_path'],
+        cfg['evaluate']['eval_dataset_path'],
         target_size=(image_height, image_width),
-        batch_size=cfg['eval']['batch_size'],
+        batch_size=cfg['evaluate']['batch_size'],
         color_mode=color_mode,
         class_mode='categorical',
         interpolation=interpolation,

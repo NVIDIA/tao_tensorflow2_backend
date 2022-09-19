@@ -149,7 +149,7 @@ class ExperimentConfig:
 
     train: TrainConfig = TrainConfig()
     model: ModelConfig = ModelConfig()
-    eval: EvalConfig = EvalConfig()
+    evaluate: EvalConfig = EvalConfig()
     export: ExportConfig = ExportConfig()
     infer: InferConfig = InferConfig()
     prune: PruneConfig = PruneConfig()

@@ -8,7 +8,7 @@ train:
   n_epochs: 3
   image_mean: [7834.4968]
 
-eval:
+evaluate:
   eval_dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
   # model_path: '/home/binz/Tao/tao-tf2/results/weights/resnet18_bn_001.eff'
   model_path: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.eff'

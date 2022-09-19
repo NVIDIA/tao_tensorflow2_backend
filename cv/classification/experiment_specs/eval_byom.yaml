@@ -6,7 +6,7 @@ train:
   batch_size_per_gpu: 64
   preprocess_mode: 'torch'
   n_epochs: 80
-eval:
+evaluate:
   eval_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   model_path: '/home/projects2_metropolis/tmp/sean/converted_models_classification/convnext_tiny/convnext_tiny.tltb'
   top_k: 1
