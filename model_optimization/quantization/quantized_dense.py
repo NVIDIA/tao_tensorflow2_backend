@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Quantized Dense Layer for Keras."""
 
@@ -73,7 +73,7 @@ class QuantizedDense(Dense):
                  bitwidth=8,
                  **kwargs):
         """Initialize QuantizedDense layer."""
-        super(QuantizedDense, self).__init__(
+        super().__init__(
             units,
             activation=activation,
             use_bias=use_bias,
@@ -92,7 +92,7 @@ class QuantizedDense(Dense):
     def build(self, input_shape):
         # The parent class build function should be called first so quantize input is weights[-1]
         """Allocate weights, etc to build the layer."""
-        super(QuantizedDense, self).build(input_shape)
+        super().build(input_shape)
 
         if self.quantize_input:
             self.scaling_factor = self.add_weight(
@@ -165,7 +165,7 @@ class QuantizedDense(Dense):
 
     def get_config(self):
         """Get the config dict."""
-        config = super(QuantizedDense, self).get_config()
+        config = super().get_config()
         config["quantize"] = self.quantize_input
         config["bitwidth"] = self.bitwidth
         return config

@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Collection of helper functions."""
 import os
@@ -10,13 +10,17 @@ import zipfile
 from eff.core import Archive, File
 from eff.callbacks import BinaryContentCallback
 
+from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase
+from tensorflow_quantization.quantize import quantize_model
+
 from cv.efficientdet.layers.image_resize_layer import ImageResizeLayer
 from cv.efficientdet.layers.weighted_fusion_layer import WeightedFusion
 from cv.efficientdet.utils import keras_utils
 
 CUSTOM_OBJS = {
     'ImageResizeLayer': ImageResizeLayer,
-    'WeightedFusion': WeightedFusion}
+    'WeightedFusion': WeightedFusion,
+}
 
 
 def fetch_optimizer(model, opt_type) -> tf.keras.optimizers.Optimizer:
@@ -67,7 +71,7 @@ def decode_eff(eff_model_path, passphrase=None):
     return ckpt_path, ckpt_name
 
 
-def load_model(eff_model_path, cfg, mode='train'):
+def load_model(eff_model_path, cfg, mode='train', is_qat=False):
     """Load hdf5 or EFF model.
 
     Args:
@@ -82,6 +86,8 @@ def load_model(eff_model_path, cfg, mode='train'):
         mode = 'eval'
     model = load_json_model(
         os.path.join(ckpt_path, f'{mode}_graph.json'))
+    if is_qat:
+        model = quantize_model(model, custom_qdq_cases=[EfficientNetQDQCase()])
     keras_utils.restore_ckpt(
         model,
         os.path.join(ckpt_path, ckpt_name),
@@ -105,8 +111,14 @@ def load_json_model(json_path, new_objs=None):
 
 def dump_json(model, out_path):
     """Model to json."""
+    json_str = model.to_json()
+    model_json = json.loads(json_str)
+    # workaround to remove float16 dtype if trained with AMP
+    for layer in model_json['config']['layers']:
+        if isinstance(layer['config']['dtype'], dict):
+            layer['config']['dtype'] = 'float32'
     with open(out_path, "w", encoding='utf-8') as jf:
-        jf.write(model.to_json())
+        json.dump(model_json, jf)
 
 
 def dump_eval_json(graph_dir, train_graph="train_graph.json", eval_graph='eval_graph.json'):

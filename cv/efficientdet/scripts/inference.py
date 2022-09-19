@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """EfficientDet standalone inference."""
 
@@ -46,7 +46,7 @@ def batch_generator(iterable, batch_size=1):
         yield iterable[ndx:min(ndx + batch_size, total_len)]
 
 
-def infer_tlt(cfg, label_id_mapping, min_score_thresh):
+def infer_tlt(cfg, label_id_mapping, min_score_thresh, ci_run=False):
     """Launch EfficientDet TLT model Inference."""
     # disable_eager_execution()
     tf.autograph.set_verbosity(0)
@@ -55,11 +55,11 @@ def infer_tlt(cfg, label_id_mapping, min_score_thresh):
     config = hparams_config.get_detection_config(cfg.model.name)
     config.update(generate_params_from_cfg(config, cfg, mode='infer'))
     params = config.as_dict()
-    initialize(config, training=False)
+    initialize(config, training=False, ci_run=ci_run)
     if not os.path.exists(cfg.inference.output_dir):
         os.makedirs(cfg.inference.output_dir, exist_ok=True)
     # Load model from graph json
-    model = helper.load_model(cfg.inference.model_path, cfg, MODE)
+    model = helper.load_model(cfg.inference.model_path, cfg, MODE, is_qat=cfg.train.qat)
 
     # TODO(@yuw): amp changes dtype?
     infer_model = inference.InferenceModel(model, config.image_size, params,

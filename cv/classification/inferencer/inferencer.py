@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Utility class for performing TensorRT image inference."""
 
 from abc import ABC, abstractmethod
@@ -13,7 +13,7 @@ class Inferencer(ABC):
     """Manages model inference."""
     @abstractmethod
     def __init__(self, model_path, input_shape=None, batch_size=None,
-                 img_mean=None, keep_aspect_ratio=False):
+                 img_mean=None, keep_aspect_ratio=False,img_depth=8):
         pass
     
     @abstractmethod
@@ -38,7 +38,7 @@ class Inferencer(ABC):
         else:
             raise RuntimeError("image path is not defined.")
         orig_w, orig_h = img.size
-        ratio = min(self._input_shape[-1]/float(orig_w), self._input_shape[-2]/float(orig_h))
+        ratio = min(self._img_width/float(orig_w), self._img_height/float(orig_h))
 
         # do not change aspect ratio
         new_w = int(round(orig_w*ratio))
@@ -47,7 +47,7 @@ class Inferencer(ABC):
         if self.keep_aspect_ratio:
             im = img.resize((new_w, new_h), Image.ANTIALIAS)
         else:
-            im = img.resize((self._input_shape[-1], self._input_shape[-2]), Image.ANTIALIAS)
+            im = img.resize((self._img_width, self._img_height), Image.ANTIALIAS)
 
         if im.mode in ('RGBA', 'LA') or \
                 (im.mode == 'P' and 'transparency' in im.info) and \
@@ -55,20 +55,32 @@ class Inferencer(ABC):
 
             # Need to convert to RGBA if LA format due to a bug in PIL
             im = im.convert('RGBA')
-            inf_img = Image.new("RGBA", (self._input_shape[-1], self._input_shape[-2]))
+            inf_img = Image.new("RGBA", (self._img_width, self._img_height))
             inf_img.paste(im, (0, 0))
             inf_img = inf_img.convert(self.model_img_mode)
         else:
             inf_img = Image.new(
                 self.model_img_mode,
-                (self._input_shape[-1], self._input_shape[-2])
+                (self._img_width, self._img_height)
             )
             inf_img.paste(im, (0, 0))
 
         inf_img = np.array(inf_img).astype(np.float32)
         if self.model_img_mode == 'L':
             inf_img = np.expand_dims(inf_img, axis=2)
-            inference_input = inf_img - 117.3786
+            if not self.img_mean:
+                if self.img_depth == 8:
+                    inference_input = inf_img - 117.3786
+                elif self.img_depth == 16:
+                    inference_input = inf_img - 30048.9216
+                else:
+                    raise ValueError(
+                    f"Unsupported image depth: {self.img_depth}, should be 8 or 16, "
+                    "please check `model_config.input_image_depth` in spec file"
+                )
+            else:
+                inference_input = inf_img - self.img_mean[0]
+
         else:
             inference_input = preprocess_input(inf_img,
                                                img_mean=self.img_mean)

@@ -1,4 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ class EngineCalibrator(trt.IInt8EntropyCalibrator2):
 class EngineBuilder:
     """Parses an ONNX graph and builds a TensorRT engine from it."""
 
-    def __init__(self, verbose=False, workspace=8):
+    def __init__(self, verbose=False, workspace=8, is_qat=False):
         """Init.
 
         :param verbose: If enabled, a higher verbosity level will be set on the TensorRT logger.
@@ -129,6 +129,7 @@ class EngineBuilder:
         # self.batch_size = None
         self.network = None
         self.parser = None
+        self.is_qat = is_qat
 
     def create_network(self, onnx_path, batch_size, dynamic_batch_size=None):
         """Parse the ONNX graph and create the corresponding TensorRT network definition.
@@ -202,7 +203,11 @@ class EngineBuilder:
         elif precision == "int8":
             if not self.builder.platform_has_fast_int8:
                 log.warning("INT8 is not supported natively on this platform/device")
+            elif self.is_qat:
+                print("Exporting a QAT model...")
+                self.config.set_flag(trt.BuilderFlag.INT8)
             else:
+                assert calib_cache, "cal_cache_file must be specified when exporting a model in PTQ INT8 mode."
                 if self.builder.platform_has_fast_fp16:
                     # Also enable fp16, as some layers may be even more efficient in fp16 than int8
                     self.config.set_flag(trt.BuilderFlag.FP16)

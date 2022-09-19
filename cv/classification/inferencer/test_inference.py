@@ -1,9 +1,8 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Test inferencer image loader."""
 import numpy as np
-from PIL import Image
-import tensorflow as tf
+import pytest
 
 from cv.classification.inferencer.inferencer import Inferencer
 
@@ -20,6 +19,7 @@ class TestInferencer(Inferencer):
         print('Do nothing')
 
 
+@pytest.mark.parametrize("input_shape", [(5, 5, 3), (128, 128, 3)])
 def test_image_preprocessing(input_shape):
     h, w, c = input_shape
     dummy_image = np.ones(input_shape).astype(np.uint8)
@@ -29,6 +29,3 @@ def test_image_preprocessing(input_shape):
     print(f"scale: {scale}")
     print(img)
     print(img.shape)
-
-
-test_image_preprocessing((5, 5, 3))

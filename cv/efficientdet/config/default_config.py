@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Default config file"""
 
@@ -84,7 +84,6 @@ class DataConfig:
     val_tfrecords: List[str] = field(default_factory=lambda: [])  # TODO
     val_dirs: List[str] = field(default_factory=lambda: [])  # TODO
     val_json_file: str = ""
-    testdev_dir: str = ''
     num_classes: int = 91
     max_instances_per_image: int = 200
     skip_crowd_during_training: bool = True
@@ -99,7 +98,6 @@ class EvalConfig:
 
     batch_size: int = 8
     min_score_thresh: float = 0.3
-    eval_epoch_cycle: int = 10
     num_samples: int = 5000
     max_detections_per_image: int = 100
     label_map: str = ''
@@ -122,6 +120,8 @@ class ExportConfig:
     """Export config."""
 
     max_batch_size: int = 8
+    dynamic_batch_size: bool = True
+    min_score_thresh: float = 0.4
     model_path: str = MISSING
     output_path: str = MISSING
     engine_file: str = ""
@@ -159,6 +159,19 @@ class PruneConfig:
 
 
 @dataclass
+class DatasetConvertConfig:
+    """Dataset Convert config."""
+
+    image_dir: str = MISSING
+    annotations_file: str = MISSING
+    output_dir: str = MISSING
+    tag: str = ''
+    num_shards: int = 256
+    include_masks: bool = False
+    log_dir: str = ''
+
+
+@dataclass
 class ExperimentConfig:
     """Experiment config."""
 
@@ -170,6 +183,7 @@ class ExperimentConfig:
     export: ExportConfig = ExportConfig()
     inference: InferenceConfig = InferenceConfig()
     prune: PruneConfig = PruneConfig()
-    key: str = ''
+    dataset_convert: DatasetConvertConfig = DatasetConvertConfig()
+    key: str = MISSING
     data_format: str = 'channels_last'
     verbose: bool = False

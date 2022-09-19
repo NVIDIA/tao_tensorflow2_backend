@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Utils for processing config file to run EfficientDet training, evaluation, pruning."""
 
@@ -45,7 +45,6 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         if cfg['model']['freeze_blocks'] else None,
         # data config
         val_json_file=cfg['data']['val_json_file'],
-        testdev_dir=cfg['data']['testdev_dir'],
         num_classes=cfg['data']['num_classes'],
         max_instances_per_image=cfg['data']['max_instances_per_image'] or 100,
         skip_crowd_during_training=cfg['data']['skip_crowd_during_training'],
@@ -90,7 +89,6 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         momentum=cfg['train']['optimizer']['momentum'] or 0.9,
         optimizer=cfg['train']['optimizer']['name'] or 'sgd',
         # eval config
-        eval_epoch_cycle=cfg['evaluate']['eval_epoch_cycle'],
         eval_batch_size=cfg['evaluate']['batch_size'],
         eval_samples=cfg['evaluate']['num_samples'],
         #

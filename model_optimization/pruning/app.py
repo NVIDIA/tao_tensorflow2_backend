@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Modulus pruning.
 
 This module includes APIs to prune a Keras models.
@@ -54,12 +54,12 @@ def prune_app(
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", level=verbosity
     )
 
-    logger.info("Loading model from %s" % (input_filename))
+    logger.info("Loading model from %s" % (input_filename))  # noqa pylint: disable=C0209
 
     # Load model from disk.
     model = keras.models.load_model(input_filename, compile=False)
 
-    logger.info("Original model - param count: %d" % model.count_params())
+    logger.info("Original model - param count: %d" % model.count_params())  # noqa pylint: disable=C0209
 
     # Create list of exclude layers from command-line, if provided.
     if excluded_layers is not None:
@@ -83,12 +83,12 @@ def prune_app(
         output_layers_with_outbound_nodes=output_layers_with_outbound_nodes,
     )
 
-    logger.info("New model - param count: %d" % new_model.count_params())
+    logger.info("New model - param count: %d" % new_model.count_params())  # noqa pylint: disable=C0209
 
     if output_filename is None:
         output_filename = input_filename + ".pruned"
 
-    logger.info("Saving pruned model into %s" % (output_filename))
+    logger.info("Saving pruned model into %s" % (output_filename))  # noqa pylint: disable=C0209
 
     # Save pruned model to disk.
     dirname = os.path.dirname(output_filename)
@@ -96,7 +96,7 @@ def prune_app(
         os.makedirs(dirname)
     new_model.save(output_filename)
 
-    logger.debug("Done after %s seconds" % (time.time() - start_time,))
+    logger.debug("Done after %s seconds" % (time.time() - start_time,))  # noqa pylint: disable=C0209
 
 
 def main(args=None):

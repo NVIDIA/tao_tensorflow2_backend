@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Base class to export trained .tlt models to etlt file."""
 
@@ -37,11 +37,11 @@ class Exporter:
             key (str): Key to load the model.
         """
         self.config = config
-        if config.export_config.data_type == "int8":
+        if config.export.dtype == "int8":
             self._dtype = trt.DataType.INT8
-        elif config.export_config.data_type == "fp16":
+        elif config.export.dtype == "fp16":
             self._dtype = trt.DataType.HALF
-        elif config.export_config.data_type == "fp32":
+        elif config.export.dtype == "fp32":
             self._dtype = trt.DataType.FLOAT
         else:
             raise ValueError("Unsupported data type: %s" % self._dtype)
@@ -55,10 +55,10 @@ class Exporter:
         self.opt_batch_size = opt_batch_size
 
         if not self.config.key: # TODO(@yuw): for internal usage only
-            self._saved_model = self.config.export_config.model_path
+            self._saved_model = self.config.export.model_path
         else:
             self._saved_model = decode_eff(
-                str(self.config.export_config.model_path),
+                str(self.config.export.model_path),
                 self.config.key)
     
     def _set_input_shape(self):
@@ -96,11 +96,11 @@ class Exporter:
             opset=13,
             input_names=inputs,
             output_names=outputs,
-            output_path=self.config.export_config.output_path,
+            output_path=self.config.export.output_path,
             optimizers=updated_optimizers
         )
 
-        utils.save_protobuf(self.config.export_config.output_path, model_proto)
+        utils.save_protobuf(self.config.export.output_path, model_proto)
         print("ONNX conversion Done!")
     
     def export_engine(self, verbose=True) -> None:
@@ -120,7 +120,7 @@ class Exporter:
         with trt.Builder(TRT_LOGGER) as builder, builder.create_network(
                 flags=network_flags
         ) as network, trt.OnnxParser(network, TRT_LOGGER) as parser:
-            with open(self.config.export_config.output_path, "rb") as model:
+            with open(self.config.export.output_path, "rb") as model:
                 if not parser.parse(model.read()):
                     print("ERROR: Failed to parse the ONNX file.")
                     for error in range(parser.num_errors):
@@ -159,8 +159,8 @@ class Exporter:
             trt_engine = builder.build_engine(network, config)  # build_serialized_network
             if not trt_engine:
                 logger.info("TensorRT engine failed.")
-            if self.config.export_config.save_engine:
-                engine_path = self.config.export_config.output_path + f'.{self.config.export_config.data_type}.engine'
+            if self.config.export.save_engine:
+                engine_path = self.config.export.output_path + f'.{self.config.export.dtype}.engine'
                 with open(engine_path, "wb") as engine_file:
                     engine_file.write(trt_engine.serialize())
 
@@ -173,7 +173,7 @@ class Exporter:
         self._set_input_shape()
         # TODO(@yuw): encrypt with EFF
         self.export_onnx()
-        logger.info(f"ONNX is saved at {self.config.export_config.output_path}")
+        logger.info(f"ONNX is saved at {self.config.export.output_path}")
         self.export_engine()
         self._del()
 

@@ -1,0 +1,64 @@
+podTemplate (cloud:'sc-ipp-blossom-prod', yaml : """
+apiVersion: v1
+kind: Pod
+metadata:
+    labels:
+        some-label: tao-tf2-dev-build
+spec:
+    imagePullSecrets:
+      - name: tltimagepullsecret
+    containers:
+    - name: docker
+      image: docker:19.03.1-dind
+      securityContext:
+        privileged: true
+      env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+    - name: cuda
+      image: gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:9cc198b69a35e99f408b25f7a1291fb1d0bfe1ff9a8db3b7c7ce789261c9d0b8
+      command:
+      - cat
+      resources:
+        requests:
+          nvidia.com/gpu: 1
+          memory: "16Gi"
+        limits:
+          nvidia.com/gpu: 1
+          memory: "32Gi"
+      tty: true
+    restartPolicy: Never
+    backoffLimit: 4
+    nodeSelector:
+      kubernetes.io/os: linux
+      nvidia.com/driver_version: "510.41"
+      nvidia.com/gpu_type: TITAN_V
+    """
+)
+{
+    node(POD_LABEL) {
+        container('cuda') {
+            stage("checkout"){
+                gitlabCommitStatus(name: "checkout", connection: gitLabConnection('git-lab-master')) {
+                    checkout scm
+                    sh "ls -lrt"
+                }
+            }
+            stage ('gpu_check') {
+                gitlabCommitStatus(name: "gpu_check", connection: gitLabConnection('git-lab-master')) {
+                    sh 'nvidia-smi'
+                }
+            }
+            stage ('setup') {
+                gitlabCommitStatus(name: "setup", connection: gitLabConnection('git-lab-master')) {
+                    println "started setup..."
+                }
+            }
+            stage ('static_tests') {
+                gitlabCommitStatus(name: "static_tests", connection: gitLabConnection('git-lab-master')) {
+                    println "started static_tests .."
+                }
+            }
+        }
+    }
+}

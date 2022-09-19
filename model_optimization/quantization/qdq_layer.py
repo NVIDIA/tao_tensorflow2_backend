@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Quantize and De-Quantize layer for Keras."""
 
@@ -42,12 +42,11 @@ class QDQ(Layer):
 
     def __init__(self, bitwidth=8, **kwargs):
         """Construct the QDQ layer."""
-        super(QDQ, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.bitwidth = bitwidth
 
     def call(self, inputs):
         """Keras layer call."""
-
         # Quantize the input.
         assert tf.is_tensor(inputs), "The input to QDQ layer should be a tensor."
         x = inputs
@@ -90,7 +89,6 @@ class QDQ(Layer):
 
     def build(self, input_shape):
         """Keras layer build."""
-
         self.scaling_factor = self.add_weight(
             shape=[],
             initializer=init_ops.constant_initializer(6.0),
@@ -103,7 +101,7 @@ class QDQ(Layer):
     def get_config(self):
         """Get the layer configuration for QDQ layer."""
         config = {"bitwidth": self.bitwidth}
-        base_config = super(QDQ, self).get_config()
+        base_config = super().get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
     def compute_output_shape(self, input_shape):

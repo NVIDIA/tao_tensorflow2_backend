@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Quantized Conv2DTranspose for Keras."""
 
@@ -131,8 +131,7 @@ class QuantizedConv2DTranspose(Conv2DTranspose):
         **kwargs
     ):
         """init function."""
-
-        super(QuantizedConv2DTranspose, self).__init__(
+        super().__init__(
             filters,
             kernel_size,
             strides=strides,
@@ -157,9 +156,8 @@ class QuantizedConv2DTranspose(Conv2DTranspose):
 
     def build(self, input_shape):
         """Keras layer build."""
-
         # The parent class build function should be called first so quantize input is weights[-1]
-        super(QuantizedConv2DTranspose, self).build(input_shape)
+        super().build(input_shape)
 
         if self.quantize_input:
             self.scaling_factor = self.add_weight(
@@ -173,9 +171,6 @@ class QuantizedConv2DTranspose(Conv2DTranspose):
 
     def call(self, inputs):
         """call function to apply QAT."""
-        axis = None
-        if self.per_channel:
-            axis = 1 if self.data_format == 'channels_first' else 3
         inputs_shape = K.shape(inputs)
         batch_size = inputs_shape[0]
         if self.data_format == 'channels_first':
@@ -282,7 +277,7 @@ class QuantizedConv2DTranspose(Conv2DTranspose):
 
     def get_config(self):
         """get config function."""
-        config = super(QuantizedConv2DTranspose, self).get_config()
+        config = super().get_config()
         config["quantize"] = self.quantize_input
         config["bitwidth"] = self.bitwidth
         config["per_channel"] = self.per_channel

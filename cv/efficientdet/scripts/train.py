@@ -1,12 +1,12 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """The main training script."""
 import os
+import sys
 import time
 from absl import logging
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
-from dllogger import StdOutBackend, JSONStreamBackend, Verbosity
-import dllogger as DLLogger
+from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase
 from tensorflow_quantization.quantize import quantize_model
 
 from common.hydra.hydra_runner import hydra_runner
@@ -20,11 +20,11 @@ from cv.efficientdet.model import optimizer_builder
 from cv.efficientdet.trainer.efficientdet_trainer import EfficientDetTrainer
 from cv.efficientdet.utils import hparams_config, keras_utils
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
-from cv.efficientdet.utils.helper import decode_eff, load_model, load_json_model
+from cv.efficientdet.utils.helper import decode_eff, dump_json, load_model, load_json_model
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
 
 
-def run_experiment(cfg):
+def run_experiment(cfg, ci_run=False):
     """Run training experiment."""
     # get e2e training time
     # begin = time.time()
@@ -37,17 +37,11 @@ def run_experiment(cfg):
     config.update(generate_params_from_cfg(config, cfg, mode='train'))
 
     # initialize
-    initialize(config, training=True)
-    # dllogger setup
-    backends = []
+    initialize(config, training=True, ci_run=ci_run)
+
     if is_main_process():
         if not os.path.exists(cfg.train.results_dir):
             os.makedirs(cfg.train.results_dir)
-        log_path = os.path.join(cfg.train.results_dir, 'log.txt')
-        backends += [
-            JSONStreamBackend(verbosity=Verbosity.VERBOSE, filename=log_path),
-            StdOutBackend(verbosity=Verbosity.DEFAULT)]
-    DLLogger.init(backends=backends)
 
     steps_per_epoch = (
         cfg.train.num_examples_per_epoch +
@@ -80,6 +74,8 @@ def run_experiment(cfg):
 
     # Build models
     if not cfg.train.pruned_model_path:
+        if is_main_process():
+            print("Building unpruned graph...")
         # TODO(@yuw): verify channels_first training or force last
         input_shape = list(config.image_size) + [3] \
             if config.data_format == 'channels_last' else [3] + list(config.image_size)
@@ -89,12 +85,17 @@ def run_experiment(cfg):
         eval_model = efficientdet(input_shape, training=False, config=config)
         tf.keras.backend.set_learning_phase(original_learning_phase)
     else:
-        print("Building pruned graph...")
+        if is_main_process():
+            print("Loading pruned graph...")
         original_learning_phase = tf.keras.backend.learning_phase()
         model = load_model(cfg.train.pruned_model_path, cfg, mode='train')
         tf.keras.backend.set_learning_phase(0)
         eval_model = load_model(cfg.train.pruned_model_path, cfg, mode='eval')
         tf.keras.backend.set_learning_phase(original_learning_phase)
+
+    # save nonQAT nonAMP graph in results_dir
+    dump_json(model, os.path.join(cfg.train.results_dir, 'train_graph.json'))
+    dump_json(eval_model, os.path.join(cfg.train.results_dir, 'eval_graph.json'))
 
     # Load pretrained weights
     # TODO(@yuw): move weight loading to master rank
@@ -105,9 +106,9 @@ def run_experiment(cfg):
         pretrained_ckpt_path = cfg.train.checkpoint
     if pretrained_ckpt_path and not os.path.exists(resume_ckpt_path):
         if not cfg.train.pruned_model_path:
-            print("Loading pretrained weight....")
+            print("Loading pretrained weight...")
             if 'train_graph.json' in os.listdir(pretrained_ckpt_path):
-                print("from detection:")
+                print("Loading EfficientDet mdoel...")
                 pretrained_model = load_json_model(
                     os.path.join(pretrained_ckpt_path, 'train_graph.json'))
                 keras_utils.restore_ckpt(
@@ -117,24 +118,26 @@ def run_experiment(cfg):
                     steps_per_epoch=0,
                     expect_partial=True)
             else:
-                print("from backbone:")
+                print("Loading EfficientNet backbone...")
                 pretrained_model = tf.keras.models.load_model(pretrained_ckpt_path)
             for layer in pretrained_model.layers[1:]:
                 # The layer must match up to prediction layers.
+                l_return = None
                 try:
                     l_return = model.get_layer(layer.name)
                 except ValueError:
                     # Some layers are not there
                     print(f"Skipping as {layer.name} is not found.")
-                try:
-                    l_return.set_weights(layer.get_weights())
-                except ValueError:
-                    print(f"Skipping {layer.name} due to shape mismatch.")
+                if l_return is not None:
+                    try:
+                        l_return.set_weights(layer.get_weights())
+                    except ValueError:
+                        print(f"Skipping {layer.name} due to shape mismatch.")
 
     # TODO(@yuw): Enable QAT
     if cfg.train.qat:
-        model = quantize_model(model)
-        eval_model = quantize_model(eval_model)
+        model = quantize_model(model, custom_qdq_cases=[EfficientNetQDQCase()])
+        eval_model = quantize_model(eval_model, custom_qdq_cases=[EfficientNetQDQCase()])
 
     if is_main_process():
         model.summary()
@@ -171,36 +174,42 @@ def run_experiment(cfg):
 
     # resume from checkpoint or load pretrained backbone
     train_from_epoch = 0
-    if os.path.exists(resume_ckpt_path) and is_main_process():
-        print("Resume training...")
+    if os.path.exists(resume_ckpt_path):
+        if is_main_process():
+            print("Resume training...")
         ckpt_path, _ = decode_eff(resume_ckpt_path, cfg.key)
         train_from_epoch = keras_utils.restore_ckpt(
             model,
             ckpt_path,
             config.moving_average_decay,
             steps_per_epoch=steps_per_epoch,
-            expect_partial=False)
+            expect_partial=True)
         # TODO(@yuw): remove ckpt_path
 
-    # set up callbacks
-    num_samples = (cfg.evaluate.num_samples + get_world_size() - 1) // get_world_size()
-    num_samples = (num_samples + cfg.evaluate.batch_size - 1) // cfg.evaluate.batch_size
-    cfg.evaluate.num_samples = num_samples
+    if train_from_epoch < config.num_epochs:
+        # set up callbacks
+        num_samples = (cfg.evaluate.num_samples + get_world_size() - 1) // get_world_size()
+        num_samples = (num_samples + cfg.evaluate.batch_size - 1) // cfg.evaluate.batch_size
+        cfg.evaluate.num_samples = num_samples
 
-    callbacks = callback_builder.get_callbacks(
-        cfg,
-        eval_dataset.shard(get_world_size(), get_rank()).take(num_samples),
-        eval_model=eval_model)
+        callbacks = callback_builder.get_callbacks(
+            cfg,
+            eval_dataset.shard(get_world_size(), get_rank()).take(num_samples),
+            eval_model=eval_model)
 
-    trainer = EfficientDetTrainer(model, config, callbacks)
-    trainer.fit(
-        train_dataset,
-        eval_dataset,
-        config.num_epochs,
-        steps_per_epoch,
-        initial_epoch=train_from_epoch,
-        validation_steps=num_samples // cfg.evaluate.batch_size,
-        verbose=1 if is_main_process() else 0)
+        trainer = EfficientDetTrainer(model, config, callbacks)
+        trainer.fit(
+            train_dataset,
+            eval_dataset,
+            config.num_epochs,
+            steps_per_epoch,
+            initial_epoch=train_from_epoch,
+            validation_steps=num_samples // cfg.evaluate.batch_size,
+            verbose=1 if is_main_process() else 0)
+    else:
+        if is_main_process():
+            print(f"Training ({train_from_epoch} epochs) has finished.")
+        sys.exit(0)
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

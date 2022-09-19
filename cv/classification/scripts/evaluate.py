@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Perform classification evaluation."""
 from __future__ import absolute_import
 from __future__ import division
@@ -46,14 +46,14 @@ def run_evaluate(cfg):
     initialize()
     # Decrypt EFF
     final_model = load_model(
-        str(cfg['eval_config']['model_path']),
+        str(cfg['eval']['model_path']),
         cfg['key'])
 
     # Defining optimizer
     opt = keras.optimizers.SGD(lr=0, decay=1e-6, momentum=0.9, nesterov=False)
     # Define precision/recall and F score metrics
     topk_acc = partial(keras.metrics.top_k_categorical_accuracy,
-                       k=cfg['eval_config']['top_k'])
+                       k=cfg['eval']['top_k'])
     topk_acc.__name__ = 'topk_acc'
     # Compile model
     final_model.compile(loss='categorical_crossentropy',
@@ -65,25 +65,28 @@ def run_evaluate(cfg):
 
     # Get input shape
     image_height, image_width, nchannels = get_input_shape(final_model)
-    print(image_height, image_width, nchannels)
+    image_depth = cfg['model']['input_image_depth']
+    assert image_depth in [8, 16], "Only 8-bit and 16-bit images are supported"
 
     assert nchannels in [1, 3], (
         "Unsupported channel count {} for evaluation".format(nchannels)
     )
+    logger.info(f'input req HWC and depth: {image_height}, {image_width}, {nchannels}, {image_depth}')
     color_mode = "rgb"
     if nchannels == 1:
         color_mode = "grayscale"
-    interpolation = cfg['model_config']['resize_interpolation_method']
-    if cfg['eval_config']['enable_center_crop']:
+    interpolation = cfg['model']['resize_interpolation_method']
+    if cfg['eval']['enable_center_crop']:
         interpolation += ":center"
 
     # Initializing data generator
     target_datagen = ImageDataGenerator(
         preprocessing_function=partial(preprocess_input,
                                        data_format=cfg['data_format'],
-                                       mode=cfg['train_config']['preprocess_mode'],
-                                       img_mean=list(cfg['train_config']['image_mean']),
-                                       color_mode=color_mode),
+                                       mode=cfg['train']['preprocess_mode'],
+                                       img_mean=list(cfg['train']['image_mean']),
+                                       color_mode=color_mode,
+                                       img_depth=image_depth),
         horizontal_flip=False,
         data_format=cfg['data_format'])
 
@@ -118,16 +121,15 @@ def run_evaluate(cfg):
 
     # Initializing data iterator
     target_iterator = target_datagen.flow_from_directory(
-        cfg['eval_config']['eval_dataset_path'],
+        cfg['eval']['eval_dataset_path'],
         target_size=(image_height, image_width),
         color_mode=color_mode,
-        batch_size=cfg['eval_config']['batch_size'],
-        classes=class_names,
+        batch_size=cfg['eval']['batch_size'],
         class_mode='categorical',
         interpolation=interpolation,
         shuffle=False)
     # target_dataset = tf.data.Dataset.from_generator(target_iterator)
-    logger.info('Processing dataset (evaluation): {}'.format(cfg['eval_config']['eval_dataset_path']))
+    logger.info('Processing dataset (evaluation): {}'.format(cfg['eval']['eval_dataset_path']))
     nclasses = target_iterator.num_classes
     assert nclasses > 1, "Invalid number of classes in the evaluation dataset."
 
@@ -139,16 +141,16 @@ def run_evaluate(cfg):
     # Evaluate the model on the full data set.
     score = final_model.evaluate(target_iterator,
                                  steps=len(target_iterator),
-                                 workers=cfg['eval_config']['n_workers'],
+                                 workers=cfg['eval']['n_workers'],
                                  use_multiprocessing=False)
 
     print('Evaluation Loss: {}'.format(score[0]))
     print('Evaluation Top K accuracy: {}'.format(score[1]))
     # Re-initializing data iterator
     target_iterator = target_datagen.flow_from_directory(
-        cfg['eval_config']['eval_dataset_path'],
+        cfg['eval']['eval_dataset_path'],
         target_size=(image_height, image_width),
-        batch_size=cfg['eval_config']['batch_size'],
+        batch_size=cfg['eval']['batch_size'],
         color_mode=color_mode,
         class_mode='categorical',
         interpolation=interpolation,
@@ -173,7 +175,7 @@ def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for continuous training of classification application.
     """
     run_evaluate(cfg)
-    logger.info("Training finished successfully.")
+    logger.info("Evaluating finished successfully.")
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Script to prune the EfficientDet TAO model."""
 
@@ -42,7 +42,6 @@ def run_pruning(cfg):
     pruned_model = pruner.prune(
         threshold=cfg.prune.threshold,
         excluded_layers=list(cfg.prune.excluded_layers))
-    # pruned_model.summary()
 
     # Save the encrypted pruned model
     tmp_dir = tempfile.mkdtemp()

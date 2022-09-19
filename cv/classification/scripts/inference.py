@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Inference and metrics computation code using a loaded model."""
 
@@ -30,16 +30,21 @@ def run_inference(cfg):
             write out a .csv file to store all the predictions
     """
     predictions = []
-    inferencer = KerasInferencer(cfg['infer_config']['model_path'])
+    image_depth = cfg['model']['input_image_depth']
+    assert image_depth in [8, 16], "Only 8-bit and 16-bit images are supported"
+    inferencer = KerasInferencer(cfg['infer']['model_path'],
+                                key=cfg.key,
+                                img_mean=list(cfg['train']['image_mean']),
+                                img_depth=image_depth)
 
-    for img_name in sorted(os.listdir(cfg['infer_config']['image_dir'])):
+    for img_name in sorted(os.listdir(cfg['infer']['image_dir'])):
         _, ext = os.path.splitext(img_name)
         if ext.lower() in SUPPORTED_IMAGE_FORMAT:
             result = inferencer.infer_single(
-                os.path.join(cfg['infer_config']['image_dir'], img_name))
+                os.path.join(cfg['infer']['image_dir'], img_name))
             predictions.append(np.argmax(result))
             break
-    print(predictions)
+    print(os.path.join(cfg['infer']['image_dir'], img_name),predictions)
 
 
 

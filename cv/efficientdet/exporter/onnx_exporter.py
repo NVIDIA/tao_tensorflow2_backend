@@ -1,4 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # limitations under the License.
 """EfficientDet ONNX exporter."""
 
+import copy
 import logging
 import os
 import tempfile
@@ -68,10 +69,22 @@ def tf_to_onnx_tensor(tensor, name=""):
 tf_utils.tf_to_onnx_tensor = tf_to_onnx_tensor
 
 
+@gs.Graph.register()
+def replace_with_reducemean(self, inputs, outputs):
+    """Replace subgraph with ReduceMean."""
+    # Disconnect output nodes of all input tensors
+    new_outputs = outputs.copy()
+    # Disconnet input nodes of all output tensors
+    for out in outputs:
+        out.inputs.clear()
+    # Insert the new node.
+    return self.layer(op="ReduceMean", inputs=inputs, outputs=new_outputs, attrs={'axes': [2, 3], 'keepdims': 1})
+
+
 class EfficientDetGraphSurgeon:
     """EfficientDet GraphSurgeon Class."""
 
-    def __init__(self, saved_model_path, legacy_plugins=False):
+    def __init__(self, saved_model_path, legacy_plugins=False, dynamic_batch=False, is_qat=False):
         """Constructor of the EfficientDet Graph Surgeon object.
 
         :param saved_model_path: The path pointing to the TensorFlow saved model to load.
@@ -80,6 +93,12 @@ class EfficientDetGraphSurgeon:
         """
         saved_model_path = os.path.realpath(saved_model_path)
         assert os.path.exists(saved_model_path)
+
+        # Let TensorRT optimize QDQ nodes instead of TF
+        from tf2onnx.optimizer import _optimizers  # noqa pylint: disable=C0415
+        updated_optimizers = copy.deepcopy(_optimizers)
+        del updated_optimizers["q_dq_optimizer"]
+        del updated_optimizers["const_dequantize_optimizer"]
 
         # Use tf2onnx to convert saved model to an initial ONNX graph.
         graph_def, inputs, outputs = tf_loader.from_saved_model(
@@ -90,17 +109,18 @@ class EfficientDetGraphSurgeon:
         with tf_loader.tf_session(graph=tf_graph):
             onnx_graph = tfonnx.process_tf_graph(
                 tf_graph, input_names=inputs, output_names=outputs, opset=13)
-        onnx_model = optimizer.optimize_graph(onnx_graph).make_model(
+        onnx_model = optimizer.optimize_graph(onnx_graph, optimizers=updated_optimizers).make_model(
             f"Converted from {saved_model_path}")
         self.graph = gs.import_onnx(onnx_model)
         assert self.graph
         log.info("TF2ONNX graph created successfully")
+        self.is_qat = is_qat
 
         # Fold constants via ONNX-GS that TF2ONNX may have missed
-        self.graph.fold_constants()
-
-        self.api = "AutoML"
+        if not self.is_qat:
+            self.graph.fold_constants()
         self.batch_size = None
+        self.dynamic_batch = dynamic_batch
         self.legacy_plugins = legacy_plugins
         os_handle, self.tmp_onnx_path = tempfile.mkstemp(suffix='.onnx', dir=saved_model_path)
         os.close(os_handle)
@@ -124,11 +144,12 @@ class EfficientDetGraphSurgeon:
                 self.graph = gs.import_onnx(model)
             except Exception as e:
                 raise RuntimeError("Shape inference could not be performed at this time") from e
-            try:
-                self.graph.fold_constants(fold_shapes=True)
-            except TypeError as e:
-                raise TypeError("This version of ONNX GraphSurgeon does not support folding shapes, "
-                                "please upgrade your onnx_graphsurgeon module.") from e
+            if not self.is_qat:
+                try:
+                    self.graph.fold_constants(fold_shapes=True)
+                except TypeError as e:
+                    raise TypeError("This version of ONNX GraphSurgeon does not support folding shapes, "
+                                    "please upgrade your onnx_graphsurgeon module.") from e
 
             count_after = len(self.graph.nodes)
             if count_before == count_after:
@@ -157,18 +178,21 @@ class EfficientDetGraphSurgeon:
         """
         # Update the input and output tensors shape
         # input_size = input_size.split(",")
-        assert len(input_size) == 2
-        for i in range(len(input_size)):
-            input_size[i] = int(input_size[i])
-            assert input_size[i] >= 1
+        assert len(input_size) == 4
         assert input_format in ["NCHW", "NHWC"]
-        if input_format == "NCHW":
-            self.graph.inputs[0].shape = ['N', 3, input_size[0], input_size[1]]
-        if input_format == "NHWC":
-            self.graph.inputs[0].shape = ['N', input_size[0], input_size[1], 3]
+
+        if self.dynamic_batch:
+            # Enable dynamic batchsize
+            if input_format == "NCHW":
+                self.graph.inputs[0].shape = ['N', 3, input_size[2], input_size[3]]
+            if input_format == "NHWC":
+                self.graph.inputs[0].shape = ['N', input_size[1], input_size[2], 3]
+        else:
+            # Disable dynamic batchsize
+            self.graph.inputs[0].shape = input_size
         self.graph.inputs[0].dtype = np.float32
         self.graph.inputs[0].name = "input"
-        print("ONNX graph input shape: {self.graph.inputs[0].shape} [{input_format} format]")
+        print(f"ONNX graph input shape: {self.graph.inputs[0].shape} [{input_format} format]")
         self.infer()
 
         # Find the initial nodes of the graph, whatever the input is first connected to, and disconnect them
@@ -186,7 +210,7 @@ class EfficientDetGraphSurgeon:
             # RGB Normalizers. The per-channel values are given with shape [1, 3, 1, 1] for proper NCHW shape broadcasting
             scale_val = 1 / np.asarray([255], dtype=np.float32)
             mean_val = -1 * np.expand_dims(np.asarray([0.485, 0.456, 0.406], dtype=np.float32), axis=(0, 2, 3))
-            stddev_val = 1 / np.expand_dims(np.asarray([0.229, 0.224, 0.225], dtype=np.float32), axis=(0, 2, 3))
+            stddev_val = 1 / np.expand_dims(np.asarray([0.224, 0.224, 0.224], dtype=np.float32), axis=(0, 2, 3))
             # y = (x * scale + mean) * stddev   -->   y = x * scale * stddev + mean * stddev
             scale_out = self.graph.elt_const("Mul", "preprocessor/scale", input_tensor, scale_val * stddev_val)
             mean_out = self.graph.elt_const("Add", "preprocessor/mean", scale_out, mean_val * stddev_val)
@@ -201,13 +225,31 @@ class EfficientDetGraphSurgeon:
             preprocessed_tensor = range_out[0]
 
         # Find the first stem conv node of the graph, and connect the normalizer directly to it
-        stem_name = None
-        if self.api == "AutoML":
-            stem_name = "stem_conv"
+        stem_name = "stem_conv"
+
+        # Remove transpose in QAT graph: stem <- transpose <- DQ <- Q
+        if self.is_qat:
+            print("Removing QAT transpose")
+            transpose_node = [node for node in self.graph.nodes if node.op == "Transpose" and stem_name in node.o().name][0]
+            dq_node = transpose_node.i()
+            dq_node.outputs = transpose_node.outputs
+            transpose_node.outputs.clear()
+
         stem = [node for node in self.graph.nodes
                 if node.op == "Conv" and stem_name in node.name][0]
         print(f"Found {stem.op} node '{stem.name}' as stem entry")
-        stem.inputs[0] = preprocessed_tensor
+
+        if self.is_qat:
+            # # stem <- DQ <- Q
+            # stem.i().i().i().outputs[0].dtype = np.uint8
+            stem.i().i().inputs[0] = preprocessed_tensor
+        else:
+            stem.inputs[0] = preprocessed_tensor
+
+        # Patch for QAT export (@yuw)
+        if 'auto_pad' not in stem.attrs:
+            stem.attrs['auto_pad'] = 'NOTSET'
+            stem.attrs['pads'] = [0, 0, 1, 1]
 
         self.infer()
 
@@ -239,31 +281,30 @@ class EfficientDetGraphSurgeon:
             print(f"Updating Reshape node {node.name} to {node.inputs[1].values}")
 
         # Resize nodes try to calculate the output shape dynamically, it's more optimal to pre-compute the shape
-        if self.api == "AutoML":
-            # Resize on a BiFPN will always be 2x, but grab it from the graph just in case
-            for node in [node for node in self.graph.nodes if node.op == "Resize"]:
-                if len(node.inputs) < 4 or node.inputs[0].shape is None:
+        # Resize on a BiFPN will always be 2x, but grab it from the graph just in case
+        for node in [node for node in self.graph.nodes if node.op == "Resize"]:
+            if len(node.inputs) < 4 or node.inputs[0].shape is None:
+                continue
+            scale_h, scale_w = None, None
+            if type(node.inputs[3]) == gs.Constant:
+                # The sizes input is already folded
+                if len(node.inputs[3].values) != 4:
                     continue
-                scale_h, scale_w = None, None
-                if type(node.inputs[3]) == gs.Constant:
-                    # The sizes input is already folded
-                    if len(node.inputs[3].values) != 4:
-                        continue
-                    scale_h = node.inputs[3].values[2] / node.inputs[0].shape[2]
-                    scale_w = node.inputs[3].values[3] / node.inputs[0].shape[3]
-                if type(node.inputs[3]) == gs.Variable:
-                    # The sizes input comes from Shape+Slice+Concat
-                    concat = node.i(3)
-                    if concat.op != "Concat":
-                        continue
-                    if type(concat.inputs[1]) != gs.Constant or len(concat.inputs[1].values) != 2:
-                        continue
-                    scale_h = concat.inputs[1].values[0] / node.inputs[0].shape[2]
-                    scale_w = concat.inputs[1].values[1] / node.inputs[0].shape[3]
-                scales = np.asarray([1, 1, scale_h, scale_w], dtype=np.float32)
-                del node.inputs[3]
-                node.inputs[2] = gs.Constant(name=f"{node.name}_scales", values=scales)
-                print(f"Updating Resize node {node.name} to {scales}")
+                scale_h = node.inputs[3].values[2] / node.inputs[0].shape[2]
+                scale_w = node.inputs[3].values[3] / node.inputs[0].shape[3]
+            if type(node.inputs[3]) == gs.Variable:
+                # The sizes input comes from Shape+Slice+Concat
+                concat = node.i(3)
+                if concat.op != "Concat":
+                    continue
+                if type(concat.inputs[1]) != gs.Constant or len(concat.inputs[1].values) != 2:
+                    continue
+                scale_h = concat.inputs[1].values[0] / node.inputs[0].shape[2]
+                scale_w = concat.inputs[1].values[1] / node.inputs[0].shape[3]
+            scales = np.asarray([1, 1, scale_h, scale_w], dtype=np.float32)
+            del node.inputs[3]
+            node.inputs[2] = gs.Constant(name=f"{node.name}_scales", values=scales)
+            print(f"Updating Resize node {node.name} to {scales}")
 
         self.infer()
 
@@ -272,15 +313,15 @@ class EfficientDetGraphSurgeon:
 
         To replace certain nodes in the main EfficientDet network
         """
-        pass
+        # EXPERIMENTAL
         # for node in self.graph.nodes:
-        #     if node.op == "Cast":
-        #         # Make the input tensor of the Cast node connect directly to the consumers of the Cast node
-        #         inp_tensor = node.inputs[0]
-        #         inp_tensor.outputs = inp_tensor.outputs + node.outputs[0].outputs
-        #         node.outputs[0].outputs.clear()
-
-        # self.graph.cleanup()
+        #     if node.op == "GlobalAveragePool" and node.o().op == "Squeeze" and node.o().o().op == "Reshape":
+        #         # node Mul has two output nodes: GlobalAveragePool and Mul
+        #         # we only disconnect GlobalAveragePool
+        #         self.graph.replace_with_reducemean(node.inputs, node.o().o().outputs)
+        #         print("Pooling removed.")
+        # self.graph.cleanup().toposort()
+        pass
 
     def update_nms(self, threshold=None, detections=None):
         """Updates the graph to replace the NMS op by BatchedNMS_TRT TensorRT plugin node.
@@ -339,9 +380,7 @@ class EfficientDetGraphSurgeon:
 
         self.infer()
 
-        head_names = []
-        if self.api == "AutoML":
-            head_names = ["class-predict", "box-predict"]
+        head_names = ["class-predict", "box-predict"]
 
         # There are five nodes at the bottom of the graph that provide important connection points:
 
@@ -408,23 +447,25 @@ class EfficientDetGraphSurgeon:
         nms_output_classes_dtype = np.int32
 
         # NMS Outputs
-        # nms_output_num_detections = gs.Variable(
-        #     name="num_detections", dtype=np.int32, shape=[self.batch_size, 1])
-        # nms_output_boxes = gs.Variable(name="detection_boxes", dtype=np.float32,
-        #                                shape=[self.batch_size, num_detections, 4])
-        # nms_output_scores = gs.Variable(name="detection_scores", dtype=np.float32,
-        #                                 shape=[self.batch_size, num_detections])
-        # nms_output_classes = gs.Variable(name="detection_classes", dtype=nms_output_classes_dtype,
-        #                                  shape=[self.batch_size, num_detections])
-
-        nms_output_num_detections = gs.Variable(name="num_detections",
-                                                dtype=np.int32, shape=['N', 1])
-        nms_output_boxes = gs.Variable(name="detection_boxes", dtype=np.float32,
-                                       shape=['N', num_detections, 4])
-        nms_output_scores = gs.Variable(name="detection_scores", dtype=np.float32,
-                                        shape=['N', num_detections])
-        nms_output_classes = gs.Variable(name="detection_classes", dtype=nms_output_classes_dtype,
-                                         shape=['N', num_detections])
+        if self.dynamic_batch:
+            # Enable dynamic batch
+            nms_output_num_detections = gs.Variable(
+                name="num_detections", dtype=np.int32, shape=['N', 1])
+            nms_output_boxes = gs.Variable(
+                name="detection_boxes", dtype=np.float32, shape=['N', num_detections, 4])
+            nms_output_scores = gs.Variable(
+                name="detection_scores", dtype=np.float32, shape=['N', num_detections])
+            nms_output_classes = gs.Variable(
+                name="detection_classes", dtype=nms_output_classes_dtype, shape=['N', num_detections])
+        else:
+            nms_output_num_detections = gs.Variable(
+                name="num_detections", dtype=np.int32, shape=[self.batch_size, 1])
+            nms_output_boxes = gs.Variable(
+                name="detection_boxes", dtype=np.float32, shape=[self.batch_size, num_detections, 4])
+            nms_output_scores = gs.Variable(
+                name="detection_scores", dtype=np.float32, shape=[self.batch_size, num_detections])
+            nms_output_classes = gs.Variable(
+                name="detection_classes", dtype=nms_output_classes_dtype, shape=[self.batch_size, num_detections])
 
         nms_outputs = [
             nms_output_num_detections,

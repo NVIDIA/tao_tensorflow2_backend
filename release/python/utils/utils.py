@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Helper utils for packaging."""
 
 from __future__ import absolute_import
@@ -7,6 +7,7 @@ from __future__ import print_function
 
 import glob
 import os
+import setuptools
 
 # Rename all .py files to .py_tmp temporarily.
 ignore_list = ['__init__.py', '__version__.py']
@@ -76,3 +77,18 @@ def cleanup():
         pyc_list = glob.glob(dir_path + '/*.pyc')
         for pyc_file in pyc_list:
             os.remove(pyc_file)
+
+
+def find_packages(package_name):
+    """List of packages.
+
+    Args:
+        package_name (str): Name of the package.
+
+    Returns:
+        packages (list): List of packages.
+    """
+    packages = setuptools.find_packages(package_name)
+    packages = [f"{package_name}.{f}" for f in packages]
+    packages.append(package_name)
+    return packages

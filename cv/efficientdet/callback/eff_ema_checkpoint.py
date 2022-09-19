@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """EFF EMA Checkpoint Callback."""
 
@@ -38,6 +38,7 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
                  save_weights_only: bool = False,
                  mode: str = 'auto',
                  save_freq: str = 'epoch',
+                 is_qat: bool = False,
                  **kwargs):
         """Init."""
         super().__init__(
@@ -53,6 +54,7 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         self.ema_opt = None
         self.eff_dir = eff_dir
         self.passphrase = key
+        self.is_qat = is_qat
 
     def set_model(self, model):
         """Set model."""
@@ -93,9 +95,14 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         # pylint: disable=protected-access
         if self.save_freq == 'epoch' and self.epochs_since_last_save >= self.period:
             self._save_model(epoch=epoch, batch=None, logs=logs)  # To self.filepath
-            # save train/eval graph json to checkpoint_dir
-            dump_json(self.model, os.path.join(checkpoint_dir, 'train_graph.json'))
-            dump_eval_json(checkpoint_dir, eval_graph='eval_graph.json')
+            # WORKAROUND to save QAT graph
+            if self.is_qat:
+                shutil.copy(os.path.join(os.path.dirname(self.eff_dir), 'train_graph.json'), checkpoint_dir)
+                shutil.copy(os.path.join(os.path.dirname(self.eff_dir), 'eval_graph.json'), checkpoint_dir)
+            else:
+                # save train/eval graph json to checkpoint_dir
+                dump_json(self.model, os.path.join(checkpoint_dir, 'train_graph.json'))
+                dump_eval_json(checkpoint_dir, eval_graph='eval_graph.json')
             # convert content in self.filepath to EFF
             eff_filename = f'{self.model.name}_{eff_epoch:03d}.eff'
             eff_model_path = os.path.join(self.eff_dir, eff_filename)

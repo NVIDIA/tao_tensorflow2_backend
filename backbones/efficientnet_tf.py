@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """EfficientNet."""
 
 from __future__ import absolute_import
@@ -16,15 +16,13 @@ from tensorflow.keras.layers import (
     Dense,
     Dropout,
     Flatten,
-    Input,
-    ZeroPadding2D
+    Input
 )
 from tensorflow.keras.models import Model
 
 from backbones.utils_tf import (
     block,
     CONV_KERNEL_INITIALIZER,
-    correct_pad,
     DENSE_KERNEL_INITIALIZER,
     force_stride16,
     round_filters,
@@ -126,16 +124,11 @@ def EfficientNet(width_coefficient,
     bn_axis = 3 if K.image_data_format() == 'channels_last' else 1
     # Build stem
     x = img_input
-    x = ZeroPadding2D(
-        padding=correct_pad(x, 3),
-        name='stem_conv_pad',
-        data_format=data_format,
-    )(x)
     x = Conv2D(
         round_filters(32, depth_divisor, width_coefficient),
         3,
         strides=2,
-        padding='valid',
+        padding='same',
         use_bias=use_bias,
         kernel_initializer=CONV_KERNEL_INITIALIZER,
         kernel_regularizer=kernel_regularizer,

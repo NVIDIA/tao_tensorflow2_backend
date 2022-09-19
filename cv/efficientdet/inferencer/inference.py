@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION. All rights reserved.
 """Inference related utilities."""
 
 from __future__ import absolute_import
@@ -121,6 +121,7 @@ def build_inputs(image_path_pattern: Text, image_size: Union[int, Tuple[int, int
     raw_images, fnames = [], []
     for fname in tf.io.gfile.glob(image_path_pattern):
         image = Image.open(fname).convert('RGB')
+        image = np.array(image)
         raw_images.append(image)
         fnames.append(fname)
     if not raw_images:
@@ -299,7 +300,7 @@ class InferenceModel(tf.Module):
 
     def __init__(self, model, input_shape, params,
                  batch_size=1, label_id_mapping=None,
-                 min_score_thresh=0.3, max_boxes_to_draw=100):
+                 min_score_thresh=0.001, max_boxes_to_draw=100):
         """Init."""
         super().__init__()
         self.model = model
@@ -308,8 +309,8 @@ class InferenceModel(tf.Module):
         self.params = params
         self.disable_pyfun = True
         self.label_id_mapping = label_id_mapping or {}
-        self.min_score_thresh = min_score_thresh or 0.3
-        self.max_boxes_to_draw = max_boxes_to_draw or 100
+        self.min_score_thresh = min_score_thresh
+        self.max_boxes_to_draw = max_boxes_to_draw
 
     def infer(self, imgs):
         """Run inference on a batch of images."""

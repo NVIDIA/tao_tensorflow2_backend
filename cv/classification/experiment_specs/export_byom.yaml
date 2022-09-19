@@ -1,4 +1,4 @@
-export_config:
+export:
   model_path: '/home/scratch.p3/sean/tlt3_experiments/imagenet/tf2_byom_res18/weights/model_2_001.eff'
   output_path: '/home/scratch.p3/sean/tlt3_experiments/imagenet/tf2_byom_res18/weights/model_2_001.onnx'
   save_engine: True

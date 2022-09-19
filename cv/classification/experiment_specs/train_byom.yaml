@@ -2,7 +2,7 @@ results_dir: '/home/scratch.p3/sean/tlt3_experiments/imagenet/tf2_byom_res18'
 key: nvidia_tlt
 data_format: 'channels_first'
 # init_epoch: 16
-train_config:
+train:
   qat: False
   train_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   val_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
@@ -22,7 +22,7 @@ train_config:
     soft_start: 0.0
   enable_color_augmentation: True
   mixup_alpha: 0.2
-model_config:
+model:
   resize_interpolation_method: 'bicubic'
   arch: 'byom'
   retain_head: False

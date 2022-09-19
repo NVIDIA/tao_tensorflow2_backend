@@ -26,7 +26,7 @@ def configure_env():
 CI, DOCKER_ROOT, ROOT_DIR = configure_env()
 # Testing modules.
 RCFILE = ".pylintrc"
-TEST_MODULES = ['backbones', 'blocks', 'common', 'cv/efficientdet'] # 'cv', 'model_optimization']
+TEST_MODULES = ['backbones', 'blocks', 'common', 'cv/efficientdet', 'model_optimization']
 
 
 def get_docker_information(manifest_file):

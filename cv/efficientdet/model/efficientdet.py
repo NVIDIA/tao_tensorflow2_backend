@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Keras implementation of efficientdet."""
 import functools
 from absl import logging
@@ -14,6 +14,78 @@ from cv.efficientdet.utils import hparams_config
 from cv.efficientdet.utils import model_utils
 from cv.efficientdet.utils import keras_utils
 # pylint: disable=arguments-differ  # fo keras layers.
+
+
+class SeparableConvWAR:
+    """WAR for tf.keras.layers.SeparableConv2D."""
+
+    def __init__(
+            self,
+            filters,
+            kernel_size,
+            strides=(1, 1),
+            padding='valid',
+            data_format=None,
+            dilation_rate=(1, 1),
+            depth_multiplier=1,
+            activation=None,
+            use_bias=True,
+            depthwise_initializer='glorot_uniform',
+            pointwise_initializer='glorot_uniform',
+            bias_initializer='zeros',
+            depthwise_regularizer=None,
+            pointwise_regularizer=None,
+            bias_regularizer=None,
+            activity_regularizer=None,
+            depthwise_constraint=None,
+            pointwise_constraint=None,
+            bias_constraint=None,
+            name='separable_conv_war',
+            **kwargs) -> None:
+        """Init."""
+        self.dw_conv = tf.keras.layers.DepthwiseConv2D(
+            kernel_size,
+            strides=strides,
+            padding=padding,
+            depth_multiplier=depth_multiplier,
+            data_format=data_format,
+            dilation_rate=dilation_rate,
+            activation=activation,
+            use_bias=False,
+            depthwise_initializer=depthwise_initializer,
+            bias_initializer=bias_initializer,
+            depthwise_regularizer=depthwise_regularizer,
+            bias_regularizer=bias_regularizer,
+            activity_regularizer=activity_regularizer,
+            depthwise_constraint=depthwise_constraint,
+            bias_constraint=bias_constraint,
+            name=name + '_dw',
+            **kwargs)
+
+        self.pw_conv = tf.keras.layers.Conv2D(
+            filters,
+            1,
+            strides=strides,
+            padding=padding,
+            data_format=data_format,
+            dilation_rate=dilation_rate,
+            activation=activation,
+            use_bias=use_bias,
+            kernel_initializer=pointwise_initializer,
+            bias_initializer=bias_initializer,
+            kernel_regularizer=pointwise_regularizer,
+            bias_regularizer=bias_regularizer,
+            activity_regularizer=activity_regularizer,
+            kernel_constraint=pointwise_constraint,
+            bias_constraint=bias_constraint,
+            name=name + '_pw',
+            **kwargs)
+
+    def __call__(self, inputs):
+        """Call."""
+        x = self.dw_conv(inputs)
+        x = self.pw_conv(x)
+        return x
 
 
 class FNode:
@@ -67,7 +139,9 @@ class FNode:
             self.data_format,
             name=f'{self.name}_op_after_combine_{feat_level}')
 
-        self.fuse_layer = WeightedFusion(name=f'fusion_{self.name}')
+        self.fuse_layer = WeightedFusion(
+            inputs_offsets=self.inputs_offsets,
+            name=f'fusion_{self.name}')
 
     def __call__(self, feats, training):
         """Call."""
@@ -102,6 +176,8 @@ class OpAfterCombine:
         if self.separable_conv:
             conv2d_layer = functools.partial(
                 tf.keras.layers.SeparableConv2D, depth_multiplier=1)
+            # conv2d_layer = functools.partial(
+            #     SeparableConvWAR, depth_multiplier=1)
         else:
             conv2d_layer = tf.keras.layers.Conv2D
 
@@ -268,6 +344,7 @@ class ClassNet:
         if separable_conv:
             conv2d_layer = functools.partial(
                 tf.keras.layers.SeparableConv2D,
+                # SeparableConvWAR,
                 depth_multiplier=1,
                 data_format=data_format,
                 pointwise_initializer=tf.initializers.VarianceScaling(),
@@ -378,7 +455,7 @@ class BoxNet:
             # If using SeparableConv2D
             if self.separable_conv:
                 self.conv_ops.append(
-                    tf.keras.layers.SeparableConv2D(
+                    tf.keras.layers.SeparableConv2D(  # SeparableConvWAR(
                         filters=self.num_filters,
                         depth_multiplier=1,
                         pointwise_initializer=tf.initializers.VarianceScaling(),
@@ -414,7 +491,7 @@ class BoxNet:
             self.bns.append(bn_per_level)
 
         if self.separable_conv:
-            self.boxes = tf.keras.layers.SeparableConv2D(
+            self.boxes = tf.keras.layers.SeparableConv2D(  # SeparableConvWAR
                 filters=4 * self.num_anchors,
                 depth_multiplier=1,
                 pointwise_initializer=tf.initializers.VarianceScaling(),

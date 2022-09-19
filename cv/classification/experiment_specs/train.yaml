@@ -1,13 +1,19 @@
-results_dir: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18'
+# train minist with efficientnet_b0
+results_dir: '/home/binz/tao-tf2/results_enb0'
 key: nvidia_tlt
 # init_epoch: 16
-train_config:
+train:
   qat: False
-  # pretrained_model_path: '/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_res18/weights/resnet18_bn_003.eff'
-  train_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
-  val_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
-  batch_size_per_gpu: 64
-  n_epochs: 300
-model_config:
-  arch: 'resnet'
-  n_layers: 18
+  # pretrained_model_path: '/home/binz/Tao/tao-tf2/results_enb0_16bit_train/weights/efficientnet-b0_004_prune.eff'
+  train_dataset_path: '/home/binz/tao-tf2/dataset/flower_17/train'
+  val_dataset_path: '/home/binz/tao-tf2/dataset/flower_17/validation'
+  # image_mean: [33.328] # mean of MNIST (0.1307 *255)
+  preprocess_mode: 'caffe'
+  batch_size_per_gpu: 128
+  n_epochs: 10
+model:
+  arch: 'efficientnet_b0'
+  # n_layers: 18
+  input_image_size: [1,500,500]
+  input_image_depth: 8
+

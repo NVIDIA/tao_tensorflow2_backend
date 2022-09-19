@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """EfficientDet standalone evaluation script."""
 import os
 from mpi4py import MPI
@@ -16,14 +16,15 @@ from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank
 
 
-def run_experiment(cfg):
+def run_experiment(cfg, ci_run=False):
     """Run evaluation."""
     hvd.init()
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
-    if gpus:
-        tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+    if not ci_run:
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        if gpus:
+            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
     MODE = 'eval'
     # Parse and update hparams
     config = hparams_config.get_detection_config(cfg.model.name)
@@ -47,9 +48,8 @@ def run_experiment(cfg):
     eval_dataset = eval_dataset.shard(get_world_size(), get_rank()).take(num_samples)
 
     # Load model from graph json
-    model = helper.load_model(cfg.evaluate.model_path, cfg, MODE)
-
-    # evaluation
+    model = helper.load_model(cfg.evaluate.model_path, cfg, MODE, is_qat=cfg.train.qat)
+    # Set up postprocessor
     postpc = EfficientDetPostprocessor(cfg)
     label_map = label_utils.get_label_map(cfg.evaluate.label_map)
     evaluator = coco_metric.EvaluationMetric(
