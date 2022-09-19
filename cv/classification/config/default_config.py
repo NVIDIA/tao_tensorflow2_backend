@@ -98,6 +98,7 @@ class EvalConfig:
     n_workers: int = 64
     enable_center_crop: bool = True
     top_k: int = 3
+    classmap: str = ""
 
 
 @dataclass
@@ -106,8 +107,18 @@ class ExportConfig:
 
     model_path: str = ''
     output_path: str = ''
-    dtype: str = MISSING
-    save_engine: bool = True
+    data_type: str = "fp32"
+    engine_file: str = ""
+    max_workspace_size: int = 2  # in Gb
+    cal_image_dir: str = ""
+    cal_cache_file: str = ""
+    cal_data_file: str = ""
+    batch_size: int = 16
+    batches: int = 10
+    max_batch_size: int = 1
+    min_batch_size: int = 1
+    opt_batch_size: int = 1
+    verbose: bool = False
 
 
 @dataclass

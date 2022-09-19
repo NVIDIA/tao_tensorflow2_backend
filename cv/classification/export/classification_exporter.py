@@ -46,7 +46,7 @@ class Exporter:
         else:
             raise ValueError("Unsupported data type: %s" % self._dtype)
         
-        if config.train_config.qat and config.export_config.dtype != "int8":
+        if config.train_config.qat and config.export_config.data_type != "int8":
             raise ValueError("QAT only supports int8 export")
         self.backend = "onnx"
         self.input_shape = None
