@@ -1,7 +1,7 @@
 results_dir: '/home/binz/tao-tf2/results_enb0'
 key: nvidia_tlt
 prune:
-  model_path: '/home/binz/tao-tf2/results_enb0/weights/efficientnet-b0_010.eff'
-  output_path: '/home/binz/tao-tf2/results_enb0/weights/efficientnet-b0_010.prune.eff'
+  model_path: '/home/binz/tao-tf2/results_enb0/weights/efficientnet-b0_010.tlt'
+  output_path: '/home/binz/tao-tf2/results_enb0/weights/efficientnet-b0_010.prune.tlt'
   pruning_threshold: 0.3
   byom_model_path: ''

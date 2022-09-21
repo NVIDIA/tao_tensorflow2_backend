@@ -1,4 +1,4 @@
-ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:22.07-tf2-py3
+ARG FROM_IMAGE_NAME=gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image:22.09.14-yuw
 FROM ${FROM_IMAGE_NAME}
 
 RUN apt-get update

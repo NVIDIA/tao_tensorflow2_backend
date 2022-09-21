@@ -158,7 +158,7 @@ def zipdir(src, zip_path):
 
 
 def encode_eff(filepath, eff_model_path, passphrase, is_pruned=False):
-    """Encode saved_model directory into a .eff file.
+    """Encode saved_model directory into a .tlt file.
 
     Args:
         filepath (str): Path to saved_model

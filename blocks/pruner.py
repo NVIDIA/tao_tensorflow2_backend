@@ -25,7 +25,7 @@ class Pruner(ABC):
         self.key = cfg.key
         self.normalizer = cfg.prune.normalizer
         self.criterion = 'L2'
-        self.granularity = cfg.prune.pruning_granularity
+        self.granularity = cfg.prune.granularity
         self.min_num_filters = cfg.prune.min_num_filters
         self.equalization_criterion = cfg.prune.equalization_criterion
         self.excluded_layers = []

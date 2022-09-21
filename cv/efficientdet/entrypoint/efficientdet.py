@@ -12,9 +12,9 @@ def main():
     """Main entrypoint wrapper."""
     # Create parser for a given task.
     parser = argparse.ArgumentParser(
-        "efficientdet",
+        "efficientdet_tf2",
         add_help=True,
-        description="Train Adapt Optimize Toolkit entrypoint for efficientDet"
+        description="TAO Toolkit entrypoint for EfficientDet (TF2)"
     )
 
     # Build list of subtasks by inspecting the scripts package.

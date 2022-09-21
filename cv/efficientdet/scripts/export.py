@@ -7,11 +7,13 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import tempfile
 
 import tensorflow as tf
 from tensorflow.python.util import deprecation
 
 from common.hydra.hydra_runner import hydra_runner
+from common.utils import encode_etlt
 
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.exporter.onnx_exporter import EfficientDetGraphSurgeon
@@ -21,7 +23,7 @@ from cv.efficientdet.utils import helper, hparams_config
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 
 deprecation._PRINT_DEPRECATION_WARNINGS = False
-
+BUILD_ENGINE = False
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 os.environ["TF_CPP_VMODULE"] = 'non_max_suppression_op=0,generate_box_proposals_op=0,executor=0'
@@ -42,12 +44,11 @@ def run_export(cfg, ci_run=False):
     # Parse and update hparams
     MODE = 'export'
     config = hparams_config.get_detection_config(cfg.model.name)
-    config.update(generate_params_from_cfg(config, cfg, mode='export'))
+    config.update(generate_params_from_cfg(config, cfg, mode=MODE))
     params = config.as_dict()
 
-    # TODO(@yuw): change to EFF
-    assert str(cfg.export.output_path).endswith('.onnx'), "ONNX!!!"
-    output_dir = os.path.dirname(cfg.export.output_path)
+    assert str(cfg.export.output_path).endswith('.etlt'), "Exported file must end with .etlt"
+    output_dir = tempfile.mkdtemp()  # os.path.dirname(cfg.export.output_path)
     tf.keras.backend.set_learning_phase(0)
 
     # Load model from graph json
@@ -69,7 +70,7 @@ def run_export(cfg, ci_run=False):
         signatures=export_model.infer.get_concrete_function(
             tf.TensorSpec(shape=(None, None, None, 3), dtype=tf.uint8)))
 
-    print("Generating ONNX model...")
+    print("Exporting .etlt model...")
     # convert to onnx
     effdet_gs = EfficientDetGraphSurgeon(
         output_dir,
@@ -79,22 +80,25 @@ def run_export(cfg, ci_run=False):
     effdet_gs.update_preprocessor('NHWC', input_shape, preprocessor="imagenet")
     effdet_gs.update_shapes()
     effdet_gs.update_nms(threshold=cfg.export.min_score_thresh)
-    # TODO(@yuw): convert onnx to eff
-    onnx_file = effdet_gs.save(cfg.export.output_path)
-    print("Generating TensorRT engine...")
-    # convert to engine
-    if cfg.export.engine_file is not None or cfg.export.data_type == 'int8':
+    # convert onnx to eff
+    onnx_file = effdet_gs.save()
+    encode_etlt(onnx_file, cfg.export.output_path, "", cfg.key)
+    print(f"Export finished successfully. The etlt model is saved at: {onnx_file}")
+    if BUILD_ENGINE:
+        print("Generating TensorRT engine...")
+        # convert to engine
+        if cfg.export.engine_file is not None or cfg.export.data_type == 'int8':
 
-        output_engine_path = cfg.export.engine_file
-        builder = EngineBuilder(cfg.verbose, workspace=cfg.export.max_workspace_size)
-        builder.create_network(onnx_file, batch_size=max_batch_size)
-        builder.create_engine(
-            output_engine_path,
-            cfg.export.data_type,
-            cfg.export.cal_image_dir,
-            cfg.export.cal_cache_file,
-            cfg.export.cal_batch_size * cfg.export.cal_batches,
-            cfg.export.cal_batch_size)
+            output_engine_path = cfg.export.engine_file
+            builder = EngineBuilder(cfg.verbose, workspace=cfg.export.max_workspace_size)
+            builder.create_network(onnx_file, batch_size=max_batch_size)
+            builder.create_engine(
+                output_engine_path,
+                cfg.export.data_type,
+                cfg.export.cal_image_dir,
+                cfg.export.cal_cache_file,
+                cfg.export.cal_batch_size * cfg.export.cal_batches,
+                cfg.export.cal_batch_size)
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

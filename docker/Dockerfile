@@ -1,4 +1,4 @@
-ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:22.07-tf2-py3
+ARG FROM_IMAGE_NAME=gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image:22.09.14-yuw
 FROM ${FROM_IMAGE_NAME}
 
 RUN apt-get update
@@ -37,7 +37,8 @@ RUN mkdir trt_oss_src && \
    cd ../../../ && \
    rm -rf trt_oss_src
 
-RUN pip install https://urm.nvidia.com/artifactory/sw-eff-pypi-local/nvidia-eff/0.5.5/nvidia_eff-0.5.5-cp38-cp38-linux_x86_64.whl
+RUN pip install https://urm.nvidia.com/artifactory/sw-eff-pypi/nvidia-eff-tao-encryption/0.1.7/nvidia_eff_tao_encryption-0.1.7-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+RUN pip install https://urm.nvidia.com/artifactory/sw-eff-pypi/nvidia-eff/0.6.2/nvidia_eff-0.6.2-py38-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 
 ENV TF_XLA_FLAGS="--tf_xla_enable_lazy_compilation=false tf_xla_async_io_level=0"
 

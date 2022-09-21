@@ -16,7 +16,9 @@ spec:
         - name: DOCKER_TLS_CERTDIR
           value: ""
     - name: cuda
-      image: gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:9cc198b69a35e99f408b25f7a1291fb1d0bfe1ff9a8db3b7c7ce789261c9d0b8
+      image: gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:45c1d334b78464c43f716e7c952b730595464d6b84f2efcd7e67004297030a93
+      securityContext:
+        privileged: true
       command:
       - cat
       resources:
@@ -51,12 +53,63 @@ spec:
             }
             stage ('setup') {
                 gitlabCommitStatus(name: "setup", connection: gitLabConnection('git-lab-master')) {
-                    println "started setup..."
+                    sh "source scripts/envsetup.sh"
+                    def workspace_path = pwd()
+                    def pythonpath_env = 'PYTHONPATH=' + workspace_path
+                    def ci_path_env = 'CI_PROJECT_DIR=' + workspace_path
+                    command_env = pythonpath_env + ' ' + ci_path_env
                 }
             }
-            stage ('static_tests') {
-                gitlabCommitStatus(name: "static_tests", connection: gitLabConnection('git-lab-master')) {
-                    println "started static_tests .."
+            stage ('setup_scratch_space') {
+                sh 'apt-get update'
+                sh 'apt-get install cifs-utils -y'
+                sh 'env | sort'
+                sh 'mkdir -p /home/scratch.metropolis2'
+                sh 'ls -l /home/scratch.metropolis2'
+                withCredentials([usernamePassword(credentialsId: 'svc-tlt-ci-mount', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
+                    sh 'mount -t cifs -o "vers=2.0,username=${USERNAME},password=${PASSWORD},dom=nvidia.com,dir_mode=0444,file_mode=0444" //dc2-cdot49-sw-svm02/scratch.metropolis2 /home/scratch.metropolis2'
+                }
+                sh 'ls -l /home/scratch.metropolis2'
+            }
+            stage("functional_tests"){
+                gitlabCommitStatus(name: "functional_tests", connection: gitLabConnection('git-lab-master')) {
+                    println "started functional_tests .."
+                    sh "${command_env} python ci/run_functional_tests.py"
+                }
+            }
+            stage ('build_wheel') {
+                gitlabCommitStatus(name: "build_wheel", connection: gitLabConnection('git-lab-master')) {
+                    // Building the wheels for the tao source code.
+                    def BUILD_TYPE="dev"
+                    def TAO_WHEEL_VERSION="3.22.11"
+                    def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
+                    def PYTHON_VER="cp38-cp38"
+                    def ARCH="linux_x86_64"
+                    sh "echo '${BUILD_NUMBER}-${BUILD_TYPE}' > build.info"
+                    sh "pwd"
+                    sh "${command_env} make build"
+                    sh "${command_env} rm -rf *.egg-info"
+                    sh "make install"
+                    sh "efficientdet_tf2 --help"
+                    sh "classification_tf2 --help"
+                }
+            }
+            stage ('cleanup_scratch_space') {
+                sh 'umount /home/scratch.metropolis2'
+                sh 'ls -l /home/scratch.metropolis2'
+            }
+        }
+        container("docker"){
+            stage ('build_publish_docker') {
+                gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
+                    withEnv(["TAO_VERSION=3.22.11", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.6"]){
+                        docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
+                            sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
+                        }
+                        docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
+                            sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
+                        }
+                    }
                 }
             }
         }

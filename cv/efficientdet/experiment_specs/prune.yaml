@@ -1,4 +1,4 @@
 prune:
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0/weights/efficientdet-d0_001.eff'
-  output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0/pruned_model.eff'
+  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0/weights/efficientdet-d0_001.tlt'
+  output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0/pruned_model.tlt'
   threshold: 0.6

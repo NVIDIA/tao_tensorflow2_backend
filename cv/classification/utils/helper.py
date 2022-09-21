@@ -366,9 +366,9 @@ def load_model(model_path, passphrase=None):
         Keras model: Loaded model
     """
     assert os.path.exists(model_path), "Pretrained model not found at {}".format(model_path)
-    assert os.path.splitext(model_path)[-1] in ['.hdf5', '.eff', '.tltb'], \
+    assert os.path.splitext(model_path)[-1] in ['.hdf5', '.tlt', '.tltb'], \
         "Only .hdf5, .tlt, .tltb are supported."
-    if model_path.endswith('.eff'):
+    if model_path.endswith('.tlt'):
         model_path = decode_eff(model_path, passphrase)
         return tf.keras.models.load_model(model_path)
     if model_path.endswith('.tltb'):
@@ -398,7 +398,7 @@ def zipdir(src, zip_path):
 
 
 def encode_eff(filepath, eff_model_path, passphrase):
-    """Encode saved_model directory into a .eff file.
+    """Encode saved_model directory into a .tlt file.
 
     Args:
         filepath (str): Path to saved_model

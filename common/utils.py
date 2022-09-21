@@ -11,7 +11,10 @@ import logging
 import math
 from math import exp, log
 import os
+import struct
 import sys
+
+from eff_tao_encryption.tao_codec import encrypt_stream
 
 from tensorflow import keras
 from tensorflow.keras import backend as K
@@ -29,6 +32,22 @@ ap_mode_dict = {0: "sample", 1: "integrate"}
 MB = 2 << 20
 
 CUSTOM_OBJS = {'swish': swish}
+
+
+def encode_etlt(tmp_file_name, output_file_name, input_tensor_name, key):
+    """Encrypt ETLT model."""
+    # Encode temporary uff to output file
+    with open(tmp_file_name, "rb") as open_temp_file, \
+         open(output_file_name, "wb") as open_encoded_file:
+        # TODO: @vpraveen: Remove this hack to support multiple input nodes.
+        # This will require an update to tlt_converter and DS. Postponing this for now.
+        if isinstance(input_tensor_name, list):
+            input_tensor_name = input_tensor_name[0]
+        open_encoded_file.write(struct.pack("<i", len(input_tensor_name)))
+        open_encoded_file.write(input_tensor_name.encode())
+        encrypt_stream(open_temp_file,
+                       open_encoded_file,
+                       key, encryption=True, rewind=False)
 
 
 def raise_deprecation_warning(task, subtask, args):

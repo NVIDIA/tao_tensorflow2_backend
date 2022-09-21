@@ -34,11 +34,12 @@ def cfg():
     return default_cfg
 
 
-# @pytest.mark.script_launch_mode('subprocess')
 @pytest.mark.parametrize("amp, qat, batch_size, num_epochs",
                          [(False, True, 4, 1)])
 def test_train(amp, qat, batch_size, num_epochs, cfg):
-    # env = os.environ.copy()
+    # reset graph precision
+    policy = tf.keras.mixed_precision.Policy('float32')
+    tf.keras.mixed_precision.set_global_policy(policy)
     results_dir = os.path.join(
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}")
@@ -71,7 +72,7 @@ def test_eval(amp, qat, batch_size, num_epochs, cfg):
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}",
         "weights",
-        f'efficientdet-d0_00{num_epochs}.eff')
+        f'efficientdet-d0_00{num_epochs}.tlt')
     cfg.evaluate.batch_size = batch_size
     run_evaluate(cfg, ci_run=True)
     tf.keras.backend.clear_session()
@@ -94,14 +95,14 @@ def test_export(amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type,
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}",
         "weights",
-        f'efficientdet-d0_00{num_epochs}.eff')
+        f'efficientdet-d0_00{num_epochs}.tlt')
     cfg.export.max_batch_size = max_bs
     cfg.export.dynamic_batch_size = dynamic_bs
     cfg.export.output_path = os.path.join(
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}",
         "weights",
-        f'efficientdet-d0_00{num_epochs}.onnx')
+        f'efficientdet-d0_00{num_epochs}.etlt')
     cfg.export.cal_cache_file = os.path.join(
         TMP_MODEL_DIR,
         f"exp_b{batch_size}_ep{num_epochs}",
