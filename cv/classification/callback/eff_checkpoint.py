@@ -37,7 +37,7 @@ class EffCheckpoint(ModelCheckpoint):
                  options=None,
                  **kwargs):
         """Initialization with encryption key."""
-        super(EffCheckpoint, self).__init__(
+        super().__init__(
             eff_dir,
             monitor=monitor,
             verbose=verbose,
@@ -52,24 +52,23 @@ class EffCheckpoint(ModelCheckpoint):
         self.ckpt_freq = ckpt_freq
 
     def zipdir(self, src, zip_path) -> None:
-        """
-        Function creates zip archive from src in dst location. The name of archive is zip_name.
+        """Function creates zip archive from src in dst location. The name of archive is zip_name.
+
         :param src: Path to directory to be archived.
         :param dst: Path where archived dir will be stored.
         :param zip_name: The name of the archive.
         :return: None
         """
-        ### destination directory
+        # destination directory
         os.chdir(os.path.dirname(zip_path))
-        ### zipfile handler
+        # zipfile handler
         with ZipFile(zip_path, "w") as zf:
-            ### writing content of src directory to the archive
+            # writing content of src directory to the archive
             for root, _, filenames in os.walk(src):
                 for filename in filenames:
                     zf.write(
                         os.path.join(root, filename),
-                        arcname=os.path.join(root.replace(src, ""),
-                        filename))
+                        arcname=os.path.join(root.replace(src, ""), filename))
 
     def _save_eff(self, epoch, metadata={}):
         """Save EFF Archive."""
@@ -102,7 +101,7 @@ class EffCheckpoint(ModelCheckpoint):
 
         # pylint: disable=protected-access
         if self.save_freq == 'epoch' and self.epochs_since_last_save % self.ckpt_freq == 0:
-            self.filepath = tempfile.mkdtemp() # override filepath
+            self.filepath = tempfile.mkdtemp()  # override filepath
             self._save_model(epoch=epoch, batch=None, logs=logs)
             self._save_eff(epoch=epoch)
             self._remove_tmp_files()

@@ -2,7 +2,6 @@
 """Inference with classification tensorrt engine."""
 
 import os
-from functools import partial
 import logging
 
 import numpy as np
@@ -33,8 +32,8 @@ def run_inference(cfg):
     # initialize()
     predictions = []
     inferencer = TRTInferencer(cfg['infer']['model_path'], batch_size=1,
-                                data_format=cfg['data_format'],
-                                img_depth=cfg['model']['input_image_depth'])
+                               data_format=cfg['data_format'],
+                               img_depth=cfg['model']['input_image_depth'])
 
     for img_name in os.listdir(cfg['infer']['image_dir']):
         _, ext = os.path.splitext(img_name)
@@ -46,14 +45,16 @@ def run_inference(cfg):
             break
     print(predictions)
 
+
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
     config_name="infer", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
-    """Wrapper function for continuous training of classification application.
-    """
+    """Wrapper function for continuous training of classification application."""
     run_inference(cfg)
     logger.info("Inference finished successfully.")
 

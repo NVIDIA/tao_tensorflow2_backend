@@ -2,7 +2,7 @@
 
 """Default config file"""
 
-from typing import Optional, List, Dict
+from typing import List
 from dataclasses import dataclass, field
 from omegaconf import MISSING
 
@@ -14,6 +14,7 @@ class RegConfig:
     type: str = 'L2'
     scope: List[str] = field(default_factory=lambda: ['conv2d', 'dense'])
     weight_decay: float = 0.000015
+
 
 @dataclass
 class OptimConfig:
@@ -29,11 +30,12 @@ class OptimConfig:
     momentum: float = 0.99
     nesterov: bool = True
 
+
 @dataclass
 class LRConfig:
     """Learning rate config."""
 
-    scheduler: str = 'cosine' # soft_anneal, step
+    scheduler: str = 'cosine'  # soft_anneal, step
     learning_rate: float = 0.05
     soft_start: float = 0.05
     annealing_points: List[float] = field(default_factory=lambda: [0.33, 0.66, 0.88])
@@ -46,6 +48,7 @@ class LRConfig:
 @dataclass
 class TrainConfig:
     """Train config."""
+
     qat: bool = True
     train_dataset_path: str = MISSING
     val_dataset_path: str = MISSING
@@ -81,10 +84,10 @@ class ModelConfig:
     use_pooling: bool = True
     all_projections: bool = False
     freeze_bn: bool = False
-    freeze_blocks: List[int] = field(default_factory=lambda: []) # TODO
+    freeze_blocks: List[int] = field(default_factory=lambda: [])
     retain_head: bool = False
     dropout: float = 0.0
-    resize_interpolation_method: str = 'bilinear' # or 'bicubic'
+    resize_interpolation_method: str = 'bilinear'  # 'bicubic'
     byom_model: str = ''
 
 
@@ -107,7 +110,7 @@ class ExportConfig:
 
     model_path: str = ''
     output_path: str = ''
-    data_type: str = "fp32"
+    dtype: str = "fp32"
     engine_file: str = ""
     max_workspace_size: int = 2  # in Gb
     cal_image_dir: str = ""
@@ -127,11 +130,13 @@ class InferConfig:
 
     model_path: str = ''
     image_dir: str = ''
+    classmap: str = ''
+
 
 @dataclass
 class PruneConfig:
     """Pruning config."""
-    
+
     model_path: str = MISSING
     byom_model_path: str = MISSING
     normalizer: str = 'max'
@@ -142,6 +147,7 @@ class PruneConfig:
     min_num_filters: int = 16
     excluded_layers: List[str] = field(default_factory=lambda: [])
     verbose: bool = True
+
 
 @dataclass
 class ExperimentConfig:
@@ -156,4 +162,4 @@ class ExperimentConfig:
     results_dir: str = MISSING
     key: str = 'nvidia_tlt'
     init_epoch: int = 1
-    data_format: str = 'channels_last'
+    data_format: str = 'channels_first'

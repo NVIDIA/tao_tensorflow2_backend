@@ -5,13 +5,12 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from base64 import decode
 
 import logging
 
 from blocks.pruner import Pruner
 from common.utils import CUSTOM_OBJS
-from cv.classification.utils.helper import load_model, decode_tltb, decode_eff
+from cv.classification.utils.helper import decode_tltb, decode_eff
 from model_optimization.pruning.pruning import prune
 
 from tensorflow import keras
@@ -20,16 +19,15 @@ logger = logging.getLogger(__name__)
 
 
 class ClassificationPruner(Pruner):
-    
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    """Classification pruner class."""
 
     def _load_model(self):
+        """Load classification model."""
         self.model_path = decode_eff(self.model_path, self.key)
         if self.cfg.prune.byom_model_path:
             custom_objs = decode_tltb(self.cfg.prune.byom_model_path, self.key)['custom_objs']
             CUSTOM_OBJS.update(custom_objs)
-        
+
         # @scha: Although TF SavedModel can mostly train / eval
         # models with custom layer w/o the actual implementation,
         # pruning require layer configuration. Hence, better to
@@ -37,10 +35,11 @@ class ClassificationPruner(Pruner):
         self.model = keras.models.load_model(
             self.model_path, custom_objects=CUSTOM_OBJS
         )
-        self.excluded_layers = self.model.output_names
+        self.excluded_layers = ['predictions', 'predictions_dense']
         self.model.summary()
-    
+
     def _handle_byom_layers(self, excluded_layers):
+        """Handle BYOM custom layers."""
         byom_custom_layer = set()
         # For BYOM Models with custom layer
         for layer in self.model.layers:
@@ -58,12 +57,13 @@ class ClassificationPruner(Pruner):
         return byom_custom_layer, excluded_layers
 
     def prune(self, threshold, excluded_layers):
+        """Run pruning."""
         self._load_model()
         byom_custom_layer = None
         if self.cfg.prune.byom_model_path:
             logger.info("Loading BYOM information")
             byom_custom_layer, excluded_layers = self._handle_byom_layers(excluded_layers)
-        
+
         # Pruning trained model
         pruned_model = prune(
             model=self.model,
@@ -84,7 +84,7 @@ class ClassificationPruner(Pruner):
 
         pruning_ratio = pruned_model.count_params() / self.model.count_params()
         logger.info(
-            "Pruning ratio (pruned model / original model): {}".format(
+            "Pruning ratio (pruned model / original model): {}".format(  # noqa pylint: disable=C0209
                 pruning_ratio
             )
         )

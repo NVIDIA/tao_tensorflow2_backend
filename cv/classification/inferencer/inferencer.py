@@ -11,13 +11,16 @@ from cv.classification.utils.preprocess_input import preprocess_input
 
 class Inferencer(ABC):
     """Manages model inference."""
+
     @abstractmethod
     def __init__(self, model_path, input_shape=None, batch_size=None,
-                 img_mean=None, keep_aspect_ratio=False,img_depth=8):
+                 img_mean=None, keep_aspect_ratio=False, img_depth=8):
+        """Init."""
         pass
-    
+
     @abstractmethod
     def infer_single(self, img_path):
+        """Run inference on a single image."""
         pass
 
     def _load_img(self, img_path=None, img_alt=None):
@@ -38,11 +41,11 @@ class Inferencer(ABC):
         else:
             raise RuntimeError("image path is not defined.")
         orig_w, orig_h = img.size
-        ratio = min(self._img_width/float(orig_w), self._img_height/float(orig_h))
+        ratio = min(self._img_width / float(orig_w), self._img_height / float(orig_h))
 
         # do not change aspect ratio
-        new_w = int(round(orig_w*ratio))
-        new_h = int(round(orig_h*ratio))
+        new_w = int(round(orig_w * ratio))
+        new_h = int(round(orig_h * ratio))
 
         if self.keep_aspect_ratio:
             im = img.resize((new_w, new_h), Image.ANTIALIAS)
@@ -75,14 +78,14 @@ class Inferencer(ABC):
                     inference_input = inf_img - 30048.9216
                 else:
                     raise ValueError(
-                    f"Unsupported image depth: {self.img_depth}, should be 8 or 16, "
-                    "please check `model_config.input_image_depth` in spec file"
-                )
+                        f"Unsupported image depth: {self.img_depth}, should be 8 or 16, "
+                        "please check `model.input_image_depth` in spec file")
             else:
                 inference_input = inf_img - self.img_mean[0]
 
         else:
             inference_input = preprocess_input(inf_img,
-                                               img_mean=self.img_mean)
-
-        return img, float(orig_w)/new_w, inference_input
+                                               data_format='channels_first',
+                                               img_mean=self.img_mean,
+                                               mode=self.preprocess_mode)
+        return img, float(orig_w) / new_w, inference_input

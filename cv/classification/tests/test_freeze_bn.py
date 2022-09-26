@@ -64,10 +64,10 @@ def test_freeze_bn(freeze_bn):
 def check_freeze_bn(model):
     """Check if the BN layers in a model is frozen or not."""
     bn_weights = []
-    for l in model.layers:
-        if type(l) == BatchNormalization:
+    for layer in model.layers:
+        if type(layer) == BatchNormalization:
             # only check for moving mean and moving variance
-            bn_weights.append(l.get_weights()[2:])
+            bn_weights.append(layer.get_weights()[2:])
     rand_input = np.random.random((1, 3, 224, 224))
     # do training several times
     out_shape = model.outputs[0].get_shape()[1:]
@@ -81,10 +81,10 @@ def check_freeze_bn(model):
     model.predict(rand_input)
     # finally, check BN weights
     new_bn_weights = []
-    for l in model.layers:
-        if type(l) == BatchNormalization:
+    for layer in model.layers:
+        if type(layer) == BatchNormalization:
             # only check for moving mean and moving variance
-            new_bn_weights.append(l.get_weights()[2:])
+            new_bn_weights.append(layer.get_weights()[2:])
     # check the bn weights
     for old_w, new_w in zip(bn_weights, new_bn_weights):
         if not np.array_equal(old_w, new_w):
