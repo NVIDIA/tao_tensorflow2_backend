@@ -9,16 +9,12 @@ from functools import partial
 import logging
 import json
 import sys
-import zipfile
 
 import numpy as np
 from PIL import ImageFile
 from sklearn.metrics import classification_report, confusion_matrix
 from tensorflow import keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-import tensorflow as tf
-
-from eff.core import Archive
 
 from common.hydra.hydra_runner import hydra_runner
 
@@ -69,9 +65,9 @@ def run_evaluate(cfg):
     assert image_depth in [8, 16], "Only 8-bit and 16-bit images are supported"
 
     assert nchannels in [1, 3], (
-        "Unsupported channel count {} for evaluation".format(nchannels)
+        f"Unsupported channel count {nchannels} for evaluation"
     )
-    logger.info(f'input req HWC and depth: {image_height}, {image_width}, {nchannels}, {image_depth}')
+    logger.debug('input req HWC and depth: %s, %s, %s, %s', image_height, image_width, nchannels, image_depth)
     color_mode = "rgb"
     if nchannels == 1:
         color_mode = "grayscale"
@@ -90,13 +86,13 @@ def run_evaluate(cfg):
         horizontal_flip=False,
         data_format=cfg['data_format'])
 
-    if cfg['eval_config']['classmap']:
+    if cfg['evaluate']['classmap']:
         # If classmap is provided, then we explicitly set it in ImageDataGenerator
-        with open(cfg['eval_config']['classmap'], "r") as cmap_file:
+        with open(cfg['evaluate']['classmap'], "r", encoding='utf-8') as cmap_file:
             try:
                 data = json.load(cmap_file)
             except json.decoder.JSONDecodeError as e:
-                print(f"Loading the {cfg['eval_config']['classmap']} failed with error\n{e}")
+                print(f"Loading the {cfg['evaluate']['classmap']} failed with error\n{e}")
                 sys.exit(-1)
             except Exception as e:
                 if e.output is not None:
@@ -106,8 +102,7 @@ def run_evaluate(cfg):
             class_names = None
         else:
             class_names = [""] * len(list(data.keys()))
-            if not all([class_index < len(class_names)
-                        and isinstance(class_index, int)
+            if not all([class_index < len(class_names) and isinstance(class_index, int) # noqa pylint: disable=R1729
                         for class_index in data.values()]):
                 raise RuntimeError(
                     "Invalid data in the json file. The class index must "
@@ -115,7 +110,7 @@ def run_evaluate(cfg):
             for class_name, class_index in data.items():
                 class_names[class_index] = class_name
 
-        print("Class name = {}".format(class_names))
+        print(f"Class name = {class_names}")
     else:
         class_names = None
 
@@ -128,8 +123,8 @@ def run_evaluate(cfg):
         class_mode='categorical',
         interpolation=interpolation,
         shuffle=False)
-    # target_dataset = tf.data.Dataset.from_generator(target_iterator)
-    logger.info('Processing dataset (evaluation): {}'.format(cfg['evaluate']['eval_dataset_path']))
+
+    logger.info('Processing dataset (evaluation): {}'.format(cfg['evaluate']['eval_dataset_path']))  # noqa pylint: disable=C0209
     nclasses = target_iterator.num_classes
     assert nclasses > 1, "Invalid number of classes in the evaluation dataset."
 
@@ -144,8 +139,8 @@ def run_evaluate(cfg):
                                  workers=cfg['evaluate']['n_workers'],
                                  use_multiprocessing=False)
 
-    print('Evaluation Loss: {}'.format(score[0]))
-    print('Evaluation Top K accuracy: {}'.format(score[1]))
+    print(f'Evaluation Loss: {score[0]}')
+    print(f'Evaluation Top K accuracy: {score[1]}')
     # Re-initializing data iterator
     target_iterator = target_datagen.flow_from_directory(
         cfg['evaluate']['eval_dataset_path'],
@@ -162,20 +157,22 @@ def run_evaluate(cfg):
     print(confusion_matrix(target_iterator.classes, y_pred))
     print('Classification Report')
     class_dict = target_iterator.class_indices
-    target_names = [c[0] for c in sorted(class_dict.items(), key=lambda x:x[1])]
-    print(classification_report(target_iterator.classes, y_pred, target_names=target_names))
+    target_keys_names = list(sorted(class_dict.items(), key=lambda x: x[1]))
+    target_keys_names = list(zip(*target_keys_names))
+    print(classification_report(target_iterator.classes, y_pred, labels=target_keys_names[1], target_names=target_keys_names[0]))
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
     config_name="eval", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
-    """Wrapper function for continuous training of classification application.
-    """
+    """Wrapper function for continuous training of classification application."""
     run_evaluate(cfg)
-    logger.info("Evaluating finished successfully.")
+    logger.info("Evaluation finished successfully.")
 
 
 if __name__ == '__main__':

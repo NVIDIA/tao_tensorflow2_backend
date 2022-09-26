@@ -19,8 +19,6 @@ from tensorflow.keras.callbacks import CSVLogger, TensorBoard
 from PIL import Image, ImageFile
 
 import horovod.tensorflow.keras as hvd
-# Horovod: initialize Horovod.
-hvd.init()
 
 from common.hydra.hydra_runner import hydra_runner
 
@@ -40,6 +38,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 Image.MAX_IMAGE_PIXELS = 9000000000
 logger = logging.getLogger(__name__)
 verbose = 0
+# Horovod: initialize Horovod.
+hvd.init()
 
 
 def setup_callbacks(ckpt_freq, results_dir, lr_config,
@@ -58,7 +58,7 @@ def setup_callbacks(ckpt_freq, results_dir, lr_config,
         callbacks (list of keras.callbacks): list of callbacks.
     """
     callbacks = [hvd.callbacks.BroadcastGlobalVariablesCallback(0),
-                hvd.callbacks.MetricAverageCallback()]
+                 hvd.callbacks.MetricAverageCallback()]
     max_iterations = iters_per_epoch * max_epoch
     lrscheduler = build_lr_scheduler(lr_config, hvd.size(), max_iterations)
     init_step = (init_epoch - 1) * iters_per_epoch
@@ -154,7 +154,7 @@ def load_data(train_data, val_data, preprocessing_func,
         interpolation=interpolation + ':random' if enable_random_crop else interpolation,
         alpha=mixup_alpha
     )
-    logger.info('Processing dataset (train): {}'.format(train_data))
+    print(f'Processing dataset (train): {train_data}')
 
     # Initializing data generator: Val
     val_datagen = ImageDataGenerator(
@@ -171,7 +171,7 @@ def load_data(train_data, val_data, preprocessing_func,
         interpolation=interpolation + ':center' if enable_center_crop else interpolation,
         shuffle=False,
         class_mode='categorical')
-    logger.info(f'Processing dataset (validation): {val_data}')
+    print(f'Processing dataset (validation): {val_data}')
 
     # Check if the number of classes is > 1
     assert train_iterator.num_classes > 1, \
@@ -211,9 +211,7 @@ def run_experiment(cfg, results_dir=None,
         level='DEBUG' if verbosity else 'INFO')
 
     # Set random seed.
-    logger.debug("Random seed is set to {}".format(cfg['train']['random_seed']))
-    
-    # initialize()
+    logger.debug("Random seed is set to {}".format(cfg['train']['random_seed']))  # noqa pylint: disable=C0209
 
     nchannels, image_height, image_width = cfg['model']['input_image_size']
     image_depth = cfg['model']['input_image_depth']
@@ -249,18 +247,18 @@ def run_experiment(cfg, results_dir=None,
 
     # @scha: For BYOM model loading
     if cfg['model']['arch'] in ["byom"] and cfg['model']['byom_model'] == '':
-        raise ValueError('{} requires .tltb file to be processed by TAO'.format(cfg['model']['arch']))
+        raise ValueError('{} requires .tltb file to be processed by TAO'.format(cfg['model']['arch']))  # noqa pylint: disable=C0209
 
     ka = dict(
         nlayers=cfg['model']['n_layers'],
         use_batch_norm=cfg['model']['use_batch_norm'],
         use_pooling=cfg['model']['use_pooling'],
         freeze_bn=cfg['model']['freeze_bn'],
-        use_bias = cfg['model']['use_bias'],
+        use_bias=cfg['model']['use_bias'],
         all_projections=cfg['model']['all_projections'],
         dropout=cfg['model']['dropout'],
-        model_config_path = cfg['model']['byom_model'],
-        passphrase = cfg['key']
+        model_config_path=cfg['model']['byom_model'],
+        passphrase=cfg['key']
     )
     input_shape = (nchannels, image_height, image_width) \
         if cfg['data_format'] == 'channels_first' else (image_height, image_width, nchannels)
@@ -289,7 +287,7 @@ def run_experiment(cfg, results_dir=None,
         bn_config=bn_config,
         custom_objs=custom_objs
     )
-    
+
     if cfg['train']['pretrained_model_path']:
         # Decrypt and load pretrained model
         pretrained_model = load_model(
@@ -316,9 +314,9 @@ def run_experiment(cfg, results_dir=None,
                         reg_config,
                         bn_config=bn_config
                     )
-    if cfg['train_config']['qat']:
+    if cfg['train']['qat']:
         qdq_cases = [EfficientNetQDQCase()] \
-            if 'efficientnet' in cfg['model_config']['arch'] else [ResNetV1QDQCase()]
+            if 'efficientnet' in cfg['model']['arch'] else [ResNetV1QDQCase()]
         final_model = quantize_model(final_model, custom_qdq_cases=qdq_cases)
 
     # Printing model summary
@@ -366,7 +364,7 @@ def run_experiment(cfg, results_dir=None,
         verbose=verbose,
         workers=cfg['train']['n_workers'],
         validation_data=val_iterator,
-        validation_steps=len(val_iterator), # // hvd.size(),
+        validation_steps=len(val_iterator),  # // hvd.size(),
         validation_freq=cfg['train']['checkpoint_freq'],
         callbacks=callbacks,
         initial_epoch=init_epoch - 1)
@@ -375,13 +373,14 @@ def run_experiment(cfg, results_dir=None,
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
     config_name="train", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
-    """Wrapper function for continuous training of classification application.
-    """
+    """Wrapper function for continuous training of classification application."""
     run_experiment(cfg=cfg,
                    results_dir=cfg.results_dir,
                    key=cfg.key,

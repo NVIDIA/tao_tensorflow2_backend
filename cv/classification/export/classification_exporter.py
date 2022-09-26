@@ -30,7 +30,6 @@ class Exporter:
 
     def __init__(self,
                  config=None,
-                 classmap_file=None,
                  min_batch_size=1,
                  opt_batch_size=4,
                  max_batch_size=8,
@@ -48,9 +47,9 @@ class Exporter:
         elif config.export.dtype == "fp32":
             self._dtype = trt.DataType.FLOAT
         else:
-            raise ValueError("Unsupported data type: %s" % self._dtype)
-        
-        if config.train_config.qat and config.export_config.data_type != "int8":
+            raise ValueError(f"Unsupported data type: {self._dtype}")
+
+        if config.train.qat and config.export.dtype != "int8":
             raise ValueError("QAT only supports int8 export")
         self.backend = "onnx"
         self.input_shape = None
@@ -58,7 +57,7 @@ class Exporter:
         self.min_batch_size = min_batch_size
         self.opt_batch_size = opt_batch_size
 
-        if not self.config.key: # TODO(@yuw): for internal usage only
+        if not self.config.key:  # TODO(@yuw): for internal usage only
             self._saved_model = self.config.export.model_path
         else:
             self._saved_model = decode_eff(
@@ -66,13 +65,13 @@ class Exporter:
                 self.config.key)
         _handle, self.tmp_onnx = tempfile.mkstemp(suffix='onnx')
         os.close(_handle)
-    
+
     def _set_input_shape(self):
         model = tf.keras.models.load_model(self._saved_model, custom_objects=None)
         self.input_shape = tuple(model.layers[0].input_shape[0][1:4])
 
     def export_onnx(self) -> None:
-        """ Convert Keras saved model into ONNX format.
+        """Convert Keras saved model into ONNX format.
 
         Args:
             root_dir: root directory containing the quantized Keras saved model. This is the same directory where the ONNX
@@ -81,7 +80,7 @@ class Exporter:
             onnx_filename: desired name to save the converted ONNX file.
         """
         # 1. Let TensorRT optimize QDQ nodes instead of TF
-        from tf2onnx.optimizer import _optimizers
+        from tf2onnx.optimizer import _optimizers  # noqa pylint: disable=C0415
         updated_optimizers = copy.deepcopy(_optimizers)
         del updated_optimizers["q_dq_optimizer"]
         del updated_optimizers["const_dequantize_optimizer"]
@@ -111,8 +110,7 @@ class Exporter:
         encode_etlt(self.tmp_onnx, self.config.export.output_path, "", self.config.key)
 
     def export_engine(self, verbose=True) -> None:
-        """Parse the model file through TensorRT and build TRT engine
-        """
+        """Parse the model file through TensorRT and build TRT engine."""
         # Create builder and network
         if verbose:
             TRT_LOGGER = trt.Logger(trt.Logger.VERBOSE)
@@ -121,7 +119,7 @@ class Exporter:
 
         network_flags = 1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
         network_flags = network_flags | (
-                1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_PRECISION)
+            1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_PRECISION)
         )
 
         with trt.Builder(TRT_LOGGER) as builder, builder.create_network(
@@ -133,8 +131,7 @@ class Exporter:
                     for error in range(parser.num_errors):
                         print(parser.get_error(error))
                     return None
-                else:
-                    print("Parsed ONNX model successfully")
+                print("Parsed ONNX model successfully")
 
             config = builder.create_builder_config()
             config.max_workspace_size = 1 << 30
@@ -170,6 +167,7 @@ class Exporter:
                 engine_path = self.config.export.output_path + f'.{self.config.export.dtype}.engine'
                 with open(engine_path, "wb") as engine_file:
                     engine_file.write(trt_engine.serialize())
+            return None
 
     def _del(self):
         """Remove temp files."""
@@ -178,23 +176,18 @@ class Exporter:
     def export(self):
         """Export to EFF and TensorRT engine."""
         self._set_input_shape()
-        # TODO(@yuw): encrypt with EFF
         self.export_onnx()
-        logger.info(f"The etlt model is saved at {self.config.export.output_path}")
+        logger.info("The etlt model is saved at %s", self.config.export.output_path)
         # INTERNAL only: self.export_engine()
         self._del()
-        logger.info("Export finished successfully.")
 
     def _build_profile(self, builder, network, profile_shapes, default_shape_value=1):
-        """
-        Build optimization profile for the builder and configure the min, opt, max shapes appropriately.
-        """
-
+        """Build optimization profile for the builder and configure the min, opt, max shapes appropriately."""
         def is_dimension_dynamic(dim):
             return dim is None or dim <= 0
 
         def override_shape(shape):
-            return tuple([1 if is_dimension_dynamic(dim) else dim for dim in shape])
+            return (1 if is_dimension_dynamic(dim) else dim for dim in shape)
 
         profile = builder.create_optimization_profile()
         for idx in range(network.num_inputs):
@@ -211,11 +204,7 @@ class Exporter:
                     return None
                 shapes = profile_shapes[profile_name]
                 if not isinstance(shapes, list) or len(shapes) != 3:
-                    logger.critical(
-                        "Profile values must be a list containing exactly 3 shapes (tuples or Dims), but received shapes: {:} for input: {:}.\nNote: profile was: {:}.\nNote: Network inputs were: {:}".format(
-                            shapes, name, profile_shapes, shapes,
-                        )
-                    )
+                    logger.critical("Profile values must be a list containing exactly 3 shapes (tuples or Dims)")
                 return shapes
 
             if inp.is_shape_tensor:
@@ -224,14 +213,14 @@ class Exporter:
                     rank = inp.shape[0]
                     shapes = [(default_shape_value,) * rank] * 3
                     print(
-                        "Setting shape input to {:}. If this is incorrect, for shape input: {:}, please provide tuples for min, opt, and max shapes containing {:} elements".format(
+                        "Setting shape input to {:}. If this is incorrect, for shape input: {:}, please provide tuples for min, opt, and max shapes containing {:} elements".format(  # noqa pylint: disable=C0209
                             shapes[0], inp.name, rank
                         )
                     )
-                min, opt, max = shapes
+                min, opt, max = shapes   # noqa pylint: disable=W0622
                 profile.set_shape_input(inp.name, min, opt, max)
                 print(
-                    "Setting shape input: {:} values to min: {:}, opt: {:}, max: {:}".format(
+                    "Setting shape input: {:} values to min: {:}, opt: {:}, max: {:}".format(  # noqa pylint: disable=C0209
                         inp.name, min, opt, max
                     )
                 )
@@ -240,20 +229,20 @@ class Exporter:
                 if not shapes:
                     shapes = [override_shape(inp.shape)] * 3
                     print(
-                        "Overriding dynamic input shape {:} to {:}. If this is incorrect, for input tensor: {:}, please provide tuples for min, opt, and max shapes containing values: {:} with dynamic dimensions replaced,".format(
+                        "Overriding dynamic input shape {:} to {:}. If this is incorrect, for input tensor: {:}, please provide tuples for min, opt, and max shapes containing values: {:} with dynamic dimensions replaced,".format(  # noqa pylint: disable=C0209
                             inp.shape, shapes[0], inp.name, inp.shape
                         )
                     )
                 min, opt, max = shapes
                 profile.set_shape(inp.name, min, opt, max)
                 print(
-                    "Setting input: {:} shape to min: {:}, opt: {:}, max: {:}".format(
+                    "Setting input: {:} shape to min: {:}, opt: {:}, max: {:}".format(  # noqa pylint: disable=C0209
                         inp.name, min, opt, max
                     )
                 )
         if not profile:
             print(
-                "Profile is not valid, please provide profile data. Note: profile was: {:}".format(
+                "Profile is not valid, please provide profile data. Note: profile was: {:}".format(  # noqa pylint: disable=C0209
                     profile_shapes
                 )
             )

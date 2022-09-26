@@ -15,7 +15,8 @@ class TRTInferencer(Inferencer):
     """Manages TensorRT objects for model inference."""
 
     def __init__(self, model_path, input_shape=None, batch_size=None,
-                 img_mean=None, keep_aspect_ratio=False, data_format='channel_first',img_depth=8):
+                 img_mean=None, keep_aspect_ratio=False,
+                 data_format='channel_first', img_depth=8):
         """Initializes TensorRT objects needed for model inference.
 
         Args:
@@ -25,7 +26,6 @@ class TRTInferencer(Inferencer):
             img_depth (int): depth of images, only support 8-bit or 16-bit
             data_format (str): 'channel_first' or 'channel_last'
         """
-
         # We first load all custom plugins shipped with TensorRT,
         # some of them will be needed during inference
         trt.init_libnvinfer_plugins(TRT_LOGGER, '')
@@ -39,7 +39,7 @@ class TRTInferencer(Inferencer):
         self.context = self.trt_engine.create_execution_context()
 
         def override_shape(shape, batch_size):
-            return tuple([batch_size if dim == TRT_DYNAMIC_DIM else dim for dim in shape])
+            return (batch_size if dim == TRT_DYNAMIC_DIM else dim for dim in shape)
 
         # Allocate memory for multiple usage [e.g. multiple batch inference]
         # Resolve dynamic shapes in the context
@@ -55,11 +55,11 @@ class TRTInferencer(Inferencer):
                 self.context.set_binding_shape(binding_idx, shape)
                 self._input_shape = shape
                 if data_format == "channels_first":
-                    self._img_height, self._img_width = self._input_shape[2:4] 
-                    self._nchannels =  self._input_shape[1] 
+                    self._img_height, self._img_width = self._input_shape[2:4]
+                    self._nchannels = self._input_shape[1]
                 else:
                     self._img_height, self._img_width = self._input_shape[1:3]
-                    self._nchannels = self._input_shape[3] 
+                    self._nchannels = self._input_shape[3]
                 self.model_img_mode = 'RGB' if self._nchannels == 3 else 'L'
 
         assert self._input_shape, "Input shape not detected."
@@ -76,9 +76,9 @@ class TRTInferencer(Inferencer):
         self.img_mean = img_mean
         self.keep_aspect_ratio = keep_aspect_ratio
         self.model_img_mode = 'RGB' if self._nchannels == 3 else 'L'
-        self.img_depth = img_depth  
+        self.img_depth = img_depth
         assert self.img_depth in [8, 16], "Only 8-bit and 16-bit images are supported"
-        
+
     def clear_buffers(self):
         """Simple function to free input, output buffers allocated earlier.
 
@@ -123,9 +123,9 @@ class TRTInferencer(Inferencer):
         """Infers model on batch of same sized images resized to fit the model.
 
         Args:
-            img_path (str):  path to a single image file 
+            img_path (str):  path to a single image file
         """
-        # load image 
+        # load image
         _, _, infer_input = self._load_img(img_path)
         infer_input = infer_input.transpose(2, 0, 1)
         imgs = infer_input[None, ...]
@@ -133,8 +133,8 @@ class TRTInferencer(Inferencer):
         max_batch_size = self.max_batch_size
         actual_batch_size = len(imgs)
         if actual_batch_size > max_batch_size:
-            raise ValueError("image_paths list bigger ({}) than \
-                engine max batch size ({})".format(actual_batch_size, max_batch_size))
+            raise ValueError(
+                f"image_paths list bigger ({actual_batch_size}) than engine max batch size ({max_batch_size})")
         self.numpy_array[:actual_batch_size] = imgs.reshape(actual_batch_size, -1)
         print(self.numpy_array.shape)
         # ...copy them into appropriate place into memory...
@@ -153,7 +153,5 @@ class TRTInferencer(Inferencer):
 
     def __del__(self):
         """Clear things up on object deletion."""
-
-        # Clear session and buffer
         self.clear_trt_session()
         self.clear_buffers()

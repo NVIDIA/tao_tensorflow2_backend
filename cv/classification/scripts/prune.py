@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 def run_pruning(cfg):
     """Prune an encrypted Keras model."""
-
     assert cfg.prune.equalization_criterion in \
         ['arithmetic_mean', 'geometric_mean', 'union', 'intersection'], \
         "Equalization criterion are [arithmetic_mean, geometric_mean, union, \
@@ -45,13 +44,14 @@ def run_pruning(cfg):
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
     config_name="prune", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
-    """Wrapper function for EfficientDet pruning.
-    """
+    """Wrapper function for classification pruning."""
     run_pruning(cfg=cfg)
 
 

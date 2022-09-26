@@ -57,7 +57,6 @@ def initialize():
 
 def build_optimizer(optimizer_config):
     """build optimizer with the optimizer config."""
-
     if optimizer_config.optimizer == "sgd":
         return opt_dict["sgd"](
             learning_rate=optimizer_config.lr,
@@ -80,7 +79,7 @@ def build_optimizer(optimizer_config):
             epsilon=optimizer_config.epsilon,
             decay=optimizer_config.decay
         )
-    raise ValueError("Unsupported Optimizer: {}".format(optimizer_config.optimizer))
+    raise ValueError(f"Unsupported Optimizer: {optimizer_config.optimizer}")
 
 
 def build_lr_scheduler(lr_config, hvd_size, max_iterations):
@@ -111,8 +110,7 @@ def build_lr_scheduler(lr_config, hvd_size, max_iterations):
         )
     else:
         raise ValueError(
-            f"Only `step`, `cosine` and `soft_anneal` ",
-            "LR scheduler are supported, but {lr_config.scheduler} is specified."
+            f"Only `step`, `cosine` and `soft_anneal`. LR scheduler are supported, but {lr_config.scheduler} is specified."
         )
     return lrscheduler
 
@@ -133,13 +131,12 @@ def get_input_shape(model):
 @njit
 def randu(low, high):
     """standard uniform distribution."""
-    return np.random.random()*(high-low) + low
+    return np.random.random() * (high - low) + low
 
 
 @jit
 def random_hue(img, max_delta=10.0):
-    """
-    Rotates the hue channel.
+    """Rotates the hue channel.
 
     Args:
         img: input image in float32
@@ -165,15 +162,14 @@ def random_saturation(img, max_shift):
     hsv = cv2.cvtColor(img.astype(np.float32), cv2.COLOR_BGR2HSV)
     shift = randu(-max_shift, max_shift)
     # saturation should always be within [0,1.0]
-    hsv[:, :, 1] = np.clip(hsv[:, :, 1]+shift, 0.0, 1.0)
+    hsv[:, :, 1] = np.clip(hsv[:, :, 1] + shift, 0.0, 1.0)
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
 
 @jit
 def random_contrast(img, center, max_contrast_scale):
     """random contrast data augmentation."""
-    new_img = (img-center)*(1.0 + randu(-max_contrast_scale, max_contrast_scale)) \
-        + center
+    new_img = (img - center) * (1.0 + randu(-max_contrast_scale, max_contrast_scale)) + center
     new_img = np.clip(new_img, 0., 1.)
     return new_img
 
@@ -181,7 +177,7 @@ def random_contrast(img, center, max_contrast_scale):
 @jit
 def random_shift(x_img, shift_stddev):
     """random shift data augmentation."""
-    shift = np.random.randn()*shift_stddev
+    shift = np.random.randn() * shift_stddev
     new_img = np.clip(x_img + shift, 0.0, 1.0)
 
     return new_img
@@ -224,7 +220,6 @@ def setup_config(model, reg_config, bn_config=None, custom_objs=None):
     Return:
         A new model with overridden config.
     """
-
     if bn_config is not None:
         bn_momentum = bn_config['momentum']
         bn_epsilon = bn_config['epsilon']
@@ -257,7 +252,7 @@ def setup_config(model, reg_config, bn_config=None, custom_objs=None):
                     assert 0 < reg_config['weight_decay'] < 1, \
                         "Weight decay should be no less than 0 and less than 1"
                     regularizer = regularizer_dict[reg_type](
-                                        reg_config['weight_decay'])
+                        reg_config['weight_decay'])
                     layer_config['config']['kernel_regularizer'] = \
                         {'class_name': regularizer.__class__.__name__,
                          'config': regularizer.get_config()}
@@ -294,7 +289,7 @@ def decode_eff(eff_model_path, passphrase=None):
     zip_path = eff_art.get_handle()
     # Unzip
     saved_model_path = os.path.dirname(zip_path)
-    # TODO(@yuw): try catch? 
+    # TODO(@yuw): try catch
     with zipfile.ZipFile(zip_path, "r") as zip_file:
         zip_file.extractall(saved_model_path)
     return saved_model_path
@@ -339,7 +334,7 @@ def decode_tltb(eff_path, passphrase=None):
         EFF_CUSTOM_OBJS = deserialize_custom_layers(restored_effa.artifacts['custom_layers.py'])
         model_name = restored_effa.metadata['model_name']
 
-        art = restored_effa.artifacts['{}.hdf5'.format(model_name)]
+        art = restored_effa.artifacts[f'{model_name}.hdf5']
         weights, m = art.get_content()
 
     m = json.loads(m)
@@ -365,7 +360,7 @@ def load_model(model_path, passphrase=None):
     Returns:
         Keras model: Loaded model
     """
-    assert os.path.exists(model_path), "Pretrained model not found at {}".format(model_path)
+    assert os.path.exists(model_path), f"Pretrained model not found at {model_path}"
     assert os.path.splitext(model_path)[-1] in ['.hdf5', '.tlt', '.tltb'], \
         "Only .hdf5, .tlt, .tltb are supported."
     if model_path.endswith('.tlt'):
@@ -375,11 +370,12 @@ def load_model(model_path, passphrase=None):
         out_dict = decode_tltb(model_path, passphrase)
         model = out_dict['model']
         return model
+    return tf.keras.models.load_model(model_path, custom_objects=CUSTOM_OBJS)
 
 
 def zipdir(src, zip_path):
     """Function creates zip archive from src in dst location.
-    
+
     Args:
         src: Path to directory to be archived.
         dst: Path where archived dir will be stored.
@@ -388,13 +384,12 @@ def zipdir(src, zip_path):
     os.chdir(os.path.dirname(zip_path))
     # zipfile handler
     with zipfile.ZipFile(zip_path, "w") as zf:
-        ### writing content of src directory to the archive
+        # writing content of src directory to the archive
         for root, _, filenames in os.walk(src):
             for filename in filenames:
                 zf.write(
                     os.path.join(root, filename),
-                    arcname=os.path.join(root.replace(src, ""),
-                    filename))
+                    arcname=os.path.join(root.replace(src, ""), filename))
 
 
 def encode_eff(filepath, eff_model_path, passphrase):

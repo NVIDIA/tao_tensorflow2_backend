@@ -66,7 +66,6 @@ class MixupImageDataGenerator():
         Returns:
             tuple -- batch of input/output pair, (inputs, outputs).
         """
-
         if self.batch_index == 0:
             self.reset_index()
 
@@ -100,6 +99,7 @@ class MixupImageDataGenerator():
         return self
 
     def next(self):
+        """Next item."""
         while True:
             return next(self)
 

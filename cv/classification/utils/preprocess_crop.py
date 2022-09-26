@@ -47,7 +47,6 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
         ImportError: if PIL is not available.
         ValueError: if interpolation method is not supported.
     """
-
     # Decode interpolation string. Allowed Crop methods: none, center, random
     interpolation, crop = interpolation.split(":") \
         if ":" in interpolation else (interpolation, "none")
@@ -76,11 +75,11 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
         if img.size != (target_width, target_height):
 
             if crop not in ["center", "random"]:
-                raise ValueError('Invalid crop method %s specified.' % crop)
+                raise ValueError(f'Invalid crop method {crop} specified.')
 
             if interpolation not in keras_preprocessing.image.utils._PIL_INTERPOLATION_METHODS:
                 raise ValueError(
-                    'Invalid interpolation method {} specified. Supported '
+                    'Invalid interpolation method {} specified. Supported '  # noqa pylint: disable=C0209
                     'methods are {}'.format(
                         interpolation,
                         ", ".join(
@@ -122,8 +121,8 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
             width, height = img.size
 
             if crop == "center":
-                left_corner = int(round(width/2)) - int(round(target_width/2))
-                top_corner = int(round(height/2)) - int(round(target_height/2))
+                left_corner = int(round(width / 2)) - int(round(target_width / 2))
+                top_corner = int(round(height / 2)) - int(round(target_height / 2))
                 return img.crop(
                     (left_corner,
                      top_corner,

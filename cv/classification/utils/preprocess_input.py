@@ -31,7 +31,7 @@ def get_submodules_from_kwargs(kwargs):
     utils = kwargs.get('utils', _KERAS_UTILS)
     for key in list(kwargs.keys()):
         if key not in ['backend', 'layers', 'models', 'utils']:
-            raise TypeError('Invalid keyword argument: {}'.format(key))
+            raise TypeError(f'Invalid keyword argument: {key}')
     return backend, layers, models, utils
 
 
@@ -55,10 +55,10 @@ def _preprocess_numpy_input(x, data_format, mode, color_mode, img_mean, img_dept
     # Returns
         Preprocessed Numpy array.
     """
-    assert img_depth in [8,16] , (
-                f"Unsupported image depth: {img_depth}, should be 8 or 16, "
-                "please check `model_config.input_image_depth` in spec file"
-            )
+    assert img_depth in [8, 16], (
+        f"Unsupported image depth: {img_depth}, should be 8 or 16, "
+        "please check `model.input_image_depth` in spec file"
+    )
     backend, _, _, _ = get_submodules_from_kwargs(kwargs)
     if not issubclass(x.dtype.type, np.floating):
         x = x.astype(backend.floatx(), copy=False)
@@ -84,7 +84,7 @@ def _preprocess_numpy_input(x, data_format, mode, color_mode, img_mean, img_dept
         if color_mode == "rgb":
             assert img_depth == 8, (
                 f"RGB images only support 8-bit depth, got {img_depth}, "
-                "please check `model_config.input_image_depth` in spec file"
+                "please check `model.input_image_depth` in spec file"
             )
             mean = [0.485, 0.456, 0.406]
             std = [0.224, 0.224, 0.224]
@@ -92,12 +92,12 @@ def _preprocess_numpy_input(x, data_format, mode, color_mode, img_mean, img_dept
             mean = [0.449]
             std = [0.224]
         else:
-            raise NotImplementedError("Invalid color mode: {}".format(color_mode))
+            raise NotImplementedError(f"Invalid color mode: {color_mode}")
     else:
         if color_mode == "rgb":
-            assert img_depth == 8 , (
+            assert img_depth == 8, (
                 f"RGB images only support 8-bit depth, got {img_depth}, "
-                "please check `model_config.input_image_depth` in spec file"
+                "please check `model.input_image_depth` in spec file"
             )
             if data_format == 'channels_first':
                 # 'RGB'->'BGR'
@@ -168,10 +168,10 @@ def _preprocess_symbolic_input(x, data_format, mode, color_mode, img_mean, img_d
         Preprocessed tensor.
     """
     global _IMAGENET_MEAN  # noqa pylint: disable=global-statement
-    assert img_depth in [8,16] , (
-                f"Unsupported image depth: {img_depth}, should be 8 or 16, "
-                "please check `model_config.input_image_depth` in spec file"
-            )
+    assert img_depth in [8, 16], (
+        f"Unsupported image depth: {img_depth}, should be 8 or 16, "
+        "please check `model.input_image_depth` in spec file"
+    )
     backend, _, _, _ = get_submodules_from_kwargs(kwargs)
     if mode == 'tf':
         if img_mean and len(img_mean) > 0:
@@ -193,7 +193,7 @@ def _preprocess_symbolic_input(x, data_format, mode, color_mode, img_mean, img_d
         if color_mode == "rgb":
             assert img_depth == 8, (
                 f"RGB images only support 8-bit depth, got {img_depth}, "
-                "please check `model_config.input_image_depth` in spec file"
+                "please check `model.input_image_depth` in spec file"
             )
             mean = [0.485, 0.456, 0.406]
             std = [0.224, 0.224, 0.224]
@@ -201,12 +201,12 @@ def _preprocess_symbolic_input(x, data_format, mode, color_mode, img_mean, img_d
             mean = [0.449]
             std = [0.224]
         else:
-            raise NotImplementedError("Invalid color mode: {}".format(color_mode))
+            raise NotImplementedError(f"Invalid color mode: {color_mode}")
     else:
         if color_mode == "rgb":
-            assert img_depth == 8 , (
+            assert img_depth == 8, (
                 f"RGB images only support 8-bit depth, got {img_depth}, "
-                "please check `model_config.input_image_depth` in spec file"
+                "please check `model.input_image_depth` in spec file"
             )
             if data_format == 'channels_first':
                 # 'RGB'->'BGR'
@@ -252,7 +252,7 @@ def _preprocess_symbolic_input(x, data_format, mode, color_mode, img_mean, img_d
     return x
 
 
-def preprocess_input(x, data_format=None, mode='caffe', color_mode="rgb", img_mean=None,img_depth=8, **kwargs):
+def preprocess_input(x, data_format=None, mode='caffe', color_mode="rgb", img_mean=None, img_depth=8, **kwargs):
     """Preprocesses a tensor or Numpy array encoding a batch of images.
 
     # Arguments
@@ -288,7 +288,8 @@ def preprocess_input(x, data_format=None, mode='caffe', color_mode="rgb", img_me
     if isinstance(x, np.ndarray):
         return _preprocess_numpy_input(x, data_format=data_format,
                                        mode=mode, color_mode=color_mode,
-                                       img_mean=img_mean,img_depth=img_depth, **kwargs)
+                                       img_mean=img_mean,
+                                       img_depth=img_depth, **kwargs)
     return _preprocess_symbolic_input(x, data_format=data_format,
                                       mode=mode, color_mode=color_mode,
                                       img_mean=img_mean, **kwargs)

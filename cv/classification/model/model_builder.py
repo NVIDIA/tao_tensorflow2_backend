@@ -100,7 +100,6 @@ def get_byom(model_config_path=None,
              bias_regularizer=None,
              retain_head=False):
     """Wrapper to get Bring Your Own Model from json file."""
-
     # For BYOM, we don't have the code for the model archicture.
     # As a result, we must load from eff file
     out_dict = decode_tltb(model_config_path, passphrase=passphrase)
@@ -536,8 +535,7 @@ def get_model(arch="resnet",
               freeze_blocks=None,
               **kwargs):
     """Wrapper to choose feature extractor given backbone name."""
-
-    kwa = dict()
+    kwa = {}
     if arch == 'resnet':
         kwa['nlayers'] = kwargs['nlayers']
         kwa['use_batch_norm'] = kwargs['use_batch_norm']
@@ -548,7 +546,7 @@ def get_model(arch="resnet",
     elif 'efficientnet_b' in arch:
         kwa['use_bias'] = kwargs['use_bias']
         kwa['freeze_bn'] = kwargs['freeze_bn']
-        kwa['activation_type'] = None # TODO(@yuw): kwargs['activation'].activation_type
+        kwa['activation_type'] = None  # TODO(@yuw): kwargs['activation'].activation_type
     elif arch == 'mobilenet_v1':
         kwa['use_batch_norm'] = kwargs['use_batch_norm']
         kwa['use_bias'] = kwargs['use_bias']
@@ -560,9 +558,9 @@ def get_model(arch="resnet",
         kwa['all_projections'] = kwargs['all_projections']
     elif arch == 'byom':
         kwa['model_config_path'] = kwargs['model_config_path']
-        kwa['passphrase'] = kwargs['passphrase'] 
+        kwa['passphrase'] = kwargs['passphrase']
     else:
-        raise ValueError('Unsupported architecture: {}'.format(arch))
+        raise ValueError(f'Unsupported architecture: {arch}')
 
     model = model_choose[arch](input_shape=input_shape,
                                nclasses=nclasses,
