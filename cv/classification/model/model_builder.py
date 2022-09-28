@@ -98,7 +98,8 @@ def get_byom(model_config_path=None,
              nclasses=1000,
              kernel_regularizer=None,
              bias_regularizer=None,
-             retain_head=False):
+             retain_head=False,
+             input_name='Input'):
     """Wrapper to get Bring Your Own Model from json file."""
     # For BYOM, we don't have the code for the model archicture.
     # As a result, we must load from eff file
