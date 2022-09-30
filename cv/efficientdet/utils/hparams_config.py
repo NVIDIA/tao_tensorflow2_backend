@@ -188,7 +188,9 @@ def default_detection_configs():
     h.input_rand_hflip = True
     h.jitter_min = 0.1
     h.jitter_max = 2.0
-    h.autoaugment_policy = None
+    h.auto_augment = False
+    h.auto_color = False
+    h.auto_translate_xy = False
     h.grid_mask = False
     h.use_augmix = False
     # mixture_width, mixture_depth, alpha

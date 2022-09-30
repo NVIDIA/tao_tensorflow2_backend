@@ -326,6 +326,19 @@ class CocoDataset(Dataset):
                     classes = tf.gather_nd(classes, indices)
                     boxes = tf.gather_nd(boxes, indices)
 
+                if params.get('auto_augment', None):
+                    from cv.efficientdet.augmentation import autoaugment  # noqa pylint: disable=C0415
+                    if params['auto_color']:
+                        if is_main_process():
+                            print("Auto color augmentation is enabled.")
+                        image, boxes = autoaugment.distort_image_with_autocolor(
+                            image, boxes, num_layers=1, magnitude=15)
+                    if params['auto_translate_xy']:
+                        if is_main_process():
+                            print("Auto translate_xy augmentation is enabled.")
+                        image, boxes = autoaugment.distort_image_with_autotranslate(
+                            image, boxes, num_layers=1, magnitude=15)
+
             input_processor = DetectionInputProcessor(image, params['image_size'], boxes, classes)
             input_processor.normalize_image()
 
@@ -424,7 +437,9 @@ class CocoDataset(Dataset):
         datasets = []
         weights = []
         for file_pattern, image_dir in self._data_sources:
-            dataset = tf.data.Dataset.list_files(file_pattern, shuffle=params['shuffle_file'])
+            dataset = tf.data.Dataset.list_files(
+                file_pattern,
+                shuffle=params['shuffle_file'] and self._is_training)
             if self._is_training:
                 dataset = dataset.shard(get_world_size(), get_rank())
                 dataset.shuffle(buffer_size=64)

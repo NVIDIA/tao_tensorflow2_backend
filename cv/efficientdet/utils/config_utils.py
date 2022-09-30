@@ -60,6 +60,9 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         input_rand_hflip=cfg['augment']['rand_hflip'],
         jitter_min=cfg['augment']['random_crop_min_scale'] or 0.1,
         jitter_max=cfg['augment']['random_crop_max_scale'] or 2.0,
+        auto_color=cfg['augment']['auto_color_distortion'],
+        auto_translate_xy=cfg['augment']['auto_translate_xy'],
+        auto_augment=cfg['augment']['auto_color_distortion'] or cfg['augment']['auto_translate_xy'],
         # train config
         iterations_per_loop=cfg['train']['iterations_per_loop'],
         num_examples_per_epoch=cfg['train']['num_examples_per_epoch'],
@@ -69,7 +72,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         is_training_bn=mode == 'train',
         checkpoint_period=cfg['train']['checkpoint_period'],
         train_batch_size=cfg['train']['batch_size'],
-        tf_random_seed=cfg['train']['tf_random_seed'] or 42,
+        seed=cfg['train']['tf_random_seed'] or 42,
         pruned_model_path=cfg['train']['pruned_model_path'],
         moving_average_decay=cfg['train']['moving_average_decay'],
         amp=cfg['train']['amp'],
