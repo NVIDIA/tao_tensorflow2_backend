@@ -113,6 +113,8 @@ class AugmentationConfig:
     rand_hflip: bool = True
     random_crop_min_scale: float = 0.1
     random_crop_max_scale: float = 2
+    auto_color_distortion: bool = False
+    auto_translate_xy: bool = False
 
 
 @dataclass
