@@ -106,6 +106,20 @@ spec:
                 sh 'ls -l /home/scratch.metropolis2'
             }
         }
+        container("docker"){
+            stage ('wheeltamer_tests') {
+                gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
+                docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
+                    // Pull wheeltamer container and run wheeltamer test
+                    sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer"
+                    sh "docker run --rm -v ${WORKSPACE}/dist:/workspace \
+                        -e 'EXPECTED_PKG_LICENSE=NVIDIA Proprietary Software' \
+                        -e 'ALLOWED_NOSEC_COUNT=0' \
+                        gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer /bin/bash -c 'wheeltamer'"
+                }
+                }
+            }
+        }
         // container("docker"){
         //     stage ('build_publish_docker') {
         //         gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {

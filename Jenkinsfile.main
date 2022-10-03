@@ -112,6 +112,18 @@ spec:
                     }
                 }
             }
+            stage ('wheeltamer_tests') {
+              gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
+                docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
+                  // Pull wheeltamer container and run wheeltamer test
+                  sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer@sha256:3073e85762a2e7d8e4c4166863cfd24b25e1086026cae3ca19affc4212cb3c20"
+                  sh "docker run --rm -v ${WORKSPACE}/dist:/workspace \
+                      -e 'EXPECTED_PKG_LICENSE=NVIDIA Proprietary Software' \
+                      -e 'ALLOWED_NOSEC_COUNT=0' \
+                      gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer /bin/bash -c 'wheeltamer'"
+                }
+              }
+            }
         }
     }
 }
