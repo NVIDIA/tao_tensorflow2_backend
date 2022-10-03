@@ -107,6 +107,18 @@ spec:
             }
         }
         container("docker"){
+        //     stage ('build_publish_docker') {
+        //         gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
+        //             withEnv(["TAO_VERSION=3.22.11", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.6"]){
+        //                 docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
+        //                     sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
+        //                 }
+        //                 docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
+        //                     sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
+        //                 }
+        //             }
+        //         }
+        //     }
             stage ('wheeltamer_tests') {
                 gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
                 docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
@@ -120,19 +132,5 @@ spec:
                 }
             }
         }
-        // container("docker"){
-        //     stage ('build_publish_docker') {
-        //         gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
-        //             withEnv(["TAO_VERSION=3.22.11", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.6"]){
-        //                 docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
-        //                     sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
-        //                 }
-        //                 docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
-        //                     sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
     }
 }
