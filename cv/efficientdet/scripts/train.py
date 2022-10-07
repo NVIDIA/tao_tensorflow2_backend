@@ -10,6 +10,7 @@ from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase
 from tensorflow_quantization.quantize import quantize_model
 
 from common.hydra.hydra_runner import hydra_runner
+import common.logging.logging as status_logging
 
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.dataloader import dataloader, datasource
@@ -47,6 +48,22 @@ def run_experiment(cfg, ci_run=False):
         cfg.train.num_examples_per_epoch +
         (cfg.train.batch_size * get_world_size()) - 1) // \
         (cfg.train.batch_size * get_world_size())
+
+    # set up status logger
+    status_file = os.path.join(cfg.train.results_dir, "status.json")
+    status_logging.set_status_logger(
+        status_logging.StatusLogger(
+            filename=status_file,
+            is_master=True,
+            verbosity=1,
+            append=True
+        )
+    )
+    s_logger = status_logging.get_status_logger()
+    s_logger.write(
+        status_level=status_logging.Status.STARTED,
+        message="Starting EfficientDet training."
+    )
 
     # Set up dataloader
     train_sources = datasource.DataSource(
@@ -195,7 +212,9 @@ def run_experiment(cfg, ci_run=False):
         callbacks = callback_builder.get_callbacks(
             cfg,
             eval_dataset.shard(get_world_size(), get_rank()).take(num_samples),
-            eval_model=eval_model)
+            steps_per_epoch,
+            eval_model=eval_model,
+            initial_epoch=train_from_epoch)
 
         trainer = EfficientDetTrainer(model, config, callbacks)
         trainer.fit(
@@ -209,7 +228,10 @@ def run_experiment(cfg, ci_run=False):
     else:
         if is_main_process():
             print(f"Training ({train_from_epoch} epochs) has finished.")
-        sys.exit(0)
+    status_logging.get_status_logger().write(
+        status_level=status_logging.Status.SUCCESS,
+        message="Training finished successfully."
+    )
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -221,7 +243,20 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for EfficientDet training."""
-    run_experiment(cfg=cfg)
+    try:
+        run_experiment(cfg=cfg)
+    except (KeyboardInterrupt, SystemExit):
+        status_logging.get_status_logger().write(
+            message="Training was interrupted",
+            verbosity_level=status_logging.Verbosity.INFO,
+            status_level=status_logging.Status.FAILURE
+        )
+    except Exception as e:
+        status_logging.get_status_logger().write(
+            message=str(e),
+            status_level=status_logging.Status.FAILURE
+        )
+        raise e
 
 
 if __name__ == '__main__':

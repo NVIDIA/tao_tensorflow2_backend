@@ -7,11 +7,12 @@ from cv.efficientdet.callback.eff_ema_checkpoint import EffEmaCheckpoint
 from cv.efficientdet.callback.eff_checkpoint import EffCheckpoint
 from cv.efficientdet.callback.eval_callback import COCOEvalCallback
 from cv.efficientdet.callback.lr_tensorboard import LRTensorBoard
+from cv.efficientdet.callback.logging_callback import MetricLogging
 from cv.efficientdet.callback.moving_average_callback import MovingAverageCallback
 from cv.efficientdet.utils.horovod_utils import is_main_process
 
 
-def get_callbacks(params, eval_dataset, eval_model=None):
+def get_callbacks(params, eval_dataset, steps_per_epoch, eval_model=None, initial_epoch=0):
     """Get callbacks for given params."""
     callbacks = [hvd_callbacks.BroadcastGlobalVariablesCallback(0)]
     if is_main_process():
@@ -55,7 +56,9 @@ def get_callbacks(params, eval_dataset, eval_model=None):
         callbacks.append(model_callback)
 
         # log LR in tensorboard
-        callbacks.append(LRTensorBoard(log_dir=params['train']['results_dir']))
+        callbacks.append(LRTensorBoard(steps_per_epoch, initial_epoch, log_dir=params['train']['results_dir']))
+        # status logging
+        callbacks.append(MetricLogging(params['train']['num_epochs'], steps_per_epoch, initial_epoch))
 
     cocoeval = COCOEvalCallback(
         eval_dataset,

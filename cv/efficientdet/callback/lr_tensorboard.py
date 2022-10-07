@@ -8,11 +8,11 @@ import tensorflow as tf
 class LRTensorBoard(tf.keras.callbacks.Callback):
     """Learning Rate Tensorboard Callback."""
 
-    def __init__(self, log_dir, **kwargs):
+    def __init__(self, steps_per_epoch, initial_epoch, log_dir, **kwargs):
         """Init."""
         super().__init__(**kwargs)
         self.summary_writer = tf.summary.create_file_writer(log_dir)
-        self.steps_before_epoch = 0
+        self.steps_before_epoch = steps_per_epoch * initial_epoch
         self.steps_in_epoch = 0
 
     @property
