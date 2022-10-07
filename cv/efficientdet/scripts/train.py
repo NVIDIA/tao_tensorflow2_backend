@@ -1,7 +1,6 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """The main training script."""
 import os
-import sys
 import time
 from absl import logging
 import tensorflow as tf
@@ -11,6 +10,7 @@ from tensorflow_quantization.quantize import quantize_model
 
 from common.hydra.hydra_runner import hydra_runner
 import common.logging.logging as status_logging
+import common.no_warning # noqa pylint: disable=W0611
 
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.dataloader import dataloader, datasource
@@ -41,8 +41,8 @@ def run_experiment(cfg, ci_run=False):
     initialize(config, training=True, ci_run=ci_run)
 
     if is_main_process():
-        if not os.path.exists(cfg.train.results_dir):
-            os.makedirs(cfg.train.results_dir)
+        if not os.path.exists(cfg.results_dir):
+            os.makedirs(cfg.results_dir)
 
     steps_per_epoch = (
         cfg.train.num_examples_per_epoch +
@@ -50,7 +50,7 @@ def run_experiment(cfg, ci_run=False):
         (cfg.train.batch_size * get_world_size())
 
     # set up status logger
-    status_file = os.path.join(cfg.train.results_dir, "status.json")
+    status_file = os.path.join(cfg.results_dir, "status.json")
     status_logging.set_status_logger(
         status_logging.StatusLogger(
             filename=status_file,
@@ -111,12 +111,12 @@ def run_experiment(cfg, ci_run=False):
         tf.keras.backend.set_learning_phase(original_learning_phase)
 
     # save nonQAT nonAMP graph in results_dir
-    dump_json(model, os.path.join(cfg.train.results_dir, 'train_graph.json'))
-    dump_json(eval_model, os.path.join(cfg.train.results_dir, 'eval_graph.json'))
+    dump_json(model, os.path.join(cfg.results_dir, 'train_graph.json'))
+    dump_json(eval_model, os.path.join(cfg.results_dir, 'eval_graph.json'))
 
     # Load pretrained weights
     # TODO(@yuw): move weight loading to master rank
-    resume_ckpt_path = os.path.join(cfg.train.results_dir, f'{config.name}.resume')
+    resume_ckpt_path = os.path.join(cfg.results_dir, f'{config.name}.resume')
     if str(cfg.train.checkpoint).endswith(".tlt"):
         pretrained_ckpt_path, ckpt_name = decode_eff(str(cfg.train.checkpoint), cfg.key)
     else:
@@ -151,7 +151,6 @@ def run_experiment(cfg, ci_run=False):
                     except ValueError:
                         print(f"Skipping {layer.name} due to shape mismatch.")
 
-    # TODO(@yuw): Enable QAT
     if cfg.train.qat:
         model = quantize_model(model, custom_qdq_cases=[EfficientNetQDQCase()])
         eval_model = quantize_model(eval_model, custom_qdq_cases=[EfficientNetQDQCase()])

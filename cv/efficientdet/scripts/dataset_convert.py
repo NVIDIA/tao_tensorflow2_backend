@@ -17,6 +17,7 @@ import tensorflow as tf
 from common.dataset import dataset_util
 from common.dataset import label_map_util
 from common.hydra.hydra_runner import hydra_runner
+import common.logging.logging as status_logging
 
 from cv.efficientdet.config.default_config import ExperimentConfig
 
@@ -298,7 +299,22 @@ def main(cfg: ExperimentConfig) -> None:
         log_dir = cfg.dataset_convert.output_dir
     else:
         log_dir = cfg.dataset_convert.log_dir
-
+    # set up status logger
+    status_file = os.path.join(log_dir, "status.json")
+    status_logging.set_status_logger(
+        status_logging.StatusLogger(
+            filename=status_file,
+            is_master=True,
+            verbosity=1,
+            append=True
+        )
+    )
+    s_logger = status_logging.get_status_logger()
+    s_logger.write(
+        status_level=status_logging.Status.STARTED,
+        message="Starting tfrecords conversion."
+    )
+    # config output files
     tag = cfg.dataset_convert.tag or os.path.splitext(os.path.basename(cfg.dataset_convert.annotations_file))[0]
     output_path = os.path.join(cfg.dataset_convert.output_dir, tag)
 
@@ -312,6 +328,11 @@ def main(cfg: ExperimentConfig) -> None:
     if log_total:
         with open(os.path.join(log_dir, f'{tag}_warnings.json'), "w", encoding='utf-8') as f:
             json.dump(log_total, f)
+
+    s_logger.write(
+        status_level=status_logging.Status.SUCCESS,
+        message="Conversion finished successfully."
+    )
 
 
 if __name__ == '__main__':

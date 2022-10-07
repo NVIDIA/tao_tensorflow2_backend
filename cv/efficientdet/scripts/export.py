@@ -13,17 +13,17 @@ import tensorflow as tf
 from tensorflow.python.util import deprecation
 
 from common.hydra.hydra_runner import hydra_runner
+import common.logging.logging as status_logging
+import common.no_warning # noqa pylint: disable=W0611
 from common.utils import encode_etlt
 
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.exporter.onnx_exporter import EfficientDetGraphSurgeon
-from cv.efficientdet.exporter.trt_builder import EngineBuilder
 from cv.efficientdet.inferencer import inference
 from cv.efficientdet.utils import helper, hparams_config
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 
 deprecation._PRINT_DEPRECATION_WARNINGS = False
-BUILD_ENGINE = False
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 os.environ["TF_CPP_VMODULE"] = 'non_max_suppression_op=0,generate_box_proposals_op=0,executor=0'
@@ -50,6 +50,22 @@ def run_export(cfg, ci_run=False):
     assert str(cfg.export.output_path).endswith('.etlt'), "Exported file must end with .etlt"
     output_dir = tempfile.mkdtemp()  # os.path.dirname(cfg.export.output_path)
     tf.keras.backend.set_learning_phase(0)
+
+    # set up status logger
+    status_file = os.path.join(cfg.results_dir, "status.json")
+    status_logging.set_status_logger(
+        status_logging.StatusLogger(
+            filename=status_file,
+            is_master=True,
+            verbosity=1,
+            append=True
+        )
+    )
+    s_logger = status_logging.get_status_logger()
+    s_logger.write(
+        status_level=status_logging.Status.STARTED,
+        message="Starting EfficientDet export."
+    )
 
     # Load model from graph json
     model = helper.load_model(cfg.export.model_path, cfg, MODE, is_qat=cfg.train.qat)
@@ -83,22 +99,27 @@ def run_export(cfg, ci_run=False):
     # convert onnx to eff
     onnx_file = effdet_gs.save()
     encode_etlt(onnx_file, cfg.export.output_path, "", cfg.key)
-    print(f"Export finished successfully. The etlt model is saved at: {onnx_file}")
-    if BUILD_ENGINE:
-        print("Generating TensorRT engine...")
-        # convert to engine
-        if cfg.export.engine_file is not None or cfg.export.data_type == 'int8':
+    # print(f"The exported model is saved at: {onnx_file}")
+    os.remove(onnx_file)
+    s_logger.write(
+        status_level=status_logging.Status.SUCCESS,
+        message="Export finished successfully."
+    )
 
-            output_engine_path = cfg.export.engine_file
-            builder = EngineBuilder(cfg.verbose, workspace=cfg.export.max_workspace_size)
-            builder.create_network(onnx_file, batch_size=max_batch_size)
-            builder.create_engine(
-                output_engine_path,
-                cfg.export.data_type,
-                cfg.export.cal_image_dir,
-                cfg.export.cal_cache_file,
-                cfg.export.cal_batch_size * cfg.export.cal_batches,
-                cfg.export.cal_batch_size)
+    # print("Generating TensorRT engine...")
+    # # convert to engine
+    # if cfg.export.engine_file is not None or cfg.export.data_type == 'int8':
+
+    #     output_engine_path = cfg.export.engine_file
+    #     builder = EngineBuilder(cfg.verbose, workspace=cfg.export.max_workspace_size)
+    #     builder.create_network(onnx_file, batch_size=max_batch_size)
+    #     builder.create_engine(
+    #         output_engine_path,
+    #         cfg.export.data_type,
+    #         cfg.export.cal_image_dir,
+    #         cfg.export.cal_cache_file,
+    #         cfg.export.cal_batch_size * cfg.export.cal_batches,
+    #         cfg.export.cal_batch_size)
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

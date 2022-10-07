@@ -17,10 +17,10 @@ def get_callbacks(params, eval_dataset, steps_per_epoch, eval_model=None, initia
     callbacks = [hvd_callbacks.BroadcastGlobalVariablesCallback(0)]
     if is_main_process():
         tb_callback = tf.keras.callbacks.TensorBoard(
-            log_dir=params['train']['results_dir'], profile_batch=0, histogram_freq=1)
+            log_dir=params['results_dir'], profile_batch=0, histogram_freq=1)
         callbacks.append(tb_callback)
         # set up checkpointing callbacks
-        ckpt_dir = os.path.join(params['train']['results_dir'], 'weights')
+        ckpt_dir = os.path.join(params['results_dir'], 'weights')
         if not os.path.exists(ckpt_dir):
             os.makedirs(ckpt_dir, exist_ok=True)
         if params['train']['moving_average_decay'] > 0:
@@ -46,7 +46,7 @@ def get_callbacks(params, eval_dataset, steps_per_epoch, eval_model=None, initia
         callbacks.append(ckpt_callback)
 
         model_callback = EffCheckpoint(
-            eff_dir=params['train']['results_dir'],
+            eff_dir=params['results_dir'],
             key=params['key'],
             graph_only=True,
             verbose=0,
@@ -56,7 +56,7 @@ def get_callbacks(params, eval_dataset, steps_per_epoch, eval_model=None, initia
         callbacks.append(model_callback)
 
         # log LR in tensorboard
-        callbacks.append(LRTensorBoard(steps_per_epoch, initial_epoch, log_dir=params['train']['results_dir']))
+        callbacks.append(LRTensorBoard(steps_per_epoch, initial_epoch, log_dir=params['results_dir']))
         # status logging
         callbacks.append(MetricLogging(params['train']['num_epochs'], steps_per_epoch, initial_epoch))
 

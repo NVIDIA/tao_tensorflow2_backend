@@ -69,7 +69,7 @@ class BaseLogger(object):
         """Get date from the status."""
         date_time = datetime.now()
         date_object = date_time.date()
-        return "{}/{}/{}".format(
+        return "{}/{}/{}".format(  # noqa pylint: disable=C0209
             date_object.month,
             date_object.day,
             date_object.year
@@ -80,7 +80,7 @@ class BaseLogger(object):
         """Get date from the status."""
         date_time = datetime.now()
         time_object = date_time.time()
-        return "{}:{}:{}".format(
+        return "{}:{}:{}".format(  # noqa pylint: disable=C0209
             time_object.hour,
             time_object.minute,
             time_object.second
@@ -181,9 +181,9 @@ class StatusLogger(BaseLogger):
         super().__init__(is_master=is_master, verbosity=verbosity)
         self.log_path = os.path.realpath(filename)
         if os.path.exists(self.log_path):
-            logger.info("Log file already exists at {}".format(self.log_path))
+            logger.info("Log file already exists at %s", self.log_path)
         if is_master:
-            self.l_file = open(self.log_path, "a" if append else "w")
+            self.l_file = open(self.log_path, "a" if append else "w", encoding='utf-8')  # noqa pylint: disable=R1732
             atexit.register(self.l_file.close)
 
     def log(self, level, string):
@@ -192,7 +192,7 @@ class StatusLogger(BaseLogger):
             self.l_file.write(string + "\n")
 
     def flush(self):
-        "Flush contents of the log file."
+        """Flush contents of the log file."""
         if self.is_master:
             self.l_file.flush()
 

@@ -22,6 +22,7 @@ class MetricLogging(tf.keras.callbacks.Callback):
         self.time_per_epoch = 0
         # total loss
         self.total_loss = 0
+        self.s_logger = status_logging.get_status_logger()
 
     @property
     def global_steps(self):
@@ -34,6 +35,7 @@ class MetricLogging(tf.keras.callbacks.Callback):
         self.total_loss += float(logs.get('loss'))
 
     def on_epoch_begin(self, epoch, logs=None):
+        """on_epoch_begin."""
         self._epoch_start_time = time.time()
 
     def on_epoch_end(self, epoch, logs=None):
@@ -55,19 +57,19 @@ class MetricLogging(tf.keras.callbacks.Callback):
             loss (float): average training loss to be recorder in the monitor.
             current_epoch (int): Current epoch.
         """
+        current_epoch += 1  # 1-based
         lr = self.model.optimizer.lr(self.global_steps).numpy()
-        s_logger = status_logging.get_status_logger()
         monitor_data = {
-            "epoch": current_epoch + 1,
+            "epoch": current_epoch,
             "max_epoch": self.num_epochs,
             "time_per_epoch": str(timedelta(seconds=self.time_per_epoch)),
-            "eta": str(timedelta(seconds=(self.num_epochs - current_epoch) * self.time_per_epoch)),
+            # "eta": str(timedelta(seconds=(self.num_epochs - current_epoch) * self.time_per_epoch)),
             "loss": loss,
             "learning_rate": float(lr)
         }
         # Save the json file.
         try:
-            s_logger.write(
+            self.s_logger.write(
                 data=monitor_data,
                 status_level=status_logging.Status.RUNNING)
         except IOError:

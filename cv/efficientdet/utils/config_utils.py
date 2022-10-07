@@ -64,7 +64,6 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         auto_translate_xy=cfg['augment']['auto_translate_xy'],
         auto_augment=cfg['augment']['auto_color_distortion'] or cfg['augment']['auto_translate_xy'],
         # train config
-        iterations_per_loop=cfg['train']['iterations_per_loop'],
         num_examples_per_epoch=cfg['train']['num_examples_per_epoch'],
         checkpoint=cfg['train']['checkpoint'],
         ckpt=None,
@@ -95,5 +94,5 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         eval_batch_size=cfg['evaluate']['batch_size'],
         eval_samples=cfg['evaluate']['num_samples'],
         #
-        results_dir=cfg['train']['results_dir']
+        results_dir=cfg['results_dir']
     )

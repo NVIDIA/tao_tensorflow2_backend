@@ -144,47 +144,6 @@ def image(name, tensor, is_tpu=True):
         tf.summary.image(name, tensor)
 
 
-def get_tpu_host_call(global_step, params):
-    """Get TPU host call for summaries."""
-    scalar_summaries = tf.get_collection('scalar_summaries')
-    if params['img_summary_steps']:
-        image_summaries = tf.get_collection('image_summaries')
-    else:
-        image_summaries = []
-    if not scalar_summaries and not image_summaries:
-        return None  # No summaries to write.
-
-    model_dir = params['model_dir']
-    iterations_per_loop = params.get('iterations_per_loop', 100)
-    img_steps = params['img_summary_steps']
-
-    def host_call_fn(global_step, *args):
-        """Training host call. Creates summaries for training metrics."""
-        gs = global_step[0]
-        with tf.summary.create_file_writer(
-                model_dir, max_queue=iterations_per_loop).as_default():
-            with tf.summary.record_if(True):
-                for i, s in enumerate(scalar_summaries):
-                    name = s[0]
-                    tensor = args[i][0]
-                    tf.summary.scalar(name, tensor, step=gs)
-
-            if img_steps:
-                with tf.summary.record_if(lambda: tf.math.equal(gs % img_steps, 0)):
-                    # Log images every 1k steps.
-                    for i, s in enumerate(image_summaries):
-                        name = s[0]
-                        tensor = args[i + len(scalar_summaries)]
-                        tf.summary.image(name, tensor, step=gs)
-
-            return tf.summary.all_v2_summary_ops()
-
-    reshaped_tensors = [tf.reshape(t, [1]) for _, t in scalar_summaries]
-    reshaped_tensors += [t for _, t in image_summaries]
-    global_step_t = tf.reshape(global_step, [1])
-    return host_call_fn, [global_step_t] + reshaped_tensors
-
-
 def parse_image_size(image_size: Union[Text, int, Tuple[int, int]]):
     """Parse the image size and return (height, width).
 

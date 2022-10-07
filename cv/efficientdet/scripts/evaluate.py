@@ -1,13 +1,13 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """EfficientDet standalone evaluation script."""
 import os
-import pprint
 from mpi4py import MPI
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
 
 from common.hydra.hydra_runner import hydra_runner
 import common.logging.logging as status_logging
+import common.no_warning # noqa pylint: disable=W0611
 
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.dataloader import dataloader, datasource
@@ -32,7 +32,7 @@ def run_experiment(cfg, ci_run=False):
     config = hparams_config.get_detection_config(cfg.model.name)
     config.update(generate_params_from_cfg(config, cfg, mode=MODE))
     # set up status logger
-    status_file = os.path.join(cfg.train.results_dir, "status.json")
+    status_file = os.path.join(cfg.results_dir, "status.json")
     status_logging.set_status_logger(
         status_logging.StatusLogger(
             filename=status_file,

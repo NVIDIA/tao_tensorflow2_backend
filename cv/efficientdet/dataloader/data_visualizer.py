@@ -46,7 +46,7 @@ def visualize(cfg):
         image = next_element[0][0, ...]  # h, w, c
         image = image.numpy()
         image2v = vis_utils.denormalize_image(image)
-        Image.fromarray(image2v).save(os.path.join(cfg.train.results_dir, f'dl_00{counter}.png'))
+        Image.fromarray(image2v).save(os.path.join(cfg.results_dir, f'dl_00{counter}.png'))
         counter += 1
         if counter > 10:
             break

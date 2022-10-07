@@ -29,7 +29,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         self.eval_params = eval_params
         self.ema_opt = None
         self.postpc = EfficientDetPostprocessor(self.eval_params)
-        log_dir = os.path.join(eval_params.train.results_dir, 'eval')
+        log_dir = os.path.join(eval_params.results_dir, 'eval')
         self.file_writer = tf.summary.create_file_writer(log_dir)
         label_map = label_utils.get_label_map(eval_params.evaluate.label_map)
         self.evaluator = coco_metric.EvaluationMetric(
@@ -99,7 +99,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
                     classes,
                     scores,
                     {},
-                    min_score_thresh=0.2,
+                    min_score_thresh=0.3,
                     max_boxes_to_draw=100,
                     line_thickness=2)
                 with self.file_writer.as_default():
@@ -121,9 +121,9 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
                     metric_dict[name] = metrics[i]
 
             # csv format
-            csv_metrics = ['AP', 'AP50', 'AP75', 'APs', 'APm', 'APl']
-            csv_format = ",".join([str(epoch + 1)] + [str(round(metric_dict[key] * 100, 2)) for key in csv_metrics])
-            print(metric_dict, "csv format:", csv_format)
+            # csv_metrics = ['AP', 'AP50', 'AP75', 'APs', 'APm', 'APl']
+            # csv_format = ",".join([str(epoch + 1)] + [str(round(metric_dict[key] * 100, 2)) for key in csv_metrics])
+            # print(metric_dict, "csv format:", csv_format)  # TODO(@yuw): add to logger
 
         if self.eval_params.train.moving_average_decay > 0:
             self.ema_opt.swap_weights()  # get base weights
