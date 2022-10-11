@@ -21,7 +21,7 @@ def main():
     subtasks = get_subtasks(scripts)
 
     # Parse the arguments and launch the subtask.
-    launch(parser, subtasks)
+    launch(parser, subtasks, multigpu_support=['train', 'evaluate'])
 
 
 if __name__ == '__main__':

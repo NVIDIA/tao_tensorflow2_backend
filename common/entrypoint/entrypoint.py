@@ -10,8 +10,6 @@ import sys
 
 from common.entrypoint import download_specs
 
-MULTIGPU_SUPPORTED_TASKS = ["train", "evaluate"]
-
 
 def get_subtasks(package):
     """Get supported subtasks for a given task.
@@ -172,7 +170,7 @@ def command_line_parser(parser, subtasks):
     return parser
 
 
-def launch(parser, subtasks):
+def launch(parser, subtasks, multigpu_support=['train']):
     """Parse the command line and kick off the entrypoint.
 
     Args:
@@ -213,7 +211,7 @@ def launch(parser, subtasks):
     if np < 0:
         np = num_gpus
     if num_gpus > 1:
-        if not args["subtask"] in MULTIGPU_SUPPORTED_TASKS:
+        if not args["subtask"] in multigpu_support:
             raise NotImplementedError(
                 f"This {args['subtask']} doesn't support multiGPU. Please set --gpus 1"
             )
