@@ -41,6 +41,7 @@ class EfficientDetPostprocessor(Postprocessor):
         original_image_widths = tf.expand_dims(image_scales, -1) * width
 
         if use_pyfunc:
+            # TODO(@yuw): verify!
             detections_bs = []
             boxes, scores, classes = self.pre_nms(cls_outputs, box_outputs)
             for index in range(boxes.shape[0]):

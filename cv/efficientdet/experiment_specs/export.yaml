@@ -10,7 +10,6 @@ train:
   num_examples_per_epoch: 120000
   batch_size: 16
   checkpoint_period: 1
-  results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp'
 export:
   # QAT
   # max_batch_size: 4
@@ -28,3 +27,5 @@ export:
   cal_batch_size: 16
   cal_batches: 10
 data_format: 'channels_last'
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp'
+key: 'nvidia_tlt'

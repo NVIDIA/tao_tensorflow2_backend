@@ -29,7 +29,6 @@ class Pruner(ABC):
         self.min_num_filters = cfg.prune.min_num_filters
         self.equalization_criterion = cfg.prune.equalization_criterion
         self.excluded_layers = []
-        self.verbose = cfg.prune.verbose
 
     @abstractmethod
     def _load_model(self):
@@ -53,13 +52,4 @@ class Pruner(ABC):
             threshold=threshold,
             equalization_criterion=self.equalization_criterion,
             excluded_layers=self.excluded_layers + excluded_layers)
-
-        if self.verbose:
-            # Printing out pruned model summary
-            logger.info("Model summary of the pruned model:")
-            logger.info(pruned_model.summary())
-
-        pruning_ratio = pruned_model.count_params() / self.model.count_params()
-        logger.info("Pruning ratio (pruned model / original model):")
-        logger.info(pruning_ratio)
         return pruned_model

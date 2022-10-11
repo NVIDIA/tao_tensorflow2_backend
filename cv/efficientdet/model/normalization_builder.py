@@ -16,20 +16,10 @@
 import tensorflow as tf
 
 
-class BatchNormalization(tf.keras.layers.BatchNormalization):
-    """Fixed default name of BatchNormalization to match TpuBatchNormalization."""
-
-    def __init__(self, **kwargs):
-        """Init."""
-        if not kwargs.get('name', None):
-            kwargs['name'] = 'tpu_batch_normalization'
-        super().__init__(**kwargs)
-
-
 def batch_norm_class(is_training=True):
     """Choose BN based on training phase."""
     if is_training:
         # TODO(fsx950223): use SyncBatchNorm after TF bug is fixed (incorrect nccl
         # all_reduce). See https://github.com/tensorflow/tensorflow/issues/41980
-        return BatchNormalization
-    return BatchNormalization
+        return tf.keras.layers.BatchNormalization
+    return tf.keras.layers.BatchNormalization

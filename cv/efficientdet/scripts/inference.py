@@ -10,12 +10,15 @@ import os
 import tensorflow as tf
 # from tensorflow.python.framework.ops import disable_eager_execution
 from tensorflow.python.util import deprecation
+import warnings
 
 from common.hydra.hydra_runner import hydra_runner
+import common.logging.logging as status_logging
+import common.no_warning # noqa pylint: disable=W0611
 
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.inferencer import inference, inference_trt
-from cv.efficientdet.utils import helper, hparams_config
+from cv.efficientdet.utils import helper, hparams_config, label_utils
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils.horovod_utils import initialize
 
@@ -76,7 +79,6 @@ def infer_tlt(cfg, label_id_mapping, min_score_thresh, ci_run=False):
             image_paths,
             cfg.inference.output_dir,
             cfg.inference.dump_label)
-    print("Inference finished.")
 
 
 def infer_trt(cfg, label_id_mapping, min_score_thresh):
@@ -103,19 +105,39 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig):
     """Wrapper function for EfficientDet inference."""
+    # set up status logger
+    status_file = os.path.join(cfg.results_dir, "status.json")
+    status_logging.set_status_logger(
+        status_logging.StatusLogger(
+            filename=status_file,
+            is_master=True,
+            verbosity=1,
+            append=True
+        )
+    )
+    s_logger = status_logging.get_status_logger()
+    s_logger.write(
+        status_level=status_logging.Status.STARTED,
+        message="Starting EfficientDet inference."
+    )
     label_id_mapping = {}
-    if cfg.evaluate.label_map:
-        label_id_mapping = get_label_dict(cfg.evaluate.label_map)
+    if cfg.inference.label_map:
+        if str(cfg.inference.label_map).endswith('.yaml'):
+            label_id_mapping = label_utils.get_label_map(cfg.inference.label_map)
+        else:
+            label_id_mapping = get_label_dict(cfg.inference.label_map)
 
     if cfg.inference.model_path.endswith('.engine'):
-        print("Running inference with TensorRT engine...")
-        infer_trt(cfg, label_id_mapping, cfg.evaluate.min_score_thresh or 0.4)
+        warnings.warn("Please use tao-deploy to run TensorRT inference.")
+        # infer_trt(cfg, label_id_mapping, cfg.evaluate.min_score_thresh)
     elif cfg.inference.model_path.endswith('.tlt'):
-        print("Running inference with saved_model...")
-        infer_tlt(cfg, label_id_mapping, cfg.evaluate.min_score_thresh or 0.4)
+        infer_tlt(cfg, label_id_mapping, cfg.inference.min_score_thresh)
     else:
-        # TODO(@yuw): add internal inference for un-encrypted?
-        raise ValueError("Only .engine and .tlt models are supported for inference.")
+        raise ValueError("Only .tlt models are supported with tao inference.")
+    s_logger.write(
+        status_level=status_logging.Status.SUCCESS,
+        message="Inference finished successfully."
+    )
 
 
 if __name__ == '__main__':

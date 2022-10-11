@@ -35,7 +35,6 @@ class EfficientDetTrainer(Trainer):
             verbose=verbose,
             validation_data=eval_dataset,
             validation_steps=validation_steps)
-        print("Training finished successfully.")
 
     def train_step(self, data):
         """Train step.

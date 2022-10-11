@@ -336,9 +336,8 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x1 = layer(trainable=False)(x1)
-            else:
-                x1 = layer(x1)
+                layer.trainable = False
+            x1 = layer(x1)
         x1 = keras.layers.Activation(self.activation_type)(x1)
 
         # Second branch is 1x1 conv with padding = 0, and stride = 1
@@ -363,9 +362,8 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x2 = layer(trainable=False)(x2)
-            else:
-                x2 = layer(x2)
+                layer.trainable = False
+            x2 = layer(x2)
         x2 = keras.layers.Activation(self.activation_type)(x2)
 
         # Second branch is 1x1 conv with padding = 0, and stride = 1 followed by 3x3 conv
@@ -390,9 +388,8 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x2 = layer(trainable=False)(x2)
-            else:
-                x2 = layer(x2)
+                layer.trainable = False
+            x2 = layer(x2)
         x2 = keras.layers.Activation(self.activation_type)(x2)
 
         # Third branch is 1x1 conv with stride = 1
@@ -417,9 +414,8 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x3 = layer(trainable=False)(x3)
-            else:
-                x3 = layer(x3)
+                layer.trainable = False
+            x3 = layer(x3)
         x3 = keras.layers.Activation(self.activation_type)(x3)
 
         # Third branch is 1x1 conv with padding = 0, and stride = 1 followed by 5x5 conv
@@ -444,9 +440,8 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x3 = layer(trainable=False)(x3)
-            else:
-                x3 = layer(x3)
+                layer.trainable = False
+            x3 = layer(x3)
         x3 = keras.layers.Activation(self.activation_type)(x3)
 
         # Fourth branch is max pool stride = 1, and a 1x1 conv
@@ -481,9 +476,8 @@ class InceptionV1Block(object):
             if self.use_td:
                 layer = keras.layers.TimeDistributed(layer)
             if self.freeze_bn:
-                x4 = layer(trainable=False)(x4)
-            else:
-                x4 = layer(x4)
+                layer.trainable = False
+            x4 = layer(x4)
         x4 = keras.layers.Activation(self.activation_type)(x4)
 
         if self.data_format == 'channels_first':
@@ -753,7 +747,8 @@ def _leaky_conv(inputs, filters, alpha=0.1, kernel=(3, 3),
         if use_td:
             _layer = keras.layers.TimeDistributed(_layer)
         if freeze_bn:
-            x = _layer(trainable=False)(x)
+            _layer.trainable = False
+            x = _layer(x)
         else:
             x = _layer(x)
     x = keras.layers.LeakyReLU(alpha=alpha, name=name + '_lrelu')(x)
@@ -1372,9 +1367,8 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
         if use_td:
             layer = keras.layers.TimeDistributed(layer)
         if freeze_bn:
-            x = layer(trainable=False)(x)
-        else:
-            x = layer(x)
+            layer.trainable = False
+        x = layer(x)
         x = keras.layers.Activation(activation_fn, name=name + 'expand_activation')(x)
     else:
         x = inputs
@@ -1400,9 +1394,8 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
     if use_td:
         layer = keras.layers.TimeDistributed(layer)
     if freeze_bn:
-        x = layer(trainable=False)(x)
-    else:
-        x = layer(x)
+        layer.trainable = False
+    x = layer(x)
     x = keras.layers.Activation(activation_fn, name=name + 'activation')(x)
     # Squeeze and Excitation phase
     if 0 < se_ratio <= 1:
@@ -1499,9 +1492,8 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
     if use_td:
         layer = keras.layers.TimeDistributed(layer)
     if freeze_bn:
-        x = layer(trainable=False)(x)
-    else:
-        x = layer(x)
+        layer.trainable = False
+    x = layer(x)
     if (id_skip is True and strides == 1 and filters_in == filters_out):
         if drop_rate > 0:
             layer = keras.layers.Dropout(

@@ -18,8 +18,8 @@ train:
   batch_size: 20
   checkpoint_period: 5
   l2_weight_decay: 0.00004
-  results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp'
 evaluate:
   batch_size: 20
   num_samples: 5000
 key: 'nvidia_tlt'
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp'

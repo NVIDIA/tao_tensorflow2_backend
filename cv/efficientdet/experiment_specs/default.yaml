@@ -27,7 +27,6 @@ train:
     warmup_init: 0.0001
     learning_rate: 0.2
   amp: True
-  iterations_per_loop: 100
   checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/imagenet/tf2_effnet_b0/weights/efficientnet-b0_500.tlt"
   num_examples_per_epoch: 100
   moving_average_decay: 0.999
@@ -35,7 +34,6 @@ train:
   checkpoint_period: 5
   l2_weight_decay: 0.00004
   l1_weight_decay: 0.0
-  results_dir: '/tmp/'
   skip_checkpoint_variables: ''
   clip_gradients_norm: 10.0
   image_preview: True
@@ -60,7 +58,6 @@ augment:
   auto_translate_xy: False
 evaluate:
   batch_size: 8
-  min_score_thresh: 0.3
   num_samples: 5
   max_detections_per_image: 100
   label_map: ''
@@ -70,7 +67,7 @@ evaluate:
 export:
   max_batch_size: 8
   dynamic_batch_size: True
-  min_score_thresh: 0.4
+  min_score_thresh: 0.3
   model_path: ""
   output_path: ""
   engine_file: ""
@@ -99,3 +96,4 @@ prune:
 key: 'nvidia_tlt'
 data_format: 'channels_last'
 verbose: True
+results_dir: '/tmp/'

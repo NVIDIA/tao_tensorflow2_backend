@@ -49,7 +49,7 @@ def test_train(amp, qat, batch_size, num_epochs, cfg):
     cfg.train.amp = amp
     cfg.train.qat = qat
     cfg.train.batch_size = batch_size
-    cfg.train.results_dir = results_dir
+    cfg.results_dir = results_dir
 
     run_train(cfg, ci_run=True)
     tf.keras.backend.clear_session()

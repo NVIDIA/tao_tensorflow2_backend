@@ -1,7 +1,6 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Keras implementation of efficientdet."""
 import functools
-from absl import logging
 import numpy as np
 import tensorflow as tf
 
@@ -644,7 +643,6 @@ class FPNCell:
                                                          config.fpn_weight_method)
         self.fnodes = []
         for i, fnode_cfg in enumerate(self.fpn_config.nodes):
-            logging.debug(f'fnode {i} : {fnode_cfg}')
             fnode = FNode(
                 fnode_cfg['feat_level'] - self.config.min_level,
                 fnode_cfg['inputs_offsets'],

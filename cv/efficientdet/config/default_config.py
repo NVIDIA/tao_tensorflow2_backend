@@ -42,7 +42,6 @@ class TrainConfig:
 
     optimizer: OptConfig = OptConfig()
     lr_schedule: LRConfig = LRConfig()
-    iterations_per_loop: int = 10
     num_examples_per_epoch: int = 120000
     batch_size: int = 8
     num_epochs: int = 300
@@ -58,7 +57,6 @@ class TrainConfig:
     checkpoint_period: int = 10
     image_preview: bool = True
     qat: bool = False
-    results_dir: str = MISSING
 
 
 @dataclass
@@ -72,23 +70,23 @@ class ModelConfig:
     max_level: int = 7
     num_scales: int = 3
     freeze_bn: bool = False
-    freeze_blocks: List[int] = field(default_factory=lambda: [])  # TODO
+    freeze_blocks: List[int] = field(default_factory=lambda: [])
 
 
 @dataclass
 class DataConfig:
     """Data config."""
 
-    train_tfrecords: List[str] = field(default_factory=lambda: [])  # TODO
+    train_tfrecords: List[str] = field(default_factory=lambda: [])
     train_dirs: List[str] = field(default_factory=lambda: [])  # TODO
-    val_tfrecords: List[str] = field(default_factory=lambda: [])  # TODO
+    val_tfrecords: List[str] = field(default_factory=lambda: [])
     val_dirs: List[str] = field(default_factory=lambda: [])  # TODO
     val_json_file: str = ""
     num_classes: int = 91
     max_instances_per_image: int = 200
     skip_crowd_during_training: bool = True
     use_fake_data: bool = False
-    image_size: str = '512x512'  # TODO
+    image_size: str = '512x512'
     loader: LoaderConfig = LoaderConfig()
 
 
@@ -97,7 +95,6 @@ class EvalConfig:
     """Eval config."""
 
     batch_size: int = 8
-    min_score_thresh: float = 0.3
     num_samples: int = 5000
     max_detections_per_image: int = 100
     label_map: str = ''
@@ -123,7 +120,7 @@ class ExportConfig:
 
     max_batch_size: int = 8
     dynamic_batch_size: bool = True
-    min_score_thresh: float = 0.4
+    min_score_thresh: float = 0.3
     model_path: str = MISSING
     output_path: str = MISSING
     engine_file: str = ""
@@ -144,6 +141,8 @@ class InferenceConfig:
     output_dir: str = MISSING
     dump_label: bool = False
     batch_size: int = 1
+    min_score_thresh: float = 0.3
+    label_map: str = ''
 
 
 @dataclass
@@ -190,3 +189,4 @@ class ExperimentConfig:
     key: str = MISSING
     data_format: str = 'channels_last'
     verbose: bool = False
+    results_dir: str = MISSING
