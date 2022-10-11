@@ -1,6 +1,6 @@
 # Copyright (c) 2017-2020, NVIDIA CORPORATION.  All rights reserved.
 
-"""Logger class for TLT IVA models."""
+"""Logger class for TAO TF2 models."""
 
 from abc import abstractmethod
 import atexit

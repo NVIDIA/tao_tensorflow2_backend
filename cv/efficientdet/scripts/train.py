@@ -54,7 +54,7 @@ def run_experiment(cfg, ci_run=False):
     status_logging.set_status_logger(
         status_logging.StatusLogger(
             filename=status_file,
-            is_master=True,
+            is_master=is_main_process(),
             verbosity=1,
             append=True
         )

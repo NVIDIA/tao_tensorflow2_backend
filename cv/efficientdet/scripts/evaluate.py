@@ -36,7 +36,7 @@ def run_experiment(cfg, ci_run=False):
     status_logging.set_status_logger(
         status_logging.StatusLogger(
             filename=status_file,
-            is_master=True,
+            is_master=is_main_process(),
             verbosity=1,
             append=True
         )
@@ -122,13 +122,13 @@ def run_experiment(cfg, ci_run=False):
                 name = f'AP_{label_map[cid]}'
                 metric_dict[name] = metrics[i + len(evaluator.metric_names)]
                 print(f'{name}: {metric_dict[name]:.03f}')
+        for k, v in metric_dict.items():
+            s_logger.kpi[k] = float(v)
+        s_logger.write(
+            status_level=status_logging.Status.SUCCESS,
+            message="Evaluation finished successfully."
+        )
     MPI.COMM_WORLD.Barrier()  # noqa pylint: disable=I1101
-    for k, v in metric_dict.items():
-        s_logger.kpi[k] = float(v)
-    s_logger.write(
-        status_level=status_logging.Status.SUCCESS,
-        message="Evaluation finished successfully."
-    )
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

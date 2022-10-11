@@ -10,7 +10,7 @@ import sys
 
 from common.entrypoint import download_specs
 
-MULTIGPU_SUPPORTED_TASKS = ["train"]
+MULTIGPU_SUPPORTED_TASKS = ["train", "evaluate"]
 
 
 def get_subtasks(package):
