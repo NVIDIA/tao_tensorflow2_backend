@@ -1,7 +1,7 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
-"""Modulus pruning.
+"""TAO pruning.
 
-This module includes APIs to prune a Keras model.
+This module includes APIs to prune a tf.keras model.
 """
 
 from __future__ import absolute_import
@@ -171,6 +171,7 @@ class PruneMinWeight(Prune):
         if byom_custom_layer is None:
             byom_custom_layer = []
         self.byom_custom_layers = byom_custom_layer
+        self._visited = {}
 
     @staticmethod
     def _get_channel_index(data_format):
@@ -447,6 +448,7 @@ class PruneMinWeight(Prune):
         dw_layers = find_prunable_parent(dw_layers,
                                          layer,
                                          True,
+                                         visited=self._visited,
                                          byom_custom_layers=self.byom_custom_layers)
         self._update_equalization_groups(dw_layers + [layer])
         previous_layer = dw_layers[0]
@@ -514,7 +516,7 @@ class PruneMinWeight(Prune):
     def _explore_elmtwise_layer(self, layer):
         eltwise_prunable_inputs = []
         eltwise_prunable_inputs = find_prunable_parent(
-            eltwise_prunable_inputs, layer, byom_custom_layers=self.byom_custom_layers
+            eltwise_prunable_inputs, layer, byom_custom_layers=self.byom_custom_layers, visited=self._visited
         )
         logger.debug(
             "At explore_elmtwise_layer: Prunable parents at layer {}".format(layer.name)  # noqa pylint: disable=C0209
@@ -905,7 +907,6 @@ class PruneMinWeight(Prune):
 
         logger.info("Exploring graph for retainable indices")
         layers_to_explore = model._input_layers
-
         model_inputs = []
         model_outputs = []
 
@@ -1502,8 +1503,6 @@ def find_prunable_parent(prunable_parents,
     Return:
         A list of keras layers which are prunable inputs to the given layer.
     """
-    visited = visited or {}
-
     if byom_custom_layers:
         assert isinstance(byom_custom_layers, list), \
             f"Invalid data type for byom_custom_layers, {type(byom_custom_layers)}"
@@ -1541,14 +1540,15 @@ def find_prunable_parent(prunable_parents,
             previous_layers.append(l)
 
     for l in previous_layers:  # noqa pylint: disable=E741
-        if visited and l in visited:
-            prunable_parents.extend(visited[l])
+        if visited and l.name in visited:
+            prunable_parents.extend(visited[l.name])
         else:
             # Skip the Input layers if there are multiple parents.
             if type(l) not in [keras.layers.InputLayer]:
-                visited[l] = find_prunable_parent(prunable_parents,
-                                                  l,
-                                                  False,
-                                                  visited,
-                                                  byom_custom_layers)
+                find_prunable_parent(prunable_parents,
+                                     l,
+                                     False,
+                                     visited,
+                                     byom_custom_layers)
+    visited[layer.name] = prunable_parents
     return list(set(prunable_parents))

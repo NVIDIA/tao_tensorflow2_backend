@@ -20,9 +20,8 @@ from cv.efficientdet.pruner.pruner import EfficientDetPruner
 from cv.efficientdet.utils.helper import dump_eval_json, dump_json, encode_eff
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.get_logger().setLevel('ERROR')
-logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-                    level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 def run_pruning(cfg):
@@ -65,6 +64,7 @@ def run_pruning(cfg):
     dump_json(pruned_model, os.path.join(tmp_dir, 'train_graph.json'))
     dump_eval_json(tmp_dir, eval_graph='eval_graph.json')
     pruned_model.save_weights(os.path.join(tmp_dir, 'prunedckpt'))
+    pruned_model.summary()
     # Convert to EFF
     encode_eff(tmp_dir, cfg.prune.output_path, cfg.key, is_pruned=True)
     pruning_ratio = pruned_model.count_params() / pruner.model.count_params()
