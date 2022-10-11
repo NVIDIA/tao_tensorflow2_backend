@@ -123,6 +123,13 @@ class ExportConfig:
     min_score_thresh: float = 0.3
     model_path: str = MISSING
     output_path: str = MISSING
+    engine_file: str = ""
+    data_type: str = "fp32"
+    max_workspace_size: int = 2  # in Gb
+    cal_image_dir: str = ""
+    cal_cache_file: str = ""
+    cal_batch_size: int = 16
+    cal_batches: int = 10
 
 
 @dataclass

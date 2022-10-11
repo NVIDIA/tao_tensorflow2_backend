@@ -70,6 +70,13 @@ export:
   min_score_thresh: 0.3
   model_path: ""
   output_path: ""
+  engine_file: ""
+  data_type: "fp32"
+  max_workspace_size: 2  # in Gb
+  cal_image_dir: ""
+  cal_cache_file: ""
+  cal_batch_size: 16
+  cal_batches: 10
 inference:
   model_path: ""
   image_dir: ""
