@@ -18,7 +18,7 @@ import common.no_warning # noqa pylint: disable=W0611
 
 from cv.efficientdet.config.default_config import ExperimentConfig
 from cv.efficientdet.inferencer import inference, inference_trt
-from cv.efficientdet.utils import helper, hparams_config
+from cv.efficientdet.utils import helper, hparams_config, label_utils
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils.horovod_utils import initialize
 
@@ -122,7 +122,10 @@ def main(cfg: ExperimentConfig):
     )
     label_id_mapping = {}
     if cfg.inference.label_map:
-        label_id_mapping = get_label_dict(cfg.inference.label_map)
+        if str(cfg.inference.label_map).endswith('.yaml'):
+            label_id_mapping = label_utils.get_label_map(cfg.inference.label_map)
+        else:
+            label_id_mapping = get_label_dict(cfg.inference.label_map)
 
     if cfg.inference.model_path.endswith('.engine'):
         warnings.warn("Please use tao-deploy to run TensorRT inference.")
