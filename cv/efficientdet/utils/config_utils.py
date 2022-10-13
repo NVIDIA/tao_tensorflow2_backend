@@ -1,15 +1,8 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
-"""Utils for processing config file to run EfficientDet training, evaluation, pruning."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import logging
+"""Utils for processing config file to run EfficientDet pipelines."""
 import six
 from cv.efficientdet.utils import model_utils
-logger = logging.getLogger(__name__)
 
 
 def eval_str(s):
@@ -23,6 +16,7 @@ def eval_str(s):
 
 def generate_params_from_cfg(default_hparams, cfg, mode):
     """Generate parameters from experient cfg."""
+    spec_checker(cfg)
     if cfg['model']['aspect_ratios']:
         aspect_ratios = eval_str(cfg['model']['aspect_ratios'])
         if not isinstance(aspect_ratios, list):
@@ -96,3 +90,57 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         #
         results_dir=cfg['results_dir']
     )
+
+
+def spec_checker(cfg):
+    """Check if parameters in the spec file are valid.
+
+    Args:
+        cfg: Hydra config.
+    """
+    assert cfg.data_format == 'channels_last', "Only `channels_last` data format is supported."
+    # training config
+    assert cfg.train.batch_size > 0, \
+        "batch size for training must be positive."
+    assert cfg.train.checkpoint_period > 0, \
+        "checkpoint interval must be positive."
+    assert cfg.train.num_examples_per_epoch > 0, \
+        "Number of samples must be positive."
+    assert cfg.train.num_epochs >= \
+        cfg.train.checkpoint_period, \
+        "num_epochs must be positive and no less than checkpoint_period."
+    assert 0 <= cfg.train.moving_average_decay < 1, \
+        "Moving average decay must be within [0, 1)."
+    assert 0 < cfg.train.lr_schedule.warmup_init < 1, \
+        "The initial learning rate during warmup must be within (0, 1)."
+    assert cfg.train.lr_schedule.learning_rate > 0, \
+        "learning_rate must be positive."
+    assert cfg.train.num_epochs >= cfg.train.lr_schedule.warmup_epoch >= 0, \
+        "warmup_epoch must be within [0, num_epochs]."
+
+    # model config
+    assert 'efficientdet-d' in str(cfg.model.name), \
+        "model name can be chosen from efficientdet-d0 to efficientdet-d5."
+    assert cfg.model.min_level == 3, "min_level must be 3"
+    assert cfg.model.max_level == 7, "max_level must be 7"
+
+    # eval config
+    assert cfg.evaluate.batch_size > 0, "batch size for evaluation must be positive"
+    assert cfg.train.num_epochs >= cfg.evaluate.start_eval_epoch >= 0, \
+        "start_eval_epoch must be within [0, num_epochs]."
+    assert 0 < cfg.evaluate.num_samples, \
+        "Number of evaluation samples must be positive."
+
+    # dataset config
+    assert cfg.data.train_tfrecords, \
+        "train_tfrecords must be specified."
+    assert cfg.data.val_tfrecords, \
+        "val_tfrecords must be specified."
+    assert cfg.data.val_json_file, \
+        "val_json_file must be specified."
+    assert 1 < cfg.data.num_classes, \
+        "num_classes is number of categories + 1 (background). It must be greater than 1."
+
+    # augment config
+    assert cfg.augment.random_crop_max_scale >= cfg.augment.random_crop_min_scale > 0, \
+        "random_crop_min_scale should be positive and no greater than random_crop_max_scale."
