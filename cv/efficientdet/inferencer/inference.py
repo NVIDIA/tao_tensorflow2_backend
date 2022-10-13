@@ -7,10 +7,10 @@ from __future__ import division
 from __future__ import print_function
 
 import functools
+import logging
 import os
 from typing import Text, Tuple, Union
 
-from absl import logging
 import numpy as np
 from PIL import Image
 import tensorflow as tf

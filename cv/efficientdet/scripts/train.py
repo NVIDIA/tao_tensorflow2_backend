@@ -1,8 +1,8 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """The main training script."""
+import logging
 import os
-import time
-from absl import logging
+
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
 from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase
@@ -23,14 +23,13 @@ from cv.efficientdet.utils import hparams_config, keras_utils
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils.helper import decode_eff, dump_json, load_model, load_json_model
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank, initialize
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level='INFO')
+logger = logging.getLogger(__name__)
 
 
 def run_experiment(cfg, ci_run=False):
     """Run training experiment."""
-    # get e2e training time
-    # begin = time.time()
-    logging.info(f"Training started at: {time.asctime()}")
-
     hvd.init()
 
     # Parse and update hparams
@@ -92,8 +91,7 @@ def run_experiment(cfg, ci_run=False):
     # Build models
     if not cfg.train.pruned_model_path:
         if is_main_process():
-            print("Building unpruned graph...")
-        # TODO(@yuw): verify channels_first training or force last
+            logger.info("Building unpruned graph...")
         input_shape = list(config.image_size) + [3] \
             if config.data_format == 'channels_last' else [3] + list(config.image_size)
         original_learning_phase = tf.keras.backend.learning_phase()
@@ -103,7 +101,7 @@ def run_experiment(cfg, ci_run=False):
         tf.keras.backend.set_learning_phase(original_learning_phase)
     else:
         if is_main_process():
-            print("Loading pruned graph...")
+            logger.info("Loading pruned graph...")
         original_learning_phase = tf.keras.backend.learning_phase()
         model = load_model(cfg.train.pruned_model_path, cfg, mode='train')
         tf.keras.backend.set_learning_phase(0)
@@ -121,11 +119,11 @@ def run_experiment(cfg, ci_run=False):
         pretrained_ckpt_path, ckpt_name = decode_eff(str(cfg.train.checkpoint), cfg.key)
     else:
         pretrained_ckpt_path = cfg.train.checkpoint
-    if pretrained_ckpt_path and not os.path.exists(resume_ckpt_path):
+    if pretrained_ckpt_path and not os.path.exists(resume_ckpt_path) and is_main_process():
         if not cfg.train.pruned_model_path:
-            print("Loading pretrained weight...")
+            logger.info("Loading pretrained weight...")
             if 'train_graph.json' in os.listdir(pretrained_ckpt_path):
-                print("Loading EfficientDet mdoel...")
+                logger.info("Loading EfficientDet mdoel...")
                 pretrained_model = load_json_model(
                     os.path.join(pretrained_ckpt_path, 'train_graph.json'))
                 keras_utils.restore_ckpt(
@@ -135,7 +133,7 @@ def run_experiment(cfg, ci_run=False):
                     steps_per_epoch=0,
                     expect_partial=True)
             else:
-                print("Loading EfficientNet backbone...")
+                logger.info("Loading EfficientNet backbone...")
                 pretrained_model = tf.keras.models.load_model(pretrained_ckpt_path)
             for layer in pretrained_model.layers[1:]:
                 # The layer must match up to prediction layers.
@@ -144,12 +142,12 @@ def run_experiment(cfg, ci_run=False):
                     l_return = model.get_layer(layer.name)
                 except ValueError:
                     # Some layers are not there
-                    print(f"Skipping as {layer.name} is not found.")
+                    logger.info("Skipping %s, as it does not exist in the training model.", layer.name)
                 if l_return is not None:
                     try:
                         l_return.set_weights(layer.get_weights())
                     except ValueError:
-                        print(f"Skipping {layer.name} due to shape mismatch.")
+                        logger.info("Skipping %s, due to shape mismatch.", layer.name)
 
     if cfg.train.qat:
         model = quantize_model(model, custom_qdq_cases=[EfficientNetQDQCase()])
@@ -192,7 +190,7 @@ def run_experiment(cfg, ci_run=False):
     train_from_epoch = 0
     if os.path.exists(resume_ckpt_path):
         if is_main_process():
-            print("Resume training...")
+            logger.info("Resume training...")
         ckpt_path, _ = decode_eff(resume_ckpt_path, cfg.key)
         train_from_epoch = keras_utils.restore_ckpt(
             model,
@@ -226,7 +224,7 @@ def run_experiment(cfg, ci_run=False):
             verbose=1 if is_main_process() else 0)
     else:
         if is_main_process():
-            print(f"Training ({train_from_epoch} epochs) has finished.")
+            logger.info("Training (%d epochs) has finished.", train_from_epoch)
     status_logging.get_status_logger().write(
         status_level=status_logging.Status.SUCCESS,
         message="Training finished successfully."

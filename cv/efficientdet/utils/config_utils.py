@@ -75,7 +75,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         pruned_model_path=cfg['train']['pruned_model_path'],
         moving_average_decay=cfg['train']['moving_average_decay'],
         amp=cfg['train']['amp'],
-        mixed_precision=cfg['train']['amp'] and not cfg['train']['qat'],  # TODO(@yuw): whether raise error when qat and amp both True?
+        mixed_precision=cfg['train']['amp'] and not cfg['train']['qat'],
         data_format=cfg['data_format'],
         l2_weight_decay=cfg['train']['l2_weight_decay'],
         l1_weight_decay=cfg['train']['l1_weight_decay'],

@@ -94,7 +94,6 @@ def load_model(eff_model_path, cfg, mode='train', is_qat=False):
         cfg.train.moving_average_decay,
         steps_per_epoch=0,
         expect_partial=True)
-    # TODO(@yuw): verify train_from_epoch
     return model
 
 

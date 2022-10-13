@@ -8,6 +8,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow_addons.optimizers import MovingAverage
 
+import common.logging.logging as status_logging
+
 from cv.efficientdet.processor.postprocessor import EfficientDetPostprocessor
 from cv.efficientdet.utils import coco_metric
 from cv.efficientdet.utils import label_utils
@@ -35,6 +37,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         self.evaluator = coco_metric.EvaluationMetric(
             filename=eval_params.data.val_json_file, label_map=label_map)
         self.pbar = tf.keras.utils.Progbar(eval_params.evaluate.num_samples)
+        self.s_logger = status_logging.get_status_logger()
 
     def set_model(self, model):
         """Set model."""
@@ -92,7 +95,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
                 boxes = boxes[:, [1, 0, 3, 2]]
                 classes = predictions[:, -1].astype(np.int32)
                 scores = predictions[:, -2]
-                # TODO(@yuw): configurable label, min_score and max_boxes
+
                 image = vis_utils.visualize_boxes_and_labels_on_image_array(
                     image,
                     boxes,
@@ -120,10 +123,15 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
                     tf.summary.scalar(name, metrics[i], step=epoch)
                     metric_dict[name] = metrics[i]
 
-            # csv format
-            # csv_metrics = ['AP', 'AP50', 'AP75', 'APs', 'APm', 'APl']
-            # csv_format = ",".join([str(epoch + 1)] + [str(round(metric_dict[key] * 100, 2)) for key in csv_metrics])
-            # print(metric_dict, "csv format:", csv_format)  # TODO(@yuw): add to logger
+            for k, v in metric_dict.items():
+                self.s_logger.kpi[k] = float(v)
+            try:
+                self.s_logger.write(
+                    status_level=status_logging.Status.RUNNING)
+            except IOError:
+                # We let this pass because we do not want the json file writing to crash the whole job.
+                pass
+
 
         if self.eval_params.train.moving_average_decay > 0:
             self.ema_opt.swap_weights()  # get base weights

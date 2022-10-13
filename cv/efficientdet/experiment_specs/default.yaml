@@ -26,6 +26,7 @@ train:
     warmup_epoch: 5
     warmup_init: 0.0001
     learning_rate: 0.2
+    annealing_epoch: 10
   amp: True
   checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/imagenet/tf2_effnet_b0/weights/efficientnet-b0_500.tlt"
   num_examples_per_epoch: 100
@@ -40,7 +41,7 @@ train:
   qat: False
   tf_random_seed: 42
   pruned_model_path: ''
-  num_epochs: 2
+  num_epochs: 20
 model:
   name: 'efficientdet-d0'
   aspect_ratios: '[(1.0, 1.0), (1.4, 0.7), (0.7, 1.4)]'
@@ -61,9 +62,9 @@ evaluate:
   num_samples: 5
   max_detections_per_image: 100
   label_map: ''
-  iou_thresh: 0.5
   max_nms_inputs: 5000
   model_path: ''
+  sigma: 0.5
 export:
   max_batch_size: 8
   dynamic_batch_size: True
@@ -83,6 +84,7 @@ inference:
   output_dir: ""
   dump_label: False
   batch_size: 1
+  max_boxes_to_draw: 100
 prune:
   model_path: ""
   normalizer: 'max'

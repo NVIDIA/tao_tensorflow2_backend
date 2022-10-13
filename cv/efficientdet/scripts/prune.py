@@ -68,7 +68,7 @@ def run_pruning(cfg):
     # Convert to EFF
     encode_eff(tmp_dir, cfg.prune.output_path, cfg.key, is_pruned=True)
     pruning_ratio = pruned_model.count_params() / pruner.model.count_params()
-    print(f"Pruning ratio (pruned model / original model): {pruning_ratio}")
+    logger.info("Pruning ratio (pruned model / original model): %s", pruning_ratio)
     s_logger.kpi.update(
         {'pruning_ratio': float(pruning_ratio),
          'param_count': pruned_model.count_params(),

@@ -1,7 +1,7 @@
 """Postprocessing for anchor-based detection."""
+import logging
 from typing import List, Tuple
 import functools
-from absl import logging
 import tensorflow as tf
 
 from blocks.processor.postprocessor import Postprocessor
@@ -41,18 +41,16 @@ class EfficientDetPostprocessor(Postprocessor):
         original_image_widths = tf.expand_dims(image_scales, -1) * width
 
         if use_pyfunc:
-            # TODO(@yuw): verify!
             detections_bs = []
             boxes, scores, classes = self.pre_nms(cls_outputs, box_outputs)
             for index in range(boxes.shape[0]):
-                # TODO(@yuw): make it configurable
                 nms_configs = {
                     'method': 'gaussian',
                     'iou_thresh': None,  # use the default value based on method.
                     'score_thresh': 0.,
-                    'sigma': None,
-                    'max_nms_inputs': 5000,
-                    'max_output_size': 100,
+                    'sigma': self.params.evaluate.sigma,
+                    'max_nms_inputs': self.params.evaluate.max_nms_inputs,
+                    'max_output_size': self.params.evaluate.max_detections_per_image,
                 }
                 detections = tf.numpy_function(
                     functools.partial(nms_utils.per_class_nms, nms_configs=nms_configs), [
@@ -193,16 +191,16 @@ class EfficientDetPostprocessor(Postprocessor):
             denoting the valid length of boxes/scores/classes outputs.
         """
         eval_config = self.params['evaluate']
-        method = 'hard'  # nms_configs['method'] TODO(@yuw): configurable?
+        method = 'gaussian'
         max_output_size = eval_config['max_detections_per_image']
 
         if method == 'hard' or not method:
             # hard nms.
             sigma = 0.0
-            iou_thresh = eval_config['iou_thresh'] or 0.5
+            iou_thresh = eval_config['iou_thresh'] or 0.5  # TF BASED NMS NOT IN USE
             score_thresh = eval_config['min_score_thresh'] or float('-inf')
         elif method == 'gaussian':
-            sigma = eval_config['sigma'] or 0.5
+            sigma = eval_config['sigma'] or 0.5  # TF BASED NMS NOT IN USE
             iou_thresh = 1.0
             score_thresh = eval_config['min_score_thresh'] or 0.001
         else:

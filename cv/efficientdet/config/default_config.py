@@ -26,6 +26,7 @@ class LRConfig:
     warmup_epoch: int = 5
     warmup_init: float = 0.0001
     learning_rate: float = 0.2
+    annealing_epoch: int = 10
 
 
 @dataclass
@@ -98,9 +99,10 @@ class EvalConfig:
     num_samples: int = 5000
     max_detections_per_image: int = 100
     label_map: str = ''
-    iou_thresh: float = 0.5
     max_nms_inputs: int = 5000
     model_path: str = ''
+    start_eval_epoch: int = 1
+    sigma: float = 0.5
 
 
 @dataclass
@@ -143,6 +145,7 @@ class InferenceConfig:
     batch_size: int = 1
     min_score_thresh: float = 0.3
     label_map: str = ''
+    max_boxes_to_draw: int = 100
 
 
 @dataclass

@@ -13,9 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 """Data loader and processing."""
+import logging
 import os
 import multiprocessing
-from absl import logging
 import tensorflow as tf
 
 from blocks.dataloader.dataset import Dataset
@@ -26,6 +26,9 @@ from cv.efficientdet.utils.keras_utils import get_mixed_precision_policy
 
 from cv.core import preprocessor
 from cv.core import tf_example_decoder
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level='INFO')
+logger = logging.getLogger(__name__)
 
 
 class InputProcessor:
@@ -90,7 +93,7 @@ class InputProcessor:
             target_size = self._output_size
         target_size = model_utils.parse_image_size(target_size)
         if is_main_process():
-            logging.info('target_size = %s, output_size = %s', target_size, self._output_size)
+            logger.info('target_size = %s, output_size = %s', target_size, self._output_size)
 
         # Select a random scale factor.
         random_scale_factor = tf.random.uniform([], scale_min, scale_max)
@@ -330,12 +333,12 @@ class CocoDataset(Dataset):
                     from cv.efficientdet.augmentation import autoaugment  # noqa pylint: disable=C0415
                     if params['auto_color']:
                         if is_main_process():
-                            print("Auto color augmentation is enabled.")
+                            logger.info("Auto color augmentation is enabled.")
                         image, boxes = autoaugment.distort_image_with_autocolor(
                             image, boxes, num_layers=1, magnitude=15)
                     if params['auto_translate_xy']:
                         if is_main_process():
-                            print("Auto translate_xy augmentation is enabled.")
+                            logger.info("Auto translate_xy augmentation is enabled.")
                         image, boxes = autoaugment.distort_image_with_autotranslate(
                             image, boxes, num_layers=1, magnitude=15)
 
@@ -430,7 +433,7 @@ class CocoDataset(Dataset):
         example_decoder = tf_example_decoder.TfExampleDecoder(
             include_mask='segmentation' in params['heads'],
             regenerate_source_id=params['regenerate_source_id'],
-            include_image=True,  # TODO(@yuw): make it configurable!!
+            include_image=True,  # TODO(@yuw): forced to True, as image must be encoded in tfrecords
         )
 
         batch_size = batch_size or params['batch_size']
@@ -478,14 +481,12 @@ class CocoDataset(Dataset):
             weights.append(1 if (not image_dir or image_dir == '/') else len(os.listdir(image_dir)))
 
         if not self._sampling or len(self._data_sources) == 1 or not self._is_training:
-            if is_main_process():
-                print("No Sampling")
             combined = datasets[0]
             for dataset in datasets[1:]:
                 combined = combined.concatenate(dataset)
         elif self._sampling == 'proportional':
             if is_main_process():
-                print("Use Proportional Sampling")
+                logger.info("Use Proportional Sampling")
             total = sum(weights)
             weights = [w / total for w in weights]
             combined = tf.data.Dataset.sample_from_datasets(
@@ -493,13 +494,13 @@ class CocoDataset(Dataset):
             )
         elif self._sampling == 'uniform':
             if is_main_process():
-                print("Use Uniform Sampling")
+                logger.info("Use Uniform Sampling")
             weights = [1.0 / len(weights)] * len(weights)
             combined = tf.data.Dataset.sample_from_datasets(
                 datasets, weights=weights, stop_on_empty_dataset=True,
             )
         else:
-            raise ValueError("You shouldn't be here!")
+            raise ValueError("Unexpected error in dataloader!")
 
         combined = combined.batch(batch_size, drop_remainder=params['drop_remainder'])
         combined = combined.map(

@@ -64,12 +64,11 @@ def infer_tlt(cfg, label_id_mapping, min_score_thresh, ci_run=False):
     # Load model from graph json
     model = helper.load_model(cfg.inference.model_path, cfg, MODE, is_qat=cfg.train.qat)
 
-    # TODO(@yuw): amp changes dtype?
     infer_model = inference.InferenceModel(model, config.image_size, params,
                                            cfg.inference.batch_size,
                                            label_id_mapping=label_id_mapping,
                                            min_score_thresh=min_score_thresh,
-                                           max_boxes_to_draw=100)  # TODO(@yuw): make it configurable
+                                           max_boxes_to_draw=cfg.inference.max_boxes_to_draw)
     imgpath_list = [os.path.join(cfg.inference.image_dir, imgname)
                     for imgname in sorted(os.listdir(cfg.inference.image_dir))
                     if os.path.splitext(imgname)[1].lower()
@@ -93,7 +92,6 @@ def infer_trt(cfg, label_id_mapping, min_score_thresh):
         cfg.inference.image_dir,
         cfg.inference.output_dir,
         cfg.inference.dump_label)
-    print("Finished Processing")
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
