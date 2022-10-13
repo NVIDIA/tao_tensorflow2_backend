@@ -21,7 +21,7 @@ def pyarmor_init(model_to_entry_files_map, root):
         os.system("pyarmor init --src " + os.path.join(root, model_path) + " --entry '" + entry_scripts + "' " + os.path.join("/obf_src", model_path)  )
         os.chdir(os.path.join("/obf_src", model_path))
         obf_code_flag = ""
-        if "pointpillars" in model_path:
+        if "classification" in model_path:
             obf_code_flag = "--obf-code=0"
         call_command = f"pyarmor config --manifest 'global-include *.py' --is-package 0 --enable-suffix 1 {obf_code_flag}"
         os.system(call_command)

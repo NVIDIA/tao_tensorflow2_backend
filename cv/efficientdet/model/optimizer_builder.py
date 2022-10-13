@@ -97,11 +97,11 @@ class HvdMovingAverage(MovingAverage):
         return self._optimizer._resource_apply_sparse_duplicate_indices(
             grad, var, indices)
 
-    @tf.function
-    def update_average(self, step: tf.Tensor):
-        """Update average."""
-        step = tf.cast(step, tf.float32)
-        average_decay = self._get_hyper("average_decay", tf.dtypes.float32)
+    def get_decay_value(self, step, average_decay):
+        """Get decay value for updating average."""
+        # Pyarmor doesn't recognize the tf.function decorator
+        # Which results in the error: using a `tf.Tensor` as a Python `bool` is not allowed in Graph execution.
+        # Hence we use tf.py_function as a temporary workaround
         if step < self._start_step:
             decay = tf.constant(0., tf.float32)
         elif self._dynamic_decay:
@@ -109,6 +109,13 @@ class HvdMovingAverage(MovingAverage):
             decay = tf.minimum(average_decay, (1. + decay) / (10. + decay))
         else:
             decay = average_decay
+        return decay
+
+    def update_average(self, step: tf.Tensor):
+        """Update average."""
+        step = tf.cast(step, tf.float32)
+        average_decay = self._get_hyper("average_decay", tf.dtypes.float32)
+        decay = tf.py_function(func=self.get_decay_value, inp=[step, average_decay], Tout=average_decay.dtype)
 
         def _apply_moving(v_moving, v_normal):
             diff = v_moving - v_normal
