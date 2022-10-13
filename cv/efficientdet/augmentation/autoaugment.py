@@ -146,7 +146,6 @@ def policy_v3():
     return policy
 
 
-@tf.function
 def blend(image1, image2, factor):
     """Blend image1 and image2 using 'factor'.
 
@@ -185,7 +184,7 @@ def blend(image1, image2, factor):
     # # Extrapolate:
     # # We need to clip and then cast.
     # return tf.cast(tf.clip_by_value(temp, 0.0, 255.0), tf.uint8)
-    result = tf.cond(tf.greater(factor, 0.0) and tf.less(factor, 1.0),
+    result = tf.cond(tf.math.logical_and(tf.greater(factor, 0.0), tf.less(factor, 1.0)),
                      lambda: tf.cast(temp, tf.uint8),
                      lambda: tf.cast(tf.clip_by_value(temp, 0.0, 255.0), tf.uint8))
     return result
