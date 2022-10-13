@@ -132,7 +132,6 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
                 # We let this pass because we do not want the json file writing to crash the whole job.
                 pass
 
-
         if self.eval_params.train.moving_average_decay > 0:
             self.ema_opt.swap_weights()  # get base weights
 

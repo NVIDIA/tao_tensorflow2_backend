@@ -1,7 +1,7 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Convert raw COCO dataset to TFRecord for object_detection."""
 import collections
-
+from collections import Counter
 import hashlib
 import io
 import json
@@ -80,6 +80,7 @@ def create_tf_example(image,
     encoded_mask_png = []
     num_annotations_skipped = 0
     log_warnings = {}
+    cat_counter = Counter()
     box_oob = []  # out of bound boxes
     mask_oob = []  # out of bound masks
     for object_annotations in bbox_annotations:
@@ -108,6 +109,10 @@ def create_tf_example(image,
         category_id = int(object_annotations['category_id'])
         category_ids.append(category_id)
         category_names.append(category_index[category_id]['name'].encode('utf8'))
+        if str(category_index[category_id]['name']) in cat_counter:
+            cat_counter[str(category_index[category_id]['name'])] += 1
+        else:
+            cat_counter[str(category_index[category_id]['name'])] = 1
         area.append(object_annotations['area'])
 
         if include_masks:
@@ -192,7 +197,7 @@ def create_tf_example(image,
         log_warnings[image_id] = {}
         log_warnings[image_id]['box'] = box_oob
         log_warnings[image_id]['mask'] = mask_oob
-    return key, example, num_annotations_skipped, log_warnings
+    return key, example, num_annotations_skipped, log_warnings, cat_counter
 
 
 def _pool_create_tf_example(args):
@@ -259,7 +264,8 @@ def _create_tf_record_from_coco_annotations(object_annotations_file,
     pool = multiprocessing.Pool()  # noqa pylint: disable=R1732
     total_num_annotations_skipped = 0
     log_total = {}
-    for idx, (_, tf_example, num_annotations_skipped, log_warnings) in enumerate(
+    cat_total = Counter()
+    for idx, (_, tf_example, num_annotations_skipped, log_warnings, cats) in enumerate(
         pool.imap(_pool_create_tf_example, [(
             image,
             img_to_obj_annotation[image['id']],
@@ -271,6 +277,7 @@ def _create_tf_record_from_coco_annotations(object_annotations_file,
 
         total_num_annotations_skipped += num_annotations_skipped
         log_total = _merge_log(log_total, log_warnings)
+        cat_total.update(cats)
         writers[idx % num_shards].write(tf_example.SerializeToString())
 
     pool.close()
@@ -281,7 +288,7 @@ def _create_tf_record_from_coco_annotations(object_annotations_file,
 
     tf.compat.v1.logging.info(
         'Finished writing, skipped %d annotations.', total_num_annotations_skipped)
-    return log_total
+    return log_total, cat_total
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -318,7 +325,7 @@ def main(cfg: ExperimentConfig) -> None:
     tag = cfg.dataset_convert.tag or os.path.splitext(os.path.basename(cfg.dataset_convert.annotations_file))[0]
     output_path = os.path.join(cfg.dataset_convert.output_dir, tag)
 
-    log_total = _create_tf_record_from_coco_annotations(
+    log_total, cat_total = _create_tf_record_from_coco_annotations(
         cfg.dataset_convert.annotations_file,
         cfg.dataset_convert.image_dir,
         output_path,
@@ -328,6 +335,8 @@ def main(cfg: ExperimentConfig) -> None:
     if log_total:
         with open(os.path.join(log_dir, f'{tag}_warnings.json'), "w", encoding='utf-8') as f:
             json.dump(log_total, f)
+
+    s_logger.categorical = {'num_objects': cat_total}
 
     s_logger.write(
         status_level=status_logging.Status.SUCCESS,
