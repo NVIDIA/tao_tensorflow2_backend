@@ -65,6 +65,7 @@ evaluate:
   max_nms_inputs: 5000
   model_path: ''
   sigma: 0.5
+  start_eval_epoch: 1
 export:
   max_batch_size: 8
   dynamic_batch_size: True
