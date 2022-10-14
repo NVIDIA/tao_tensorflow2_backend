@@ -731,7 +731,7 @@ def efficientdet(input_shape, inputs=None, training=True, model_name=None, confi
 
     # call backbone network.
     all_feats = model_builder.build_backbone(inputs, config)
-    # TODO(@yuw): wrap line
+
     feats = [all_feats[k] for k in sorted(all_feats.keys())][config.min_level:config.max_level + 1]
     # feats = all_feats[config.min_level:config.max_level + 1]
 

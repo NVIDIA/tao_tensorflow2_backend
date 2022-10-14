@@ -1,7 +1,7 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Common keras utils."""
+import logging
 from typing import Text
-from absl import logging
 import tensorflow as tf
 from cv.efficientdet.model import normalization_builder
 
@@ -146,7 +146,7 @@ def restore_ckpt(model,
     if steps_per_epoch > 0:
         last_iteration = model.optimizer.iterations
         ckpt_epoch = last_iteration // steps_per_epoch
-        logging.debug(f"Restored checkpoint at epoch: {ckpt_epoch}")
+        logging.debug("Restored checkpoint at epoch: %s", ckpt_epoch)
         return ckpt_epoch
     return 0
 

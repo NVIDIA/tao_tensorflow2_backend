@@ -86,7 +86,6 @@ def run_export(cfg, ci_run=False):
         signatures=export_model.infer.get_concrete_function(
             tf.TensorSpec(shape=(None, None, None, 3), dtype=tf.uint8)))
 
-    print("Exporting .etlt model...")
     # convert to onnx
     effdet_gs = EfficientDetGraphSurgeon(
         output_dir,

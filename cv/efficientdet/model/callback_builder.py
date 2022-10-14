@@ -64,7 +64,7 @@ def get_callbacks(params, eval_dataset, steps_per_epoch, eval_model=None, initia
         eval_dataset,
         eval_model=eval_model,
         eval_freq=params['train']['checkpoint_period'],
-        start_eval_epoch=1,  # TODO(@yuw): make it configurable
+        start_eval_epoch=params['evaluate']['start_eval_epoch'],
         eval_params=params)
     callbacks.append(cocoeval)
 

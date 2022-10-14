@@ -1,7 +1,7 @@
 """Model utils."""
 import contextlib
+import logging
 from typing import Text, Tuple, Union
-from absl import logging
 import numpy as np
 # import tensorflow.compat.v1 as tf
 import tensorflow as tf
@@ -30,7 +30,7 @@ def get_ckpt_var_map(ckpt_path, ckpt_scope, var_scope, skip_mismatch=None):
     Returns:
         var_map: a dictionary from checkpoint name to model variables.
     """
-    logging.info(f'Init model from checkpoint {ckpt_path}')
+    logging.info('Init model from checkpoint %s', ckpt_path)
     if not ckpt_scope.endswith('/') or not var_scope.endswith('/'):
         raise ValueError('Please specific scope name ending with /')
     if ckpt_scope.startswith('/'):
@@ -47,7 +47,7 @@ def get_ckpt_var_map(ckpt_path, ckpt_scope, var_scope, skip_mismatch=None):
 
     for i, v in enumerate(model_vars):
         if not v.op.name.startswith(var_scope):
-            logging.info(f'skip {v.op.name} -- does not match scope {var_scope}')
+            logging.info('skip %s -- does not match scope %s', v.op.name, var_scope)
         ckpt_var = ckpt_scope + v.op.name[len(var_scope):]
         if (ckpt_var not in ckpt_var_names and
                 v.op.name.endswith('/ExponentialMovingAverage')):
@@ -58,19 +58,19 @@ def get_ckpt_var_map(ckpt_path, ckpt_scope, var_scope, skip_mismatch=None):
                 # Skip optimizer variables.
                 continue
             if skip_mismatch:
-                logging.info(f'skip {v.op.name} ({ckpt_var}) -- not in ckpt')
+                logging.info('skip %s (%s) -- not in ckpt', v.op.name, ckpt_var)
                 continue
             raise ValueError(f'{v.op} is not in ckpt {ckpt_path}')
 
         if v.shape != ckpt_var_name_to_shape[ckpt_var]:
             if skip_mismatch:
-                logging.info(f'skip {v.op.name} ({v.shape} vs {ckpt_var_name_to_shape[ckpt_var]}) -- shape mismatch')
+                logging.info('skip %s (%s vs %s) -- shape mismatch', v.op.name, v.shape, ckpt_var_name_to_shape[ckpt_var])
                 continue
             raise ValueError(f'shape mismatch {v.op.name} ({v.shape} vs {ckpt_var_name_to_shape[ckpt_var]})')
 
         if i < 5:
             # Log the first few elements for sanity check.
-            logging.info(f'Init {v.op.name} from ckpt var {ckpt_var}')
+            logging.info('Init %s from ckpt var %s', v.op.name, ckpt_var)
         var_map[ckpt_var] = v
 
     return var_map
@@ -108,40 +108,6 @@ def num_params_flops(readable_format=True):
         nparams = float(nparams) * 1e-6
         flops = float(flops) * 1e-9
     return nparams, flops
-
-
-conv_kernel_initializer = tf.initializers.variance_scaling()
-dense_kernel_initializer = tf.initializers.variance_scaling()
-
-
-class Pair(tuple):
-    """Custom Pair class."""
-
-    def __new__(cls, name, value):
-        """New."""
-        return super().__new__(cls, (name, value))
-
-    def __init__(self, name, _):  # pylint: disable=super-init-not-called
-        """Init."""
-        self.name = name
-
-
-def scalar(name, tensor, is_tpu=True):
-    """Stores a (name, Tensor) tuple in a custom collection."""
-    logging.info(f'Adding scale summary {Pair(name, tensor)}')
-    if is_tpu:
-        tf.add_to_collection('scalar_summaries', Pair(name, tf.reduce_mean(tensor)))
-    else:
-        tf.summary.scalar(name, tf.reduce_mean(tensor))
-
-
-def image(name, tensor, is_tpu=True):
-    """Store a (name, Tensor) tuple in a custom collection."""
-    logging.info(f'Adding image summary {Pair(name, tensor)}')
-    if is_tpu:
-        tf.add_to_collection('image_summaries', Pair(name, tensor))
-    else:
-        tf.summary.image(name, tensor)
 
 
 def parse_image_size(image_size: Union[Text, int, Tuple[int, int]]):

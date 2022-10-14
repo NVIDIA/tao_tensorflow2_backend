@@ -1,7 +1,7 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Learning rate related utils."""
 import math
-from absl import logging
+import logging
 from typing import Any, Mapping
 import tensorflow as tf
 
@@ -138,7 +138,8 @@ def learning_rate_schedule(params, steps_per_epoch):
         return SoftStartAnnealingLearningRateScheduler(
             params.lr_schedule.learning_rate,
             params.lr_schedule.warmup_init,
-            0.1, 0.3,  # TODO(@yuw): add config
+            params.lr_schedule.warmup_epoch / params.num_epochs,
+            params.lr_schedule.annealing_epoch / params.num_epochs,
             total_steps)
 
     raise ValueError(f'unknown lr_decay_method: {lr_decay_method}. \

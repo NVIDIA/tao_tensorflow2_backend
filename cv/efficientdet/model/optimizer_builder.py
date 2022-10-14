@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 """Optimizer related utils."""
-from absl import logging
+import logging
 import tensorflow as tf
 from tensorflow_addons.optimizers import MovingAverage
 
