@@ -136,8 +136,6 @@ def spec_checker(cfg):
         "train_tfrecords must be specified."
     assert cfg.data.val_tfrecords, \
         "val_tfrecords must be specified."
-    assert cfg.data.val_json_file, \
-        "val_json_file must be specified."
     assert 1 < cfg.data.num_classes, \
         "num_classes is number of categories + 1 (background). It must be greater than 1."
 
