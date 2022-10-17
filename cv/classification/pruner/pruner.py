@@ -77,10 +77,9 @@ class ClassificationPruner(Pruner):
             excluded_layers=self.excluded_layers + excluded_layers,
             byom_custom_layer=byom_custom_layer)
 
-        if self.verbose:
-            # Printing out pruned model summary
-            logger.info("Model summary of the pruned model:")
-            logger.info(pruned_model.summary())
+        # Printing out pruned model summary
+        logger.info("Model summary of the pruned model:")
+        logger.info(pruned_model.summary())
 
         pruning_ratio = pruned_model.count_params() / self.model.count_params()
         logger.info(

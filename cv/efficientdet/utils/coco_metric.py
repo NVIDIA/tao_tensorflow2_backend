@@ -16,10 +16,7 @@
 import numpy as np
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-import tensorflow as tf
 import horovod.tensorflow.keras as hvd
-
-from cv.efficientdet.utils import label_utils
 
 
 class EvaluationMetric():
@@ -179,44 +176,3 @@ class EvaluationMetric():
     def gather(self):
         """Gather."""
         self.detections = hvd.allgather(self.detections)
-
-    def estimator_metric_fn(self, detections, groundtruth_data):
-        """Constructs the metric function for tf.TPUEstimator.
-
-        For each metric, we return the evaluation op and an update op; the update op
-        is shared across all metrics and simply appends the set of detections to the
-        `self.detections` list. The metric op is invoked after all examples have
-        been seen and computes the aggregate COCO metrics. Please find details API
-        in: https://www.tensorflow.org/api_docs/python/tf/contrib/learn/MetricSpec
-
-        Args:
-            detections: Detection results in a tensor with each row representing
-                [image_id, x, y, width, height, score, class]
-            groundtruth_data: Groundtruth annotations in a tensor with each row
-                representing [y1, x1, y2, x2, is_crowd, area, class].
-        Returns:
-            metrics_dict: A dictionary mapping from evaluation name to a tuple of
-                operations (`metric_op`, `update_op`). `update_op` appends the
-                detections for the metric to the `self.detections` list.
-        """
-        with tf.name_scope('coco_metric'):
-            if self.testdev_dir:
-                update_op = tf.numpy_function(self.update_state,
-                                              [groundtruth_data, detections], [])
-                metrics = tf.numpy_function(self.result, [], tf.float32)
-                metrics_dict = {'AP': (metrics, update_op)}
-                return metrics_dict
-
-            update_op = tf.numpy_function(self.update_state, [groundtruth_data, detections], [])
-            metrics = tf.numpy_function(self.result, [], tf.float32)
-            metrics_dict = {}
-            for i, name in enumerate(self.metric_names):
-                metrics_dict[name] = (metrics[i], update_op)
-
-            if self.label_map:
-                # process per-class AP.
-                label_map = label_utils.get_label_map(self.label_map)
-                for i, cid in enumerate(sorted(label_map.keys())):
-                    name = f'AP_/{label_map[cid]}'
-                    metrics_dict[name] = (metrics[i + len(self.metric_names)], update_op)
-            return metrics_dict
