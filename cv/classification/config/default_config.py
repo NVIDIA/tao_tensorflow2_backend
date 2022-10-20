@@ -18,7 +18,7 @@ class RegConfig:
 
 @dataclass
 class OptimConfig:
-    """Learning rate config."""
+    """Optimizer config."""
 
     optimizer: str = 'sgd'
     lr: float = 0.05
@@ -50,25 +50,37 @@ class TrainConfig:
     """Train config."""
 
     qat: bool = True
-    train_dataset_path: str = MISSING
-    val_dataset_path: str = MISSING
     pretrained_model_path: str = ''
     checkpoint_freq: int = 1
     batch_size_per_gpu: int = 64
     n_epochs: int = 100
     n_workers: int = 10
     random_seed: int = 42
-    enable_random_crop: bool = True
-    enable_center_crop: bool = True
-    enable_color_augmentation: bool = False
     label_smoothing: float = 0.01
-    preprocess_mode: str = 'caffe'
-    mixup_alpha: float = 0
-    disable_horizontal_flip: bool = False
-    image_mean: List[float] = field(default_factory=lambda: [103.939, 116.779, 123.68])
     reg_config: RegConfig = RegConfig()
     lr_config: LRConfig = LRConfig()
     optim_config: OptimConfig = OptimConfig()
+
+
+@dataclass
+class AugmentConfig:
+    """Augment config."""
+
+    enable_random_crop: bool = True
+    enable_center_crop: bool = True
+    enable_color_augmentation: bool = False
+    disable_horizontal_flip: bool = False
+    mixup_alpha: float = 0
+
+
+@dataclass
+class DataConfig:
+    """Data config."""
+
+    train_dataset_path: str = MISSING
+    val_dataset_path: str = MISSING
+    preprocess_mode: str = 'caffe'
+    image_mean: List[float] = field(default_factory=lambda: [103.939, 116.779, 123.68])
 
 
 @dataclass
@@ -93,13 +105,12 @@ class ModelConfig:
 
 @dataclass
 class EvalConfig:
-    """Experiment config."""
+    """Eval config."""
 
-    eval_dataset_path: str = ''
+    dataset_path: str = ''
     model_path: str = ''
     batch_size: int = 64
     n_workers: int = 64
-    enable_center_crop: bool = True
     top_k: int = 3
     classmap: str = ""
 
@@ -110,7 +121,7 @@ class ExportConfig:
 
     model_path: str = ''
     output_path: str = ''
-    dtype: str = "fp32"
+    data_type: str = "fp32"
     engine_file: str = ""
     max_workspace_size: int = 2  # in Gb
     cal_image_dir: str = ""
@@ -121,12 +132,11 @@ class ExportConfig:
     max_batch_size: int = 1
     min_batch_size: int = 1
     opt_batch_size: int = 1
-    verbose: bool = False
 
 
 @dataclass
 class InferConfig:
-    """Export config."""
+    """Inference config."""
 
     model_path: str = ''
     image_dir: str = ''
@@ -143,10 +153,9 @@ class PruneConfig:
     output_path: str = MISSING
     equalization_criterion: str = 'union'
     granularity: int = 8
-    pruning_threshold: float = MISSING
+    threshold: float = MISSING
     min_num_filters: int = 16
     excluded_layers: List[str] = field(default_factory=lambda: [])
-    verbose: bool = True
 
 
 @dataclass
@@ -154,12 +163,14 @@ class ExperimentConfig:
     """Experiment config."""
 
     train: TrainConfig = TrainConfig()
+    augment: AugmentConfig = AugmentConfig()
+    data: DataConfig = DataConfig()
     model: ModelConfig = ModelConfig()
     evaluate: EvalConfig = EvalConfig()
     export: ExportConfig = ExportConfig()
-    infer: InferConfig = InferConfig()
+    inference: InferConfig = InferConfig()
     prune: PruneConfig = PruneConfig()
     results_dir: str = MISSING
     key: str = 'nvidia_tlt'
-    init_epoch: int = 1
     data_format: str = 'channels_first'
+    verbose: bool = False

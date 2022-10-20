@@ -1,10 +1,6 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Classification training script with protobuf configuration."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from functools import partial
 import json
 import logging
@@ -21,6 +17,7 @@ from PIL import Image, ImageFile
 import horovod.tensorflow.keras as hvd
 
 from common.hydra.hydra_runner import hydra_runner
+import common.logging.logging as status_logging
 
 from cv.classification.callback.eff_checkpoint import EffCheckpoint
 from cv.classification.config.default_config import ExperimentConfig
@@ -37,7 +34,6 @@ from cv.classification.utils.helper import (
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 Image.MAX_IMAGE_PIXELS = 9000000000
 logger = logging.getLogger(__name__)
-verbose = 0
 # Horovod: initialize Horovod.
 hvd.init()
 
@@ -154,7 +150,7 @@ def load_data(train_data, val_data, preprocessing_func,
         interpolation=interpolation + ':random' if enable_random_crop else interpolation,
         alpha=mixup_alpha
     )
-    print(f'Processing dataset (train): {train_data}')
+    logger.info('Processing dataset (train): %s', train_data)
 
     # Initializing data generator: Val
     val_datagen = ImageDataGenerator(
@@ -171,7 +167,7 @@ def load_data(train_data, val_data, preprocessing_func,
         interpolation=interpolation + ':center' if enable_center_crop else interpolation,
         shuffle=False,
         class_mode='categorical')
-    print(f'Processing dataset (validation): {val_data}')
+    logger.info('Processing dataset (validation): %s', val_data)
 
     # Check if the number of classes is > 1
     assert train_iterator.num_classes > 1, \
@@ -183,36 +179,58 @@ def load_data(train_data, val_data, preprocessing_func,
     return train_iterator, val_iterator, train_iterator.num_classes
 
 
-def run_experiment(cfg, results_dir=None,
-                   key=None, init_epoch=1, verbosity=False):
+def get_latest_checkpoint(model_dir, model_name='efficientnet-b'):
+    """Get the last tlt checkpoint."""
+    if not os.path.exists(model_dir):
+        return 0, None
+    last_checkpoint = ''
+    for f in os.listdir(model_dir):
+        if f.startswith(model_name) and f.endswith('.tlt'):
+            last_checkpoint = last_checkpoint if last_checkpoint > f else f
+    if not last_checkpoint:
+        return 0, None
+    return int(last_checkpoint[:-4].split('_')[-1]), os.path.join(model_dir, last_checkpoint)
+
+
+def run_experiment(cfg, run_ci=False):
     """Launch experiment that trains the model.
 
     NOTE: Do not change the argument names without verifying that cluster
           submission works.
 
     Args:
-        config_path (str): Path to a text file containing a complete experiment
-                           configuration.
-        results_dir (str): Path to a folder where various training outputs will
-                           be written.
-        If the folder does not already exist, it will be created.
-        init_epoch (int): The number of epoch to resume training.
+        cfg: Hydra config
     """
-    # Horovod: pin GPU to be used to process local rank (one GPU per process)
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
-    if gpus:
-        tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
-    verbose = 1 if hvd.rank() == 0 else 0
+    if not run_ci:
+        # Horovod: pin GPU to be used to process local rank (one GPU per process)
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        if gpus:
+            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+
     # Configure the logger.
-    logging.basicConfig(
-        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-        level='DEBUG' if verbosity else 'INFO')
-
+    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
     # Set random seed.
-    logger.debug("Random seed is set to {}".format(cfg['train']['random_seed']))  # noqa pylint: disable=C0209
-
+    logger.debug("Random seed is set to %d", cfg['train']['random_seed'])
+    # Create results dir
+    if hvd.rank() == 0 and not os.path.exists(cfg.results_dir):
+        os.makedirs(cfg.results_dir)
+    # set up status logger
+    status_file = os.path.join(cfg.results_dir, "status.json")
+    status_logging.set_status_logger(
+        status_logging.StatusLogger(
+            filename=status_file,
+            is_master=hvd.rank() == 0,
+            verbosity=1,
+            append=True
+        )
+    )
+    s_logger = status_logging.get_status_logger()
+    s_logger.write(
+        status_level=status_logging.Status.STARTED,
+        message="Starting classification training."
+    )
     nchannels, image_height, image_width = cfg['model']['input_image_size']
     image_depth = cfg['model']['input_image_depth']
     assert nchannels in [1, 3], "Invalid input image dimension."
@@ -227,22 +245,22 @@ def run_experiment(cfg, results_dir=None,
 
     # Load augmented data
     train_iterator, val_iterator, nclasses = \
-        load_data(cfg['train']['train_dataset_path'],
-                  cfg['train']['val_dataset_path'],
+        load_data(cfg['data']['train_dataset_path'],
+                  cfg['data']['val_dataset_path'],
                   partial(preprocess_input,
                           data_format=cfg['data_format'],
-                          mode=cfg['train']['preprocess_mode'],
-                          img_mean=list(cfg['train']['image_mean']),
+                          mode=cfg['data']['preprocess_mode'],
+                          img_mean=list(cfg['data']['image_mean']),
                           color_mode=color_mode,
                           img_depth=image_depth),
                   image_height, image_width,
                   batch_size=cfg['train']['batch_size_per_gpu'],
-                  enable_random_crop=cfg['train']['enable_random_crop'],
-                  enable_center_crop=cfg['train']['enable_center_crop'],
-                  enable_color_augmentation=cfg['train']['enable_color_augmentation'],
+                  enable_random_crop=cfg['augment']['enable_random_crop'],
+                  enable_center_crop=cfg['augment']['enable_center_crop'],
+                  enable_color_augmentation=cfg['augment']['enable_color_augmentation'],
                   color_mode=color_mode,
-                  mixup_alpha=cfg['train']['mixup_alpha'],
-                  no_horizontal_flip=cfg['train']['disable_horizontal_flip'],
+                  mixup_alpha=cfg['augment']['mixup_alpha'],
+                  no_horizontal_flip=cfg['augment']['disable_horizontal_flip'],
                   data_format=cfg['data_format'])
 
     # @scha: For BYOM model loading
@@ -280,7 +298,7 @@ def run_experiment(cfg, results_dir=None,
 
     # Set up BN and regularizer config
     bn_config = None
-    reg_config = cfg['train']['reg_config']
+    reg_config = cfg.train.reg_config
     final_model = setup_config(
         final_model,
         reg_config,
@@ -288,16 +306,23 @@ def run_experiment(cfg, results_dir=None,
         custom_objs=custom_objs
     )
 
-    if cfg['train']['pretrained_model_path']:
+    # resume from checkpoint
+    init_epoch, last_checkpoint_path = get_latest_checkpoint(
+        os.path.join(cfg.results_dir, 'weights'), final_model.name)
+    if init_epoch > 0:
+        pretrained_model_path = last_checkpoint_path
+    else:
+        pretrained_model_path = cfg.train.pretrained_model_path
+    if pretrained_model_path:
         # Decrypt and load pretrained model
         pretrained_model = load_model(
-            cfg['train']['pretrained_model_path'],
-            passphrase=cfg['key'])
+            pretrained_model_path,
+            passphrase=cfg.key)
 
         strict_mode = True
         for layer in pretrained_model.layers[1:]:
             # The layer must match up to prediction layers.
-            if layer.name == 'predictions_dense':
+            if 'predictions' in layer.name:
                 strict_mode = False
             try:
                 l_return = final_model.get_layer(layer.name)
@@ -316,28 +341,26 @@ def run_experiment(cfg, results_dir=None,
                     )
     if cfg['train']['qat']:
         qdq_cases = [EfficientNetQDQCase()] \
-            if 'efficientnet' in cfg['model']['arch'] else [ResNetV1QDQCase()]
+            if 'efficientnet' in cfg.model.arch else [ResNetV1QDQCase()]
         final_model = quantize_model(final_model, custom_qdq_cases=qdq_cases)
 
     # Printing model summary
     if hvd.rank() == 0:
         final_model.summary()
 
-    if cfg['init_epoch'] > 1 and not cfg['train']['pretrained_model_path']:
-        raise ValueError("Make sure to load the correct model when setting initial epoch > 1.")
-
-    if cfg['train']['pretrained_model_path'] and cfg['init_epoch'] > 1:
+    if pretrained_model_path and init_epoch > 0:
+        logger.info('Resume training from #%d epoch', init_epoch)
         final_model = pretrained_model
         opt = pretrained_model.optimizer
     else:
         # Defining optimizer
-        opt = build_optimizer(cfg['train']['optim_config'])
+        opt = build_optimizer(cfg.train.optim_config)
     # Add Horovod Distributed Optimizer
     opt = hvd.DistributedOptimizer(
         opt, backward_passes_per_step=1, average_aggregated_gradients=True)
     # Compiling model
     cc = tf.keras.losses.CategoricalCrossentropy(
-        label_smoothing=cfg['train']['label_smoothing'])
+        label_smoothing=cfg.train.label_smoothing)
     final_model.compile(
         loss=cc,
         metrics=[tf.keras.metrics.CategoricalAccuracy(name='accuracy')],
@@ -345,31 +368,35 @@ def run_experiment(cfg, results_dir=None,
         experimental_run_tf_function=False)
 
     # Setup callbacks
-    callbacks = setup_callbacks(cfg['train']['checkpoint_freq'],
-                                results_dir,
-                                cfg['train']['lr_config'],
-                                init_epoch, len(train_iterator) // hvd.size(),
-                                cfg['train']['n_epochs'], key,
+    callbacks = setup_callbacks(cfg.train.checkpoint_freq,
+                                cfg.results_dir,
+                                cfg.train.lr_config,
+                                init_epoch + 1,
+                                len(train_iterator) // hvd.size(),
+                                cfg.train.n_epochs, cfg.key,
                                 hvd)
     # Writing out class-map file for inference mapping
     if hvd.rank() == 0:
-        with open(os.path.join(results_dir, "classmap.json"), "w", encoding='utf-8') as f:
+        with open(os.path.join(cfg.results_dir, "classmap.json"), "w", encoding='utf-8') as f:
             json.dump(train_iterator.class_indices, f)
-
+        logger.info('classmap.json is generated at %s', cfg.results_dir)
     # Commencing Training
     final_model.fit(
         train_iterator,
         steps_per_epoch=len(train_iterator) // hvd.size(),
         epochs=cfg['train']['n_epochs'],
-        verbose=verbose,
+        verbose=hvd.rank() == 0,
         workers=cfg['train']['n_workers'],
         validation_data=val_iterator,
         validation_steps=len(val_iterator),  # // hvd.size(),
         validation_freq=cfg['train']['checkpoint_freq'],
         callbacks=callbacks,
-        initial_epoch=init_epoch - 1)
+        initial_epoch=init_epoch)
 
-    print("Training finished successfully.")
+    status_logging.get_status_logger().write(
+        status_level=status_logging.Status.SUCCESS,
+        message="Training finished successfully."
+    )
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -381,11 +408,20 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for continuous training of classification application."""
-    run_experiment(cfg=cfg,
-                   results_dir=cfg.results_dir,
-                   key=cfg.key,
-                   init_epoch=cfg.init_epoch)
-    logger.info("Training finished successfully.")
+    try:
+        run_experiment(cfg=cfg)
+    except (KeyboardInterrupt, SystemExit):
+        status_logging.get_status_logger().write(
+            message="Training was interrupted",
+            verbosity_level=status_logging.Verbosity.INFO,
+            status_level=status_logging.Status.FAILURE
+        )
+    except Exception as e:
+        status_logging.get_status_logger().write(
+            message=str(e),
+            status_level=status_logging.Status.FAILURE
+        )
+        raise e
 
 
 if __name__ == '__main__':

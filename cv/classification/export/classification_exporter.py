@@ -40,16 +40,16 @@ class Exporter:
             key (str): Key to load the model.
         """
         self.config = config
-        if config.export.dtype == "int8":
+        if config.export.data_type == "int8":
             self._dtype = trt.DataType.INT8
-        elif config.export.dtype == "fp16":
+        elif config.export.data_type == "fp16":
             self._dtype = trt.DataType.HALF
-        elif config.export.dtype == "fp32":
+        elif config.export.data_type == "fp32":
             self._dtype = trt.DataType.FLOAT
         else:
             raise ValueError(f"Unsupported data type: {self._dtype}")
 
-        if config.train.qat and config.export.dtype != "int8":
+        if config.train.qat and config.export.data_type != "int8":
             raise ValueError("QAT only supports int8 export")
         self.backend = "onnx"
         self.input_shape = None
@@ -164,7 +164,7 @@ class Exporter:
             if not trt_engine:
                 logger.info("TensorRT engine failed.")
             if self.config.export.save_engine:
-                engine_path = self.config.export.output_path + f'.{self.config.export.dtype}.engine'
+                engine_path = self.config.export.output_path + f'.{self.config.export.data_type}.engine'
                 with open(engine_path, "wb") as engine_file:
                     engine_file.write(trt_engine.serialize())
             return None

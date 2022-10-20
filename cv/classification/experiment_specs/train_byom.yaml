@@ -1,12 +1,12 @@
 results_dir: '/home/scratch.p3/sean/tlt3_experiments/imagenet/tf2_byom_res18'
 key: nvidia_tlt
 data_format: 'channels_first'
-# init_epoch: 16
-train:
-  qat: False
+data:
   train_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   val_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   preprocess_mode: 'torch'
+train:
+  qat: False
   batch_size_per_gpu: 50
   n_epochs: 150
   n_workers: 40
