@@ -160,7 +160,6 @@ class PruneConfig:
     threshold: float = MISSING
     min_num_filters: int = 16
     excluded_layers: List[str] = field(default_factory=lambda: [])
-    verbose: bool = True
 
 
 @dataclass

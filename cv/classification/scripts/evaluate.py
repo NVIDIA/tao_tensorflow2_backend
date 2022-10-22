@@ -1,9 +1,5 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Perform classification evaluation."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 from functools import partial
 import logging
@@ -17,11 +13,12 @@ from tensorflow import keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from common.hydra.hydra_runner import hydra_runner
+import common.logging.logging as status_logging
 
 from cv.classification.config.default_config import ExperimentConfig
 from cv.classification.utils import preprocess_crop  # noqa pylint: disable=unused-import
 from cv.classification.utils.preprocess_input import preprocess_input
-from cv.classification.utils.helper import initialize, get_input_shape, load_model
+from cv.classification.utils.helper import get_input_shape, load_model
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 
@@ -33,13 +30,24 @@ def run_evaluate(cfg):
        Dictionary arguments containing parameters parsed in the main function.
     """
     # Set up logger verbosity.
-    verbosity = 'INFO'
-    # Configure the logger.
-    logging.basicConfig(
-        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-        level=verbosity)
+    logger.setLevel(logging.INFO)
     # set backend
-    initialize()
+    # initialize()
+    # set up status logger
+    status_file = os.path.join(cfg.results_dir, "status.json")
+    status_logging.set_status_logger(
+        status_logging.StatusLogger(
+            filename=status_file,
+            is_master=True,
+            verbosity=1,
+            append=True
+        )
+    )
+    s_logger = status_logging.get_status_logger()
+    s_logger.write(
+        status_level=status_logging.Status.STARTED,
+        message="Starting classification evaluation."
+    )
     # Decrypt EFF
     final_model = load_model(
         str(cfg['evaluate']['model_path']),
@@ -72,15 +80,15 @@ def run_evaluate(cfg):
     if nchannels == 1:
         color_mode = "grayscale"
     interpolation = cfg['model']['resize_interpolation_method']
-    if cfg['evaluate']['enable_center_crop']:
+    if cfg['augment']['enable_center_crop']:
         interpolation += ":center"
 
     # Initializing data generator
     target_datagen = ImageDataGenerator(
         preprocessing_function=partial(preprocess_input,
                                        data_format=cfg['data_format'],
-                                       mode=cfg['train']['preprocess_mode'],
-                                       img_mean=list(cfg['train']['image_mean']),
+                                       mode=cfg['data']['preprocess_mode'],
+                                       img_mean=list(cfg['data']['image_mean']),
                                        color_mode=color_mode,
                                        img_depth=image_depth),
         horizontal_flip=False,
@@ -100,6 +108,7 @@ def run_evaluate(cfg):
                 sys.exit(-1)
         if not data:
             class_names = None
+            logger.info('classmap is not loaded.')
         else:
             class_names = [""] * len(list(data.keys()))
             if not all([class_index < len(class_names) and isinstance(class_index, int) # noqa pylint: disable=R1729
@@ -109,14 +118,13 @@ def run_evaluate(cfg):
                     "be < number of classes and an integer value.")
             for class_name, class_index in data.items():
                 class_names[class_index] = class_name
-
-        print(f"Class name = {class_names}")
+            logger.info('classmap is loaded successfully.')
     else:
         class_names = None
 
     # Initializing data iterator
     target_iterator = target_datagen.flow_from_directory(
-        cfg['evaluate']['eval_dataset_path'],
+        cfg['evaluate']['dataset_path'],
         target_size=(image_height, image_width),
         color_mode=color_mode,
         batch_size=cfg['evaluate']['batch_size'],
@@ -124,7 +132,7 @@ def run_evaluate(cfg):
         interpolation=interpolation,
         shuffle=False)
 
-    logger.info('Processing dataset (evaluation): {}'.format(cfg['evaluate']['eval_dataset_path']))  # noqa pylint: disable=C0209
+    logger.info('Processing dataset (evaluation): {}'.format(cfg['evaluate']['dataset_path']))  # noqa pylint: disable=C0209
     nclasses = target_iterator.num_classes
     assert nclasses > 1, "Invalid number of classes in the evaluation dataset."
 
@@ -139,11 +147,13 @@ def run_evaluate(cfg):
                                  workers=cfg['evaluate']['n_workers'],
                                  use_multiprocessing=False)
 
-    print(f'Evaluation Loss: {score[0]}')
-    print(f'Evaluation Top K accuracy: {score[1]}')
+    logger.info('Evaluation Loss: %s', score[0])
+    logger.info('Evaluation Top %s accuracy: %s', cfg['evaluate']['top_k'], score[1])
+    s_logger.kpi['loss'] = float(score[0])
+    s_logger.kpi['top_k'] = float(score[1])
     # Re-initializing data iterator
     target_iterator = target_datagen.flow_from_directory(
-        cfg['evaluate']['eval_dataset_path'],
+        cfg['evaluate']['dataset_path'],
         target_size=(image_height, image_width),
         batch_size=cfg['evaluate']['batch_size'],
         color_mode=color_mode,
@@ -160,6 +170,10 @@ def run_evaluate(cfg):
     target_keys_names = list(sorted(class_dict.items(), key=lambda x: x[1]))
     target_keys_names = list(zip(*target_keys_names))
     print(classification_report(target_iterator.classes, y_pred, labels=target_keys_names[1], target_names=target_keys_names[0]))
+    s_logger.write(
+        status_level=status_logging.Status.SUCCESS,
+        message="Evaluation finished successfully."
+    )
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

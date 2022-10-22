@@ -95,7 +95,6 @@ prune:
   threshold: 0.5
   min_num_filters: 16
   excluded_layers: []
-  verbose: True
 key: 'nvidia_tlt'
 data_format: 'channels_last'
 verbose: True

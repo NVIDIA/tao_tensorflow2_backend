@@ -1,22 +1,22 @@
 
 results_dir: '/home/binz/tao-tf2/results_enb0_16bit'
-train:
+data:
   train_dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
   val_dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
+  image_mean: [7834.4968]
+train:
   pretrained_model_path: ''
   batch_size_per_gpu: 4
   n_epochs: 3
-  image_mean: [7834.4968]
-
 evaluate:
-  eval_dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
+  dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
   # model_path: '/home/binz/Tao/tao-tf2/results/weights/resnet18_bn_001.tlt'
   model_path: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.tlt'
   top_k: 1
   batch_size: 2
   n_workers: 0
 model:
-  arch: 'efficientnet_b0'
+  arch: 'efficientnet-b0'
   # arch: 'resnet'
   # n_layers: 18
   input_image_size: [1,640,640]

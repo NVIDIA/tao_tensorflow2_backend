@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from common.hydra.hydra_runner import hydra_runner
+import common.logging.logging as status_logging
 
 from cv.classification.inferencer.keras_inferencer import KerasInferencer
 from cv.classification.config.default_config import ExperimentConfig
@@ -28,30 +29,48 @@ def run_inference(cfg):
         Directory Mode:
             write out a .csv file to store all the predictions
     """
+    logger.setLevel(logging.INFO)
+    # set up status logger
+    status_file = os.path.join(cfg.results_dir, "status.json")
+    status_logging.set_status_logger(
+        status_logging.StatusLogger(
+            filename=status_file,
+            is_master=True,
+            verbosity=1,
+            append=True
+        )
+    )
+    s_logger = status_logging.get_status_logger()
+    s_logger.write(
+        status_level=status_logging.Status.STARTED,
+        message="Starting classification inference."
+    )
     result_csv_path = os.path.join(cfg.results_dir, 'result.csv')
     assert os.path.exists(cfg.results_dir), "The results_dir doesn't exist."
-    with open(cfg.infer.classmap, "r", encoding='utf-8') as cm:
+    assert os.path.exists(cfg.inference.classmap), "inference.classmap doesn't exist."
+    assert os.path.exists(cfg.inference.model_path), "inference.model_path doesn't exist."
+    with open(cfg.inference.classmap, "r", encoding='utf-8') as cm:
         class_dict = json.load(cm)
     reverse_mapping = {v: k for k, v in class_dict.items()}
 
     image_depth = cfg.model.input_image_depth
     assert image_depth in [8, 16], "Only 8-bit and 16-bit images are supported"
     interpolation = cfg.model.resize_interpolation_method
-    if cfg.evaluate.enable_center_crop:
+    if cfg.augment.enable_center_crop:
         interpolation += ":center"
     inferencer = KerasInferencer(
-        cfg.infer.model_path,
+        cfg.inference.model_path,
         key=cfg.key,
-        img_mean=list(cfg.train.image_mean),
-        preprocess_mode=cfg.train.preprocess_mode,
+        img_mean=list(cfg.data.image_mean),
+        preprocess_mode=cfg.data.preprocess_mode,
         interpolation=interpolation,
         img_depth=image_depth)
     predictions = []
-    for img_name in tqdm.tqdm(sorted(os.listdir(cfg.infer.image_dir))):
+    for img_name in tqdm.tqdm(sorted(os.listdir(cfg.inference.image_dir))):
         _, ext = os.path.splitext(img_name)
         if ext.lower() in SUPPORTED_IMAGE_FORMAT:
             raw_predictions = inferencer.infer_single(
-                os.path.join(cfg.infer.image_dir, img_name))
+                os.path.join(cfg.inference.image_dir, img_name))
             class_index = np.argmax(raw_predictions)
             class_labels = reverse_mapping[class_index]
             class_conf = np.max(raw_predictions)
@@ -61,8 +80,11 @@ def run_inference(cfg):
         # Write predictions to file
         df = pd.DataFrame(predictions)
         df.to_csv(csv_f, header=False, index=False)
-    print(f"The inference result is saved at: {result_csv_path}")
-    logger.info("Inference finished sucessfully.")
+    logger.info("The inference result is saved at: %s", result_csv_path)
+    s_logger.write(
+        status_level=status_logging.Status.SUCCESS,
+        message="Inference finished successfully."
+    )
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

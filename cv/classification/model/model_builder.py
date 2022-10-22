@@ -26,10 +26,10 @@ from cv.classification.utils.helper import decode_tltb
 
 
 SUPPORTED_ARCHS = [
-    "resnet", "efficientnet_b0", "efficientnet_b1",
-    "efficientnet_b2", "efficientnet_b3",
-    "efficientnet_b4", "efficientnet_b5",
-    "efficientnet_b6", "efficientnet_b7",
+    "resnet", "efficientnet-b0", "efficientnet-b1",
+    "efficientnet-b2", "efficientnet-b3",
+    "efficientnet-b4", "efficientnet-b5",
+    "efficientnet-b6", "efficientnet-b7",
     "mobilenet_v1", "mobilenet_v2", "byom"
 ]
 
@@ -513,14 +513,14 @@ def get_mobilenet_v2(input_shape=None,
 
 # defining model dictionary
 model_choose = {"resnet": get_resnet,
-                "efficientnet_b0": get_efficientnet_b0,
-                "efficientnet_b1": get_efficientnet_b1,
-                "efficientnet_b2": get_efficientnet_b2,
-                "efficientnet_b3": get_efficientnet_b3,
-                "efficientnet_b4": get_efficientnet_b4,
-                "efficientnet_b5": get_efficientnet_b5,
-                "efficientnet_b6": get_efficientnet_b6,
-                "efficientnet_b7": get_efficientnet_b7,
+                "efficientnet-b0": get_efficientnet_b0,
+                "efficientnet-b1": get_efficientnet_b1,
+                "efficientnet-b2": get_efficientnet_b2,
+                "efficientnet-b3": get_efficientnet_b3,
+                "efficientnet-b4": get_efficientnet_b4,
+                "efficientnet-b5": get_efficientnet_b5,
+                "efficientnet-b6": get_efficientnet_b6,
+                "efficientnet-b7": get_efficientnet_b7,
                 "mobilenet_v1": get_mobilenet,
                 "mobilenet_v2": get_mobilenet_v2,
                 "byom": get_byom}
@@ -544,7 +544,7 @@ def get_model(arch="resnet",
         kwa['freeze_bn'] = kwargs['freeze_bn']
         kwa['use_bias'] = kwargs['use_bias']
         kwa['all_projections'] = kwargs['all_projections']
-    elif 'efficientnet_b' in arch:
+    elif 'efficientnet-b' in arch:
         kwa['use_bias'] = kwargs['use_bias']
         kwa['freeze_bn'] = kwargs['freeze_bn']
         kwa['activation_type'] = None  # TODO(@yuw): kwargs['activation'].activation_type

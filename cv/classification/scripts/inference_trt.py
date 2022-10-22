@@ -31,15 +31,15 @@ def run_inference(cfg):
     # set backend
     # initialize()
     predictions = []
-    inferencer = TRTInferencer(cfg['infer']['model_path'], batch_size=1,
+    inferencer = TRTInferencer(cfg['inference']['model_path'], batch_size=1,
                                data_format=cfg['data_format'],
                                img_depth=cfg['model']['input_image_depth'])
 
-    for img_name in os.listdir(cfg['infer']['image_dir']):
+    for img_name in os.listdir(cfg['inference']['image_dir']):
         _, ext = os.path.splitext(img_name)
         if ext.lower() in SUPPORTED_IMAGE_FORMAT:
             result = inferencer.infer_single(
-                os.path.join(cfg['infer']['image_dir'], img_name))
+                os.path.join(cfg['inference']['image_dir'], img_name))
             # print(result)
             predictions.append(np.argmax(result))
             break
