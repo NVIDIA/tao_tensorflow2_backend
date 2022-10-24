@@ -95,12 +95,6 @@ def command_line_parser(parser, subtasks):
         choices=subtasks.keys(),
         help="Subtask for a given task/model.",
     )
-    # Add standard TLT arguments.
-    parser.add_argument(
-        "-r",
-        "--results_dir",
-        help="Path to a folder where the experiment outputs should be written. (DEFAULT: ./)",
-    )
     parser.add_argument(
         "-k",
         "--key",

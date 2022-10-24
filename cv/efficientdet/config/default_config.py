@@ -6,6 +6,8 @@ from typing import List
 from dataclasses import dataclass, field
 from omegaconf import MISSING
 
+from common.config.mlops import WandBConfig
+
 
 @dataclass
 class LoaderConfig:
@@ -58,6 +60,10 @@ class TrainConfig:
     checkpoint_period: int = 10
     image_preview: bool = True
     qat: bool = False
+    wandb: WandBConfig = WandBConfig(
+        name="efficientdet",
+        tags=["efficientdet", "training", "tao-toolkit"]
+    )
 
 
 @dataclass

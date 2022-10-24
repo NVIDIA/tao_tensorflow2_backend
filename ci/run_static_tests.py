@@ -41,8 +41,10 @@ def main(cl_args=None):
         print(launch_command)
         if not CI:
             print("Running test in local environment.")
-            launch_command = '{} -v {}:{} {} {}'.format(
-                docker_command_prefix, ROOT_DIR, DOCKER_ROOT, docker_image, command
+            env_variables = "-e PYTHONPATH={}:$PYTHONPATH ".format("/workspace/tao-tf2")
+            launch_command = '{} -v {}:{} {} {} {}'.format(
+                docker_command_prefix, ROOT_DIR, DOCKER_ROOT, env_variables,
+                docker_image, command
             )
         sys.stdout.flush()
         rc = subprocess.call(launch_command, stdout=sys.stdout, shell=True)
