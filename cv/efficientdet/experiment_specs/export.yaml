@@ -9,7 +9,7 @@ train:
   qat: False
   num_examples_per_epoch: 120000
   batch_size: 16
-  checkpoint_period: 1
+  checkpoint_interval: 1
 export:
   # QAT
   # max_batch_size: 4

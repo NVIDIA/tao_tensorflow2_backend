@@ -412,7 +412,7 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
                 verbose=1,
                 save_freq='epoch',
                 save_weights_only=True,
-                period=params['train_config']['checkpoint_period'])
+                period=params['train_config']['checkpoint_interval'])
             callbacks.append(emackpt_callback)
 
         ckpt_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -420,7 +420,7 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
             verbose=1,
             save_freq='epoch',
             save_weights_only=True,
-            period=params['train_config']['checkpoint_period'])
+            period=params['train_config']['checkpoint_interval'])
         callbacks.append(ckpt_callback)
 
         if time_history:
@@ -444,7 +444,7 @@ def get_callbacks(params, mode, eval_dataset, logger, profile=False,
     if 'eval' in mode:
         cocoeval = COCOEvalCallback(
             eval_dataset, 
-            eval_freq=params['train_config']['checkpoint_period'], 
+            eval_freq=params['train_config']['checkpoint_interval'], 
             start_eval_epoch=1, # TODO
             eval_params=params)
         callbacks.append(cocoeval)

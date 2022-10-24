@@ -32,7 +32,7 @@ train:
   num_examples_per_epoch: 100
   moving_average_decay: 0.999
   batch_size: 20
-  checkpoint_period: 5
+  checkpoint_interval: 5
   l2_weight_decay: 0.00004
   l1_weight_decay: 0.0
   skip_checkpoint_variables: ''

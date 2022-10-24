@@ -57,7 +57,7 @@ class TrainConfig:
     moving_average_decay: float = 0.9999
     clip_gradients_norm: float = 10.0
     skip_checkpoint_variables: str = ''
-    checkpoint_period: int = 10
+    checkpoint_interval: int = 10
     image_preview: bool = True
     qat: bool = False
     wandb: WandBConfig = WandBConfig(

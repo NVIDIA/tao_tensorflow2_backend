@@ -13,7 +13,7 @@ train:
   amp: True
   num_examples_per_epoch: 120000
   batch_size: 16
-  checkpoint_period: 1
+  checkpoint_interval: 1
   tf_random_seed: 1
 evaluate:
   batch_size: 16

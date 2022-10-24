@@ -63,7 +63,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         ckpt=None,
         mode=mode,
         is_training_bn=mode == 'train',
-        checkpoint_period=cfg['train']['checkpoint_period'],
+        checkpoint_interval=cfg['train']['checkpoint_interval'],
         train_batch_size=cfg['train']['batch_size'],
         seed=cfg['train']['tf_random_seed'] or 42,
         pruned_model_path=cfg['train']['pruned_model_path'],
@@ -102,13 +102,13 @@ def spec_checker(cfg):
     # training config
     assert cfg.train.batch_size > 0, \
         "batch size for training must be positive."
-    assert cfg.train.checkpoint_period > 0, \
+    assert cfg.train.checkpoint_interval > 0, \
         "checkpoint interval must be positive."
     assert cfg.train.num_examples_per_epoch > 0, \
         "Number of samples must be positive."
     assert cfg.train.num_epochs >= \
-        cfg.train.checkpoint_period, \
-        "num_epochs must be positive and no less than checkpoint_period."
+        cfg.train.checkpoint_interval, \
+        "num_epochs must be positive and no less than checkpoint_interval."
     assert 0 <= cfg.train.moving_average_decay < 1, \
         "Moving average decay must be within [0, 1)."
     assert 0 < cfg.train.lr_schedule.warmup_init < 1, \

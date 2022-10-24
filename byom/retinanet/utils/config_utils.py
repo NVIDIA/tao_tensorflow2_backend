@@ -63,7 +63,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         checkpoint=cfg['train_config']['checkpoint'],
         ckpt=None,
         mode=mode,
-        checkpoint_period=cfg['train_config']['checkpoint_period'],
+        checkpoint_interval=cfg['train_config']['checkpoint_interval'],
         train_batch_size=cfg['train_config']['train_batch_size'],
         learning_rate=cfg['train_config']['learning_rate'],
         tf_random_seed=cfg['train_config']['tf_random_seed'] or 42,

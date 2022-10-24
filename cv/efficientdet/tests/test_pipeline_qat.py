@@ -28,7 +28,7 @@ def cfg():
 
     default_cfg.train.num_examples_per_epoch = 128
     default_cfg.train.checkpoint = ''
-    default_cfg.train.checkpoint_period = 1
+    default_cfg.train.checkpoint_interval = 1
 
     default_cfg.evaluate.num_samples = 10
     return default_cfg

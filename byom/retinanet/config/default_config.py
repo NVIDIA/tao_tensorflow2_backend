@@ -29,7 +29,7 @@ class TrainConfig:
     moving_average_decay: float = 0.9999
     clip_gradients_norm: float = 0.0
     skip_checkpoint_variables: str = ''
-    checkpoint_period: int = 1
+    checkpoint_interval: int = 1
     optimizer: str = 'sgd'
     loss_scale: float = 10.0
 
