@@ -16,8 +16,15 @@ from PIL import Image, ImageFile
 
 import horovod.tensorflow.keras as hvd
 
+from wandb.keras import WandbCallback
+
 from common.hydra.hydra_runner import hydra_runner
 import common.logging.logging as status_logging
+from common.mlops.wandb import (
+    check_wandb_logged_in,
+    initialize_wandb,
+    is_wandb_initialized
+)
 
 from cv.classification.callback.eff_checkpoint import EffCheckpoint
 from cv.classification.config.default_config import ExperimentConfig
@@ -84,6 +91,8 @@ def setup_callbacks(ckpt_freq, results_dir, lr_config,
                               separator=',',
                               append=False)
         callbacks.append(csvlogger)
+        if is_wandb_initialized():
+            callbacks.append(WandbCallback())
 
     return callbacks
 
@@ -231,6 +240,17 @@ def run_experiment(cfg, run_ci=False):
         status_level=status_logging.Status.STARTED,
         message="Starting classification training."
     )
+    logger.debug("Random seed is set to {}".format(cfg['train']['random_seed']))  # noqa pylint: disable=C0209
+
+    if hvd.rank() == 0:
+        wandb_logged_in = check_wandb_logged_in()
+        if wandb_logged_in:
+            wandb_name = cfg.train.wandb.name if cfg.train.wandb.name else "classification_train"
+            initialize_wandb(
+                name=wandb_name,
+                wandb_logged_in=wandb_logged_in,
+                config=cfg,
+            )
     nchannels, image_height, image_width = cfg['model']['input_image_size']
     image_depth = cfg['model']['input_image_depth']
     assert nchannels in [1, 3], "Invalid input image dimension."

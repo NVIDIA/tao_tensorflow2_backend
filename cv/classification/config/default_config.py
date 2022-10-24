@@ -6,6 +6,8 @@ from typing import List
 from dataclasses import dataclass, field
 from omegaconf import MISSING
 
+from common.config.mlops import WandBConfig
+
 
 @dataclass
 class RegConfig:
@@ -60,6 +62,10 @@ class TrainConfig:
     reg_config: RegConfig = RegConfig()
     lr_config: LRConfig = LRConfig()
     optim_config: OptimConfig = OptimConfig()
+    wandb: WandBConfig = WandBConfig(
+        name="classification",
+        tags=["classification", "training", "tao-toolkit"]
+    )
 
 
 @dataclass

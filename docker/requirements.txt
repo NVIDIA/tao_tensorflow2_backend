@@ -1,4 +1,5 @@
 absl-py>=0.7.1
+clearml<=1.7.1rc1
 matplotlib>=3.0.3
 numpy>=1.16.4
 Pillow>=6.0.0
@@ -29,6 +30,7 @@ graphviz
 pyarrow
 simplejson
 tabulate
+wandb<=0.13.4
 flake8
 pydocstyle
 pyflakes

@@ -1,8 +1,12 @@
 """Callback related utils."""
+
 import os
 import tensorflow as tf
 import horovod.tensorflow.keras.callbacks as hvd_callbacks
 
+from wandb.keras import WandbCallback
+
+from common.mlops.wandb import is_wandb_initialized
 from cv.efficientdet.callback.eff_ema_checkpoint import EffEmaCheckpoint
 from cv.efficientdet.callback.eff_checkpoint import EffCheckpoint
 from cv.efficientdet.callback.eval_callback import COCOEvalCallback
@@ -12,7 +16,8 @@ from cv.efficientdet.callback.moving_average_callback import MovingAverageCallba
 from cv.efficientdet.utils.horovod_utils import is_main_process
 
 
-def get_callbacks(params, eval_dataset, steps_per_epoch, eval_model=None, initial_epoch=0):
+def get_callbacks(params, eval_dataset, steps_per_epoch,
+                  eval_model=None, initial_epoch=0):
     """Get callbacks for given params."""
     callbacks = [hvd_callbacks.BroadcastGlobalVariablesCallback(0)]
     if is_main_process():
@@ -59,6 +64,11 @@ def get_callbacks(params, eval_dataset, steps_per_epoch, eval_model=None, initia
         callbacks.append(LRTensorBoard(steps_per_epoch, initial_epoch, log_dir=params['results_dir']))
         # status logging
         callbacks.append(MetricLogging(params['train']['num_epochs'], steps_per_epoch, initial_epoch))
+
+        # Setup the wandb logging callback if weights
+        # and biases have been initialized.
+        if is_wandb_initialized():
+            callbacks.append(WandbCallback())
 
     cocoeval = COCOEvalCallback(
         eval_dataset,

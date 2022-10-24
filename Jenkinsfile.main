@@ -16,7 +16,7 @@ spec:
         - name: DOCKER_TLS_CERTDIR
           value: ""
     - name: cuda
-      image: gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:45c1d334b78464c43f716e7c952b730595464d6b84f2efcd7e67004297030a93
+      image: gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:d0ed7ead05903fe3efd3c2efc0c635ee2d80952e4c912c203c9b5cf667d1d968
       securityContext:
         privileged: true
       command:
@@ -102,7 +102,7 @@ spec:
         container("docker"){
             stage ('build_publish_docker') {
                 gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
-                    withEnv(["TAO_VERSION=3.22.11", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.6"]){
+                    withEnv(["TAO_VERSION=4.22.11", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
                         docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
                             sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
                         }

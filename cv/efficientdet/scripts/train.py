@@ -9,6 +9,7 @@ from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase
 from tensorflow_quantization.quantize import quantize_model
 
 from common.hydra.hydra_runner import hydra_runner
+from common.mlops.wandb import check_wandb_logged_in, initialize_wandb
 import common.logging.logging as status_logging
 import common.no_warning # noqa pylint: disable=W0611
 
@@ -39,9 +40,19 @@ def run_experiment(cfg, ci_run=False):
     # initialize
     initialize(config, training=True, ci_run=ci_run)
 
+    wandb_logged_in = False
+
     if is_main_process():
         if not os.path.exists(cfg.results_dir):
             os.makedirs(cfg.results_dir)
+        wandb_logged_in = check_wandb_logged_in()
+        if wandb_logged_in:
+            wandb_name = cfg.train.wandb.name if cfg.train.wandb.name else "efficientdet_train"
+            initialize_wandb(
+                name=wandb_name,
+                wandb_logged_in=wandb_logged_in,
+                config=cfg
+            )
 
     steps_per_epoch = (
         cfg.train.num_examples_per_epoch +
@@ -63,7 +74,6 @@ def run_experiment(cfg, ci_run=False):
         status_level=status_logging.Status.STARTED,
         message="Starting EfficientDet training."
     )
-
     # Set up dataloader
     train_sources = datasource.DataSource(
         cfg.data.train_tfrecords,
