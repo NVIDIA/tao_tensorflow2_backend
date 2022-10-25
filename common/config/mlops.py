@@ -17,3 +17,15 @@ class WandBConfig:
     sync_tensorboard: bool = True
     save_code: bool = False
     name: str = None
+
+
+@dataclass
+class ClearMLConfig:
+    """Configration element for clearml client."""
+
+    project: str = "TAO Toolkit"
+    task: str = "train"
+    deferred_init: bool = False
+    reuse_last_task_id: bool = False
+    continue_last_task: bool = False
+    tags: List[str] = field(default_factory=lambda: [])

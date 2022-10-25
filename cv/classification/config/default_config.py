@@ -6,7 +6,7 @@ from typing import List
 from dataclasses import dataclass, field
 from omegaconf import MISSING
 
-from common.config.mlops import WandBConfig
+from common.config.mlops import ClearMLConfig, WandBConfig
 
 
 @dataclass
@@ -64,6 +64,10 @@ class TrainConfig:
     optim_config: OptimConfig = OptimConfig()
     wandb: WandBConfig = WandBConfig(
         name="classification",
+        tags=["classification", "training", "tao-toolkit"]
+    )
+    clearml: ClearMLConfig = ClearMLConfig(
+        task="classification_train",
         tags=["classification", "training", "tao-toolkit"]
     )
 

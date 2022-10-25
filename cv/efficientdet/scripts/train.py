@@ -9,6 +9,7 @@ from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase
 from tensorflow_quantization.quantize import quantize_model
 
 from common.hydra.hydra_runner import hydra_runner
+from common.mlops.clearml import get_clearml_task
 from common.mlops.wandb import check_wandb_logged_in, initialize_wandb
 import common.logging.logging as status_logging
 import common.no_warning # noqa pylint: disable=W0611
@@ -52,6 +53,13 @@ def run_experiment(cfg, ci_run=False):
                 name=wandb_name,
                 wandb_logged_in=wandb_logged_in,
                 config=cfg
+            )
+        if cfg.train.get("clearml", None):
+            logger.info("Setting up communication with ClearML server.")
+            get_clearml_task(
+                cfg.train.clearml,
+                network_name="efficientdet",
+                action="train"
             )
 
     steps_per_epoch = (
