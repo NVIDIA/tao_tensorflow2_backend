@@ -388,12 +388,12 @@ def run_experiment(cfg, run_ci=False):
         experimental_run_tf_function=False)
 
     # Setup callbacks
-    callbacks = setup_callbacks(cfg.train.checkpoint_freq,
+    callbacks = setup_callbacks(cfg.train.checkpoint_interval,
                                 cfg.results_dir,
                                 cfg.train.lr_config,
                                 init_epoch + 1,
                                 len(train_iterator) // hvd.size(),
-                                cfg.train.n_epochs, cfg.key,
+                                cfg.train.num_epochs, cfg.key,
                                 hvd)
     # Writing out class-map file for inference mapping
     if hvd.rank() == 0:
@@ -404,12 +404,12 @@ def run_experiment(cfg, run_ci=False):
     final_model.fit(
         train_iterator,
         steps_per_epoch=len(train_iterator) // hvd.size(),
-        epochs=cfg['train']['n_epochs'],
+        epochs=cfg['train']['num_epochs'],
         verbose=hvd.rank() == 0,
         workers=cfg['train']['n_workers'],
         validation_data=val_iterator,
         validation_steps=len(val_iterator),  # // hvd.size(),
-        validation_freq=cfg['train']['checkpoint_freq'],
+        validation_freq=1,
         callbacks=callbacks,
         initial_epoch=init_epoch)
 

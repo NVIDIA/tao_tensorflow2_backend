@@ -1,7 +1,0 @@
-results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-byom'
-model_config:
-  train_graph: '/home/scratch.p3/yuw/tlt3_experiments/tf2-byom/retinanet_r50_fpn_train_91.hdf5'
-data_config:
-  training_file_pattern: '/home/scratch.p3/yuw/datasets/coco/train-*'
-  validation_file_pattern: '/home/scratch.p3/yuw/datasets/coco/val-*'
-  validation_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'

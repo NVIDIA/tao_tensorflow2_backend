@@ -6,7 +6,7 @@ data:
 train:
   pretrained_model_path: ''
   batch_size_per_gpu: 64
-  n_epochs: 80
+  num_epochs: 80
 evaluate:
   dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   model_path: '/home/projects2_metropolis/tmp/sean/converted_models_classification/convnext_tiny/convnext_tiny.tltb'

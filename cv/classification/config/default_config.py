@@ -53,9 +53,9 @@ class TrainConfig:
 
     qat: bool = True
     pretrained_model_path: str = ''
-    checkpoint_freq: int = 1
+    checkpoint_interval: int = 1
     batch_size_per_gpu: int = 64
-    n_epochs: int = 100
+    num_epochs: int = 100
     n_workers: int = 10
     random_seed: int = 42
     label_smoothing: float = 0.01

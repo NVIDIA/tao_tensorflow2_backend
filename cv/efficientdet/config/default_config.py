@@ -49,7 +49,7 @@ class TrainConfig:
     batch_size: int = 8
     num_epochs: int = 300
     checkpoint: str = ""
-    tf_random_seed: int = 42
+    random_seed: int = 42
     l1_weight_decay: float = 0.0
     l2_weight_decay: float = 0.00004
     amp: bool = False
@@ -57,7 +57,7 @@ class TrainConfig:
     moving_average_decay: float = 0.9999
     clip_gradients_norm: float = 10.0
     skip_checkpoint_variables: str = ''
-    checkpoint_period: int = 10
+    checkpoint_interval: int = 10
     image_preview: bool = True
     qat: bool = False
     wandb: WandBConfig = WandBConfig(

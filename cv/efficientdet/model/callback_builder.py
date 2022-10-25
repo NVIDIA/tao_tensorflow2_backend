@@ -37,7 +37,7 @@ def get_callbacks(params, eval_dataset, steps_per_epoch,
                 verbose=0,
                 save_freq='epoch',
                 save_weights_only=True,
-                period=params['train']['checkpoint_period'],
+                period=params['train']['checkpoint_interval'],
                 is_qat=params['train']['qat'])
         else:
             ckpt_callback = EffCheckpoint(
@@ -46,7 +46,7 @@ def get_callbacks(params, eval_dataset, steps_per_epoch,
                 verbose=0,
                 save_freq='epoch',
                 save_weights_only=True,
-                period=params['train']['checkpoint_period'],
+                period=params['train']['checkpoint_interval'],
                 is_qat=params['train']['qat'])
         callbacks.append(ckpt_callback)
 
@@ -57,7 +57,7 @@ def get_callbacks(params, eval_dataset, steps_per_epoch,
             verbose=0,
             save_freq='epoch',
             save_weights_only=True,
-            period=params['train']['checkpoint_period'])
+            period=params['train']['checkpoint_interval'])
         callbacks.append(model_callback)
 
         # log LR in tensorboard
@@ -73,7 +73,7 @@ def get_callbacks(params, eval_dataset, steps_per_epoch,
     cocoeval = COCOEvalCallback(
         eval_dataset,
         eval_model=eval_model,
-        eval_freq=params['train']['checkpoint_period'],
+        eval_freq=params['train']['checkpoint_interval'],
         start_eval_epoch=params['evaluate']['start_eval_epoch'],
         eval_params=params)
     callbacks.append(cocoeval)

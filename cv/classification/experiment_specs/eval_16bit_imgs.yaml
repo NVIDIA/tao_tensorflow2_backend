@@ -7,7 +7,7 @@ data:
 train:
   pretrained_model_path: ''
   batch_size_per_gpu: 4
-  n_epochs: 3
+  num_epochs: 3
 evaluate:
   dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
   # model_path: '/home/binz/Tao/tao-tf2/results/weights/resnet18_bn_001.tlt'
