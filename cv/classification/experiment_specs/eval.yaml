@@ -5,7 +5,7 @@ data:
 train:
   pretrained_model_path: ''
   batch_size_per_gpu: 16
-  n_epochs: 3
+  num_epochs: 3
 
 evaluate:
   dataset_path: '/home/binz/tao-tf2/dataset/flower_17/validation'

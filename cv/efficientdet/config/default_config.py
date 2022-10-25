@@ -49,7 +49,7 @@ class TrainConfig:
     batch_size: int = 8
     num_epochs: int = 300
     checkpoint: str = ""
-    tf_random_seed: int = 42
+    random_seed: int = 42
     l1_weight_decay: float = 0.0
     l2_weight_decay: float = 0.00004
     amp: bool = False

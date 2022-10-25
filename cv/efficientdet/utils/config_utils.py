@@ -65,7 +65,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         is_training_bn=mode == 'train',
         checkpoint_interval=cfg['train']['checkpoint_interval'],
         train_batch_size=cfg['train']['batch_size'],
-        seed=cfg['train']['tf_random_seed'] or 42,
+        seed=cfg['train']['random_seed'] or 42,
         pruned_model_path=cfg['train']['pruned_model_path'],
         moving_average_decay=cfg['train']['moving_average_decay'],
         amp=cfg['train']['amp'],

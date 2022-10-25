@@ -39,7 +39,7 @@ train:
   clip_gradients_norm: 10.0
   image_preview: True
   qat: False
-  tf_random_seed: 42
+  random_seed: 42
   pruned_model_path: ''
   num_epochs: 20
 model:
