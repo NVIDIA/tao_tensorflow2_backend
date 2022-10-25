@@ -20,6 +20,7 @@ from wandb.keras import WandbCallback
 
 from common.hydra.hydra_runner import hydra_runner
 import common.logging.logging as status_logging
+from common.mlops.clearml import get_clearml_task
 from common.mlops.wandb import (
     check_wandb_logged_in,
     initialize_wandb,
@@ -250,6 +251,13 @@ def run_experiment(cfg, run_ci=False):
                 name=wandb_name,
                 wandb_logged_in=wandb_logged_in,
                 config=cfg,
+            )
+        if cfg.train.get("clearml", None):
+            logger.info("Setting up communication with ClearML server.")
+            get_clearml_task(
+                cfg.train.clearml,
+                network_name="classification",
+                action="train"
             )
     nchannels, image_height, image_width = cfg['model']['input_image_size']
     image_depth = cfg['model']['input_image_depth']
