@@ -6,12 +6,28 @@ from datetime import datetime
 import logging
 
 import wandb
+from wandb import AlertLevel
 import os
 
 DEFAULT_WANDB_CONFIG = "~/.netrc"
 logger = logging.getLogger(__name__)
 
 _WANDB_INITIALIZED = False
+
+
+def alert(title, text, duration=3600, level=0):
+    """Send alert."""
+    alert_levels = {
+        0: AlertLevel.INFO,
+        1: AlertLevel.WARN,
+        2: AlertLevel.ERROR
+    }
+    wandb.alert(
+        title=title,
+        text=text,
+        level=alert_levels[level],
+        wait_duration=duration
+    )
 
 
 def is_wandb_initialized():

@@ -1,11 +1,13 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
-"""Tensorboard callback for learning rate schedules."""
+"""Metric logging callback."""
 
 from datetime import timedelta
+import numpy as np
 import time
 import tensorflow as tf
 
+from common.mlops.wandb import alert
 import common.logging.logging as status_logging
 
 
@@ -32,6 +34,13 @@ class MetricLogging(tf.keras.callbacks.Callback):
     def on_batch_end(self, batch, logs=None):
         """on_batch_end."""
         self.steps_in_epoch = batch + 1
+        if np.isnan(float(logs.get('loss'))):
+            alert(
+                title='nan loss',
+                text='Training loss is nan',
+                level=1,
+                duration=1800
+            )
         self.total_loss += float(logs.get('loss'))
 
     def on_epoch_begin(self, epoch, logs=None):
