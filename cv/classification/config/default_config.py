@@ -19,6 +19,14 @@ class RegConfig:
 
 
 @dataclass
+class BNConfig:
+    """Batchnorm config."""
+
+    momentum: float = 0.9
+    epsilon: float = 1e-5
+
+
+@dataclass
 class OptimConfig:
     """Optimizer config."""
 
@@ -60,6 +68,7 @@ class TrainConfig:
     random_seed: int = 42
     label_smoothing: float = 0.01
     reg_config: RegConfig = RegConfig()
+    bn_config: BNConfig = BNConfig()
     lr_config: LRConfig = LRConfig()
     optim_config: OptimConfig = OptimConfig()
     wandb: WandBConfig = WandBConfig(

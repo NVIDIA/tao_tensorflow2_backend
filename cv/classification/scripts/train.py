@@ -22,6 +22,7 @@ from common.hydra.hydra_runner import hydra_runner
 import common.logging.logging as status_logging
 from common.mlops.clearml import get_clearml_task
 from common.mlops.wandb import (
+    alert,
     check_wandb_logged_in,
     initialize_wandb,
     is_wandb_initialized
@@ -255,6 +256,11 @@ def run_experiment(cfg, run_ci=False):
                 config=cfg,
                 results_dir=cfg.results_dir
             )
+            alert(
+                title='Training started',
+                text='Starting classification training',
+                level=0,
+            )
         if cfg.train.get("clearml", None):
             logger.info("Setting up communication with ClearML server.")
             get_clearml_task(
@@ -328,7 +334,7 @@ def run_experiment(cfg, run_ci=False):
         custom_objs = {}
 
     # Set up BN and regularizer config
-    bn_config = None
+    bn_config = cfg.train.bn_config
     reg_config = cfg.train.reg_config
     final_model = setup_config(
         final_model,
@@ -447,10 +453,20 @@ def main(cfg: ExperimentConfig) -> None:
             verbosity_level=status_logging.Verbosity.INFO,
             status_level=status_logging.Status.FAILURE
         )
+        alert(
+            title='Training stopped',
+            text='Training was interrupted',
+            level=1,
+        )
     except Exception as e:
         status_logging.get_status_logger().write(
             message=str(e),
             status_level=status_logging.Status.FAILURE
+        )
+        alert(
+            title='Training failed',
+            text=str(e),
+            level=2,
         )
         raise e
 
