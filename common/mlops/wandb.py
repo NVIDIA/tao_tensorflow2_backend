@@ -80,7 +80,8 @@ def initialize_wandb(project: str = "TAO Toolkit",
             sync_tensorboard=sync_tensorboard,
             save_code=save_code,
             name=wandb_name,
-            config=config
+            config=config,
+            dir=wandb_dir
         )
         global _WANDB_INITIALIZED  # pylint: disable=W0602,W0603
         _WANDB_INITIALIZED = True
