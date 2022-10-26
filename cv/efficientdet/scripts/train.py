@@ -50,9 +50,12 @@ def run_experiment(cfg, ci_run=False):
         if wandb_logged_in:
             wandb_name = cfg.train.wandb.name if cfg.train.wandb.name else "efficientdet_train"
             initialize_wandb(
+                project=cfg.train.wandb.project,
+                entity=cfg.train.wandb.entity,
                 name=wandb_name,
                 wandb_logged_in=wandb_logged_in,
-                config=cfg
+                config=cfg,
+                results_dir=cfg.results_dir
             )
         if cfg.train.get("clearml", None):
             logger.info("Setting up communication with ClearML server.")
