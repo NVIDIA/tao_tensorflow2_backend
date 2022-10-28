@@ -16,10 +16,20 @@ import tensorflow as tf
 
 from common.dataset import dataset_util
 from common.dataset import label_map_util
+from common.decorators import monitor_status
 from common.hydra.hydra_runner import hydra_runner
 import common.logging.logging as status_logging
 
 from cv.efficientdet.config.default_config import ExperimentConfig
+
+
+def setup_env(cfg):
+    """Setup data conversion env."""
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
+    if not os.path.exists(cfg.results_dir):
+        os.makedirs(cfg.results_dir)
+    if not os.path.exists(cfg.dataset_convert.output_dir):
+        os.mkdir(cfg.dataset_convert.output_dir)
 
 
 def create_tf_example(image,
@@ -291,36 +301,11 @@ def _create_tf_record_from_coco_annotations(object_annotations_file,
     return log_total, cat_total
 
 
-spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+@monitor_status(name="efficientdet", mode="data conversion")
+def run_conversion(cfg):
+    """Run data conversion."""
+    log_dir = cfg.dataset_convert.output_dir
 
-
-@hydra_runner(
-    config_path=os.path.join(spec_root, "experiment_specs"),
-    config_name="dataset_convert", schema=ExperimentConfig
-)
-def main(cfg: ExperimentConfig) -> None:
-    """Convert COCO format json and images into TFRecords."""
-    if not os.path.exists(cfg.dataset_convert.output_dir):
-        os.mkdir(cfg.dataset_convert.output_dir)
-    if not cfg.dataset_convert.log_dir:
-        log_dir = cfg.dataset_convert.output_dir
-    else:
-        log_dir = cfg.dataset_convert.log_dir
-    # set up status logger
-    status_file = os.path.join(log_dir, "status.json")
-    status_logging.set_status_logger(
-        status_logging.StatusLogger(
-            filename=status_file,
-            is_master=True,
-            verbosity=1,
-            append=True
-        )
-    )
-    s_logger = status_logging.get_status_logger()
-    s_logger.write(
-        status_level=status_logging.Status.STARTED,
-        message="Starting tfrecords conversion."
-    )
     # config output files
     tag = cfg.dataset_convert.tag or os.path.splitext(os.path.basename(cfg.dataset_convert.annotations_file))[0]
     output_path = os.path.join(cfg.dataset_convert.output_dir, tag)
@@ -336,14 +321,20 @@ def main(cfg: ExperimentConfig) -> None:
         with open(os.path.join(log_dir, f'{tag}_warnings.json'), "w", encoding='utf-8') as f:
             json.dump(log_total, f)
 
-    s_logger.categorical = {'num_objects': cat_total}
+    status_logging.get_status_logger().categorical = {'num_objects': cat_total}
 
-    s_logger.write(
-        status_level=status_logging.Status.SUCCESS,
-        message="Conversion finished successfully."
-    )
+
+spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+@hydra_runner(
+    config_path=os.path.join(spec_root, "experiment_specs"),
+    config_name="dataset_convert", schema=ExperimentConfig
+)
+def main(cfg: ExperimentConfig) -> None:
+    """Convert COCO format json and images into TFRecords."""
+    run_conversion(cfg)
 
 
 if __name__ == '__main__':
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
     main()

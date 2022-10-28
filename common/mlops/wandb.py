@@ -15,19 +15,20 @@ logger = logging.getLogger(__name__)
 _WANDB_INITIALIZED = False
 
 
-def alert(title, text, duration=3600, level=0):
+def alert(title, text, duration=300, level=0, is_master=True):
     """Send alert."""
     alert_levels = {
         0: AlertLevel.INFO,
         1: AlertLevel.WARN,
         2: AlertLevel.ERROR
     }
-    wandb.alert(
-        title=title,
-        text=text,
-        level=alert_levels[level],
-        wait_duration=duration
-    )
+    if is_wandb_initialized() and is_master:
+        wandb.alert(
+            title=title,
+            text=text,
+            level=alert_levels[level],
+            wait_duration=duration
+        )
 
 
 def is_wandb_initialized():
@@ -90,6 +91,7 @@ def initialize_wandb(project: str = "TAO Toolkit",
         if not os.path.exists(wandb_dir):
             os.makedirs(wandb_dir)
         wandb_name = f"{name}_{time_string}"
+        # wandb.tensorboard.patch(root_logdir=results_dir)
         wandb.init(
             project=project,
             entity=entity,
@@ -102,4 +104,4 @@ def initialize_wandb(project: str = "TAO Toolkit",
         global _WANDB_INITIALIZED  # pylint: disable=W0602,W0603
         _WANDB_INITIALIZED = True
     except Exception as e:
-        logger.error("Wandb logging failed with error %s", e)
+        logger.warning("Wandb logging failed with error %s", e)

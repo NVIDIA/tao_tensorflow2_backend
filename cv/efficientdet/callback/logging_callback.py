@@ -39,7 +39,8 @@ class MetricLogging(tf.keras.callbacks.Callback):
                 title='nan loss',
                 text='Training loss is nan',
                 level=1,
-                duration=1800
+                duration=1800,
+                is_master=True
             )
         self.total_loss += float(logs.get('loss'))
 

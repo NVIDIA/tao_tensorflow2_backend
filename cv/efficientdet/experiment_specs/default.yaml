@@ -85,6 +85,8 @@ inference:
   output_dir: ""
   dump_label: False
   batch_size: 1
+  label_map: ''
+  min_score_thresh: 0.3
   max_boxes_to_draw: 100
 prune:
   model_path: ""

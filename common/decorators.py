@@ -1,11 +1,82 @@
-# Copyright (c) 2017-2022, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Common decorators used in TAO Toolkit."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
+from functools import wraps
 import inspect
+import os
+
+import horovod.tensorflow.keras as hvd
+
+import common.logging.logging as status_logging
+from common.mlops.wandb import alert
+
+
+def monitor_status(name='efficientdet', mode='training'):
+    """Status monitoring decorator."""
+    def inner(runner):
+        @wraps(runner)
+        def _func(cfg, **kwargs):
+            try:
+                if hvd.size() > 0:
+                    is_master = hvd.rank() == 0
+            except ValueError:
+                is_master = True
+            # set up status logger
+            if not os.path.exists(cfg.results_dir) and is_master:
+                os.makedirs(cfg.results_dir)
+            status_file = os.path.join(cfg.results_dir, "status.json")
+            status_logging.set_status_logger(
+                status_logging.StatusLogger(
+                    filename=status_file,
+                    is_master=is_master,
+                    verbosity=1,
+                    append=True
+                )
+            )
+            s_logger = status_logging.get_status_logger()
+            try:
+                s_logger.write(
+                    status_level=status_logging.Status.STARTED,
+                    message=f"Starting {name} {mode}."
+                )
+                alert(
+                    title=f'{mode.capitalize()} started',
+                    text=f'{mode.capitalize()} {name} has started',
+                    level=0,
+                    is_master=is_master
+                )
+                runner(cfg, **kwargs)
+                s_logger.write(
+                    status_level=status_logging.Status.SUCCESS,
+                    message=f"{mode.capitalize()} finished successfully."
+                )
+            except (KeyboardInterrupt, SystemError):
+                status_logging.get_status_logger().write(
+                    message=f"{mode.capitalize()} was interrupted",
+                    verbosity_level=status_logging.Verbosity.INFO,
+                    status_level=status_logging.Status.FAILURE
+                )
+                alert(
+                    title=f'{mode.capitalize()} stopped',
+                    text=f'{mode.capitalize()} was interrupted',
+                    level=1,
+                    is_master=is_master
+                )
+            except Exception as e:
+                status_logging.get_status_logger().write(
+                    message=str(e),
+                    status_level=status_logging.Status.FAILURE
+                )
+                alert(
+                    title=f'{mode.capitalize()} failed',
+                    text=str(e),
+                    level=2,
+                    is_master=is_master
+                )
+                raise e
+
+        return _func
+    return inner
 
 
 def override(method):

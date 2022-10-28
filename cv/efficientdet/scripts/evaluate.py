@@ -5,6 +5,7 @@ from mpi4py import MPI
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
 
+from common.decorators import monitor_status
 from common.hydra.hydra_runner import hydra_runner
 import common.logging.logging as status_logging
 import common.no_warning # noqa pylint: disable=W0611
@@ -18,34 +19,24 @@ from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank
 
 
-def run_experiment(cfg, ci_run=False):
-    """Run evaluation."""
+def setup_env():
+    """Setup evaluation env."""
     hvd.init()
-    if not ci_run:
-        gpus = tf.config.experimental.list_physical_devices('GPU')
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        if gpus:
-            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+    if gpus:
+        tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+
+
+@monitor_status(name='efficientdet', mode='evaluation')
+def run_experiment(cfg):
+    """Run evaluation."""
     MODE = 'eval'
     # Parse and update hparams
     config = hparams_config.get_detection_config(cfg.model.name)
     config.update(generate_params_from_cfg(config, cfg, mode=MODE))
-    # set up status logger
-    status_file = os.path.join(cfg.results_dir, "status.json")
-    status_logging.set_status_logger(
-        status_logging.StatusLogger(
-            filename=status_file,
-            is_master=is_main_process(),
-            verbosity=1,
-            append=True
-        )
-    )
-    s_logger = status_logging.get_status_logger()
-    s_logger.write(
-        status_level=status_logging.Status.STARTED,
-        message="Starting EfficientDet evaluation."
-    )
+
     # Set up dataloader
     eval_sources = datasource.DataSource(
         cfg.data.val_tfrecords,
@@ -123,11 +114,7 @@ def run_experiment(cfg, ci_run=False):
                 metric_dict[name] = metrics[i + len(evaluator.metric_names)]
                 print(f'{name}: {metric_dict[name]:.03f}')
         for k, v in metric_dict.items():
-            s_logger.kpi[k] = float(v)
-        s_logger.write(
-            status_level=status_logging.Status.SUCCESS,
-            message="Evaluation finished successfully."
-        )
+            status_logging.get_status_logger().kpi[k] = float(v)
     MPI.COMM_WORLD.Barrier()  # noqa pylint: disable=I1101
 
 
@@ -140,6 +127,7 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for EfficientDet evaluation."""
+    setup_env()
     run_experiment(cfg)
 
 

@@ -8,10 +8,9 @@ import horovod.tensorflow.keras as hvd
 from tensorflow_quantization.custom_qdq_cases import EfficientNetQDQCase
 from tensorflow_quantization.quantize import quantize_model
 
+from common.decorators import monitor_status
 from common.hydra.hydra_runner import hydra_runner
-from common.mlops.clearml import get_clearml_task
-from common.mlops.wandb import alert, check_wandb_logged_in, initialize_wandb
-import common.logging.logging as status_logging
+from common.mlops.utils import init_mlops
 import common.no_warning # noqa pylint: disable=W0611
 
 from cv.efficientdet.config.default_config import ExperimentConfig
@@ -30,66 +29,30 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 
-def run_experiment(cfg, ci_run=False):
-    """Run training experiment."""
+def setup_env(cfg):
+    """Setup training env."""
     hvd.init()
-
-    # Parse and update hparams
-    config = hparams_config.get_detection_config(cfg.model.name)
-    config.update(generate_params_from_cfg(config, cfg, mode='train'))
-
+    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
     # initialize
-    initialize(config, training=True, ci_run=ci_run)
-
-    wandb_logged_in = False
-
+    initialize(cfg, training=True)
     if is_main_process():
         if not os.path.exists(cfg.results_dir):
             os.makedirs(cfg.results_dir)
-        wandb_logged_in = check_wandb_logged_in()
-        if wandb_logged_in:
-            wandb_name = cfg.train.wandb.name if cfg.train.wandb.name else "efficientdet_train"
-            initialize_wandb(
-                project=cfg.train.wandb.project,
-                entity=cfg.train.wandb.entity,
-                name=wandb_name,
-                wandb_logged_in=wandb_logged_in,
-                config=cfg,
-                results_dir=cfg.results_dir
-            )
-            alert(
-                title='Training started',
-                text='Starting EfficientDet training',
-                level=0,
-            )
-        if cfg.train.get("clearml", None):
-            logger.info("Setting up communication with ClearML server.")
-            get_clearml_task(
-                cfg.train.clearml,
-                network_name="efficientdet",
-                action="train"
-            )
+        init_mlops(cfg, name='efficientdet')
+
+
+@monitor_status(name='efficientdet', mode='training')
+def run_experiment(cfg):
+    """Run training experiment."""
+    # Parse and update hparams
+    config = hparams_config.get_detection_config(cfg.model.name)
+    config.update(generate_params_from_cfg(config, cfg, mode='train'))
 
     steps_per_epoch = (
         cfg.train.num_examples_per_epoch +
         (cfg.train.batch_size * get_world_size()) - 1) // \
         (cfg.train.batch_size * get_world_size())
 
-    # set up status logger
-    status_file = os.path.join(cfg.results_dir, "status.json")
-    status_logging.set_status_logger(
-        status_logging.StatusLogger(
-            filename=status_file,
-            is_master=is_main_process(),
-            verbosity=1,
-            append=True
-        )
-    )
-    s_logger = status_logging.get_status_logger()
-    s_logger.write(
-        status_level=status_logging.Status.STARTED,
-        message="Starting EfficientDet training."
-    )
     # Set up dataloader
     train_sources = datasource.DataSource(
         cfg.data.train_tfrecords,
@@ -251,10 +214,6 @@ def run_experiment(cfg, ci_run=False):
     else:
         if is_main_process():
             logger.info("Training (%d epochs) has finished.", train_from_epoch)
-    status_logging.get_status_logger().write(
-        status_level=status_logging.Status.SUCCESS,
-        message="Training finished successfully."
-    )
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -266,30 +225,8 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for EfficientDet training."""
-    try:
-        run_experiment(cfg=cfg)
-    except (KeyboardInterrupt, SystemExit):
-        status_logging.get_status_logger().write(
-            message="Training was interrupted",
-            verbosity_level=status_logging.Verbosity.INFO,
-            status_level=status_logging.Status.FAILURE
-        )
-        alert(
-            title='Training stopped',
-            text='Training was interrupted',
-            level=1,
-        )
-    except Exception as e:
-        status_logging.get_status_logger().write(
-            message=str(e),
-            status_level=status_logging.Status.FAILURE
-        )
-        alert(
-            title='Training failed',
-            text=str(e),
-            level=2,
-        )
-        raise e
+    setup_env(cfg)
+    run_experiment(cfg=cfg)
 
 
 if __name__ == '__main__':
