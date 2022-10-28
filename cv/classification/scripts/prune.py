@@ -6,6 +6,7 @@ import os
 import tempfile
 import tensorflow as tf
 
+from common.decorators import monitor_status
 from common.hydra.hydra_runner import hydra_runner
 import common.logging.logging as status_logging
 from common.utils import get_model_file_size
@@ -18,30 +19,17 @@ tf.get_logger().setLevel('ERROR')
 logger = logging.getLogger(__name__)
 
 
+@monitor_status(name='classification', mode='pruning')
 def run_pruning(cfg):
     """Prune an encrypted Keras model."""
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
     assert cfg.prune.equalization_criterion in \
         ['arithmetic_mean', 'geometric_mean', 'union', 'intersection'], \
         "Equalization criterion are [arithmetic_mean, geometric_mean, union, \
          intersection]."
     assert cfg.prune.normalizer in ['L2', 'max'], \
         "normalizer options are [L2, max]."
-    # set up status logger
-    status_file = os.path.join(cfg.results_dir, "status.json")
-    status_logging.set_status_logger(
-        status_logging.StatusLogger(
-            filename=status_file,
-            is_master=True,
-            verbosity=1,
-            append=True
-        )
-    )
-    s_logger = status_logging.get_status_logger()
-    s_logger.write(
-        status_level=status_logging.Status.STARTED,
-        message="Starting classification pruning."
-    )
+
     pruner = ClassificationPruner(cfg)
 
     # Pruning trained model
@@ -59,14 +47,10 @@ def run_pruning(cfg):
 
     pruning_ratio = pruned_model.count_params() / pruner.model.count_params()
     logger.info("Pruning ratio (pruned model / original model): %s", pruning_ratio)
-    s_logger.kpi.update(
+    status_logging.get_status_logger().kpi.update(
         {'pruning_ratio': float(pruning_ratio),
          'param_count': pruned_model.count_params(),
          'size': get_model_file_size(cfg.prune.output_path)})
-    s_logger.write(
-        status_level=status_logging.Status.SUCCESS,
-        message="Pruning finished successfully."
-    )
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

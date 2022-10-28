@@ -18,15 +18,11 @@ import horovod.tensorflow.keras as hvd
 
 from wandb.keras import WandbCallback
 
+from common.decorators import monitor_status
 from common.hydra.hydra_runner import hydra_runner
-import common.logging.logging as status_logging
-from common.mlops.clearml import get_clearml_task
-from common.mlops.wandb import (
-    alert,
-    check_wandb_logged_in,
-    initialize_wandb,
-    is_wandb_initialized
-)
+from common.mlops.utils import init_mlops
+from common.mlops.wandb import is_wandb_initialized
+from common.utils import set_random_seed
 
 from cv.classification.callback.eff_checkpoint import EffCheckpoint
 from cv.classification.config.default_config import ExperimentConfig
@@ -43,8 +39,31 @@ from cv.classification.utils.helper import (
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 Image.MAX_IMAGE_PIXELS = 9000000000
 logger = logging.getLogger(__name__)
-# Horovod: initialize Horovod.
-hvd.init()
+
+
+def setup_env(cfg):
+    """Setup training env."""
+    # Horovod: initialize Horovod.
+    hvd.init()
+
+    # Horovod: pin GPU to be used to process local rank (one GPU per process)
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+    if gpus:
+        tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+
+    # Configure the logger.
+    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
+    # Set random seed.
+    seed = cfg.train.random_seed + hvd.rank()
+    set_random_seed(seed)
+    logger.debug("Random seed is set to %d", seed)
+    # Create results dir
+    if hvd.rank() == 0:
+        if not os.path.exists(cfg.results_dir):
+            os.makedirs(cfg.results_dir)
+        init_mlops(cfg, name='classification')
 
 
 def setup_callbacks(ckpt_freq, results_dir, lr_config,
@@ -203,7 +222,8 @@ def get_latest_checkpoint(model_dir, model_name='efficientnet-b'):
     return int(last_checkpoint[:-4].split('_')[-1]), os.path.join(model_dir, last_checkpoint)
 
 
-def run_experiment(cfg, run_ci=False):
+@monitor_status(name='classification', mode='training')
+def run_experiment(cfg):
     """Launch experiment that trains the model.
 
     NOTE: Do not change the argument names without verifying that cluster
@@ -212,62 +232,6 @@ def run_experiment(cfg, run_ci=False):
     Args:
         cfg: Hydra config
     """
-    if not run_ci:
-        # Horovod: pin GPU to be used to process local rank (one GPU per process)
-        gpus = tf.config.experimental.list_physical_devices('GPU')
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        if gpus:
-            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
-
-    # Configure the logger.
-    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
-    # Set random seed.
-    logger.debug("Random seed is set to %d", cfg['train']['random_seed'])
-    # Create results dir
-    if hvd.rank() == 0 and not os.path.exists(cfg.results_dir):
-        os.makedirs(cfg.results_dir)
-    # set up status logger
-    status_file = os.path.join(cfg.results_dir, "status.json")
-    status_logging.set_status_logger(
-        status_logging.StatusLogger(
-            filename=status_file,
-            is_master=hvd.rank() == 0,
-            verbosity=1,
-            append=True
-        )
-    )
-    s_logger = status_logging.get_status_logger()
-    s_logger.write(
-        status_level=status_logging.Status.STARTED,
-        message="Starting classification training."
-    )
-    logger.debug("Random seed is set to {}".format(cfg['train']['random_seed']))  # noqa pylint: disable=C0209
-
-    if hvd.rank() == 0:
-        wandb_logged_in = check_wandb_logged_in()
-        if wandb_logged_in:
-            wandb_name = cfg.train.wandb.name if cfg.train.wandb.name else "classification_train"
-            initialize_wandb(
-                project=cfg.train.wandb.project,
-                entity=cfg.train.wandb.entity,
-                name=wandb_name,
-                wandb_logged_in=wandb_logged_in,
-                config=cfg,
-                results_dir=cfg.results_dir
-            )
-            alert(
-                title='Training started',
-                text='Starting classification training',
-                level=0,
-            )
-        if cfg.train.get("clearml", None):
-            logger.info("Setting up communication with ClearML server.")
-            get_clearml_task(
-                cfg.train.clearml,
-                network_name="classification",
-                action="train"
-            )
     nchannels, image_height, image_width = cfg['model']['input_image_size']
     image_depth = cfg['model']['input_image_depth']
     assert nchannels in [1, 3], "Invalid input image dimension."
@@ -430,11 +394,6 @@ def run_experiment(cfg, run_ci=False):
         callbacks=callbacks,
         initial_epoch=init_epoch)
 
-    status_logging.get_status_logger().write(
-        status_level=status_logging.Status.SUCCESS,
-        message="Training finished successfully."
-    )
-
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -445,30 +404,8 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for continuous training of classification application."""
-    try:
-        run_experiment(cfg=cfg)
-    except (KeyboardInterrupt, SystemExit):
-        status_logging.get_status_logger().write(
-            message="Training was interrupted",
-            verbosity_level=status_logging.Verbosity.INFO,
-            status_level=status_logging.Status.FAILURE
-        )
-        alert(
-            title='Training stopped',
-            text='Training was interrupted',
-            level=1,
-        )
-    except Exception as e:
-        status_logging.get_status_logger().write(
-            message=str(e),
-            status_level=status_logging.Status.FAILURE
-        )
-        alert(
-            title='Training failed',
-            text=str(e),
-            level=2,
-        )
-        raise e
+    setup_env(cfg)
+    run_experiment(cfg=cfg)
 
 
 if __name__ == '__main__':

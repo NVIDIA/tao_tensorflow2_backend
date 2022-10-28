@@ -4,38 +4,20 @@
 import os
 import logging
 
+from common.decorators import monitor_status
 from common.hydra.hydra_runner import hydra_runner
-import common.logging.logging as status_logging
 
 from cv.classification.config.default_config import ExperimentConfig
 from cv.classification.export.classification_exporter import Exporter
 logger = logging.getLogger(__name__)
 
 
+@monitor_status(name='classification', mode='export')
 def run_export(cfg=None):
     """Export classification model to etlt."""
-    logger.setLevel(logging.INFO)
-    # set up status logger
-    status_file = os.path.join(cfg.results_dir, "status.json")
-    status_logging.set_status_logger(
-        status_logging.StatusLogger(
-            filename=status_file,
-            is_master=True,
-            verbosity=1,
-            append=True
-        )
-    )
-    s_logger = status_logging.get_status_logger()
-    s_logger.write(
-        status_level=status_logging.Status.STARTED,
-        message="Starting classification export."
-    )
+    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
     exporter = Exporter(config=cfg)
     exporter.export()
-    s_logger.write(
-        status_level=status_logging.Status.SUCCESS,
-        message="Export finished successfully."
-    )
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

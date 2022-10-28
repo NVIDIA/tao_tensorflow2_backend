@@ -1,23 +1,17 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """EfficientDet standalone inference."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 import tensorflow as tf
 # from tensorflow.python.framework.ops import disable_eager_execution
 from tensorflow.python.util import deprecation
-import warnings
 
+from common.decorators import monitor_status
 from common.hydra.hydra_runner import hydra_runner
-import common.logging.logging as status_logging
 import common.no_warning # noqa pylint: disable=W0611
 
 from cv.efficientdet.config.default_config import ExperimentConfig
-from cv.efficientdet.inferencer import inference, inference_trt
+from cv.efficientdet.inferencer import inference
 from cv.efficientdet.utils import helper, hparams_config, label_utils
 from cv.efficientdet.utils.config_utils import generate_params_from_cfg
 from cv.efficientdet.utils.horovod_utils import initialize
@@ -49,25 +43,39 @@ def batch_generator(iterable, batch_size=1):
         yield iterable[ndx:min(ndx + batch_size, total_len)]
 
 
-def infer_tlt(cfg, label_id_mapping, min_score_thresh, ci_run=False):
+def setup_env(cfg):
+    """Setup inference env."""
+    initialize(cfg, training=True)
+    if not os.path.exists(cfg.results_dir):
+        os.makedirs(cfg.results_dir)
+
+
+@monitor_status(name='efficientdet', mode='inference')
+def infer_tlt(cfg):
     """Launch EfficientDet TLT model Inference."""
     # disable_eager_execution()
     tf.autograph.set_verbosity(0)
     # Parse and update hparams
     MODE = 'infer'
     config = hparams_config.get_detection_config(cfg.model.name)
-    config.update(generate_params_from_cfg(config, cfg, mode='infer'))
+    config.update(generate_params_from_cfg(config, cfg, mode=MODE))
     params = config.as_dict()
-    initialize(config, training=False, ci_run=ci_run)
     if not os.path.exists(cfg.inference.output_dir):
         os.makedirs(cfg.inference.output_dir, exist_ok=True)
+    # Parse label map
+    label_id_mapping = {}
+    if cfg.inference.label_map:
+        if str(cfg.inference.label_map).endswith('.yaml'):
+            label_id_mapping = label_utils.get_label_map(cfg.inference.label_map)
+        else:
+            label_id_mapping = get_label_dict(cfg.inference.label_map)
     # Load model from graph json
     model = helper.load_model(cfg.inference.model_path, cfg, MODE, is_qat=cfg.train.qat)
 
     infer_model = inference.InferenceModel(model, config.image_size, params,
                                            cfg.inference.batch_size,
                                            label_id_mapping=label_id_mapping,
-                                           min_score_thresh=min_score_thresh,
+                                           min_score_thresh=cfg.inference.min_score_thresh,
                                            max_boxes_to_draw=cfg.inference.max_boxes_to_draw)
     imgpath_list = [os.path.join(cfg.inference.image_dir, imgname)
                     for imgname in sorted(os.listdir(cfg.inference.image_dir))
@@ -80,20 +88,6 @@ def infer_tlt(cfg, label_id_mapping, min_score_thresh, ci_run=False):
             cfg.inference.dump_label)
 
 
-def infer_trt(cfg, label_id_mapping, min_score_thresh):
-    """Run trt inference."""
-    output_dir = os.path.realpath(cfg.inference.output_dir)
-    os.makedirs(output_dir, exist_ok=True)
-    trt_infer = inference_trt.TensorRTInfer(
-        cfg.inference.model_path,
-        label_id_mapping,
-        min_score_thresh)
-    trt_infer.visualize_detections(
-        cfg.inference.image_dir,
-        cfg.inference.output_dir,
-        cfg.inference.dump_label)
-
-
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -103,39 +97,8 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig):
     """Wrapper function for EfficientDet inference."""
-    # set up status logger
-    status_file = os.path.join(cfg.results_dir, "status.json")
-    status_logging.set_status_logger(
-        status_logging.StatusLogger(
-            filename=status_file,
-            is_master=True,
-            verbosity=1,
-            append=True
-        )
-    )
-    s_logger = status_logging.get_status_logger()
-    s_logger.write(
-        status_level=status_logging.Status.STARTED,
-        message="Starting EfficientDet inference."
-    )
-    label_id_mapping = {}
-    if cfg.inference.label_map:
-        if str(cfg.inference.label_map).endswith('.yaml'):
-            label_id_mapping = label_utils.get_label_map(cfg.inference.label_map)
-        else:
-            label_id_mapping = get_label_dict(cfg.inference.label_map)
-
-    if cfg.inference.model_path.endswith('.engine'):
-        warnings.warn("Please use tao-deploy to run TensorRT inference.")
-        # infer_trt(cfg, label_id_mapping, cfg.evaluate.min_score_thresh)
-    elif cfg.inference.model_path.endswith('.tlt'):
-        infer_tlt(cfg, label_id_mapping, cfg.inference.min_score_thresh)
-    else:
-        raise ValueError("Only .tlt models are supported with tao inference.")
-    s_logger.write(
-        status_level=status_logging.Status.SUCCESS,
-        message="Inference finished successfully."
-    )
+    setup_env(cfg)
+    infer_tlt(cfg)
 
 
 if __name__ == '__main__':

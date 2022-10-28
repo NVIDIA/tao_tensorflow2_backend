@@ -2,11 +2,13 @@
 
 """EfficientDet QAT pipeline tests."""
 
+from datetime import datetime
 import omegaconf
 import pytest
 import os
 import shutil
 
+import horovod.tensorflow.keras as hvd
 import tensorflow as tf
 
 from cv.efficientdet.scripts.train import run_experiment as run_train
@@ -15,6 +17,8 @@ from cv.efficientdet.scripts.export import run_export
 
 TMP_MODEL_DIR = '/home/scratch.metropolis2/tao_ci/tao_tf2/models/tmp'
 DATA_DIR = '/home/scratch.metropolis2/tao_ci/tao_tf2/data/coco'
+time_str = datetime.now().strftime("%y_%m_%d_%H:%M:%S")
+hvd.init()
 
 
 @pytest.fixture(scope='function')
@@ -42,7 +46,7 @@ def test_train(amp, qat, batch_size, num_epochs, cfg):
     tf.keras.mixed_precision.set_global_policy(policy)
     results_dir = os.path.join(
         TMP_MODEL_DIR,
-        f"exp_b{batch_size}_ep{num_epochs}")
+        f"effdet_b{batch_size}_ep{num_epochs}_{time_str}")
     if os.path.exists(results_dir):
         shutil.rmtree(results_dir)
 
@@ -52,7 +56,7 @@ def test_train(amp, qat, batch_size, num_epochs, cfg):
     cfg.train.batch_size = batch_size
     cfg.results_dir = results_dir
 
-    run_train(cfg, ci_run=True)
+    run_train(cfg)
     tf.keras.backend.clear_session()
     tf.compat.v1.reset_default_graph()
 
@@ -70,11 +74,11 @@ def test_eval(amp, qat, batch_size, num_epochs, cfg):
 
     cfg.evaluate.model_path = os.path.join(
         TMP_MODEL_DIR,
-        f"exp_b{batch_size}_ep{num_epochs}",
+        f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",
         f'efficientdet-d0_00{num_epochs}.tlt')
     cfg.evaluate.batch_size = batch_size
-    run_evaluate(cfg, ci_run=True)
+    run_evaluate(cfg)
     tf.keras.backend.clear_session()
     tf.compat.v1.reset_default_graph()
 
@@ -93,28 +97,28 @@ def test_export(amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type,
     cfg.export.data_type = data_type
     cfg.export.model_path = os.path.join(
         TMP_MODEL_DIR,
-        f"exp_b{batch_size}_ep{num_epochs}",
+        f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",
         f'efficientdet-d0_00{num_epochs}.tlt')
     cfg.export.max_batch_size = max_bs
     cfg.export.dynamic_batch_size = dynamic_bs
     cfg.export.output_path = os.path.join(
         TMP_MODEL_DIR,
-        f"exp_b{batch_size}_ep{num_epochs}",
+        f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",
         f'efficientdet-d0_00{num_epochs}.etlt')
     cfg.export.cal_cache_file = os.path.join(
         TMP_MODEL_DIR,
-        f"exp_b{batch_size}_ep{num_epochs}",
+        f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",
         f'efficientdet-d0_00{num_epochs}.cal')
     cfg.export.engine_file = os.path.join(
         TMP_MODEL_DIR,
-        f"exp_b{batch_size}_ep{num_epochs}",
+        f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",
         f'efficientdet-d0_00{num_epochs}.engine')
     cfg.export.cal_image_dir = os.path.join(DATA_DIR, "raw-data", "test2017")
 
-    run_export(cfg, ci_run=True)
+    run_export(cfg)
     tf.keras.backend.clear_session()
     tf.compat.v1.reset_default_graph()

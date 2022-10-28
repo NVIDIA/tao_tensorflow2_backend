@@ -12,6 +12,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from tensorflow import keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
+from common.decorators import monitor_status
 from common.hydra.hydra_runner import hydra_runner
 import common.logging.logging as status_logging
 
@@ -23,6 +24,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 
 
+@monitor_status(name='classification', mode='evaluation')
 def run_evaluate(cfg):
     """Wrapper function to run evaluation of classification model.
 
@@ -30,24 +32,7 @@ def run_evaluate(cfg):
        Dictionary arguments containing parameters parsed in the main function.
     """
     # Set up logger verbosity.
-    logger.setLevel(logging.INFO)
-    # set backend
-    # initialize()
-    # set up status logger
-    status_file = os.path.join(cfg.results_dir, "status.json")
-    status_logging.set_status_logger(
-        status_logging.StatusLogger(
-            filename=status_file,
-            is_master=True,
-            verbosity=1,
-            append=True
-        )
-    )
-    s_logger = status_logging.get_status_logger()
-    s_logger.write(
-        status_level=status_logging.Status.STARTED,
-        message="Starting classification evaluation."
-    )
+    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
     # Decrypt EFF
     final_model = load_model(
         str(cfg['evaluate']['model_path']),
@@ -149,8 +134,8 @@ def run_evaluate(cfg):
 
     logger.info('Evaluation Loss: %s', score[0])
     logger.info('Evaluation Top %s accuracy: %s', cfg['evaluate']['top_k'], score[1])
-    s_logger.kpi['loss'] = float(score[0])
-    s_logger.kpi['top_k'] = float(score[1])
+    status_logging.get_status_logger().kpi['loss'] = float(score[0])
+    status_logging.get_status_logger().kpi['top_k'] = float(score[1])
     # Re-initializing data iterator
     target_iterator = target_datagen.flow_from_directory(
         cfg['evaluate']['dataset_path'],
@@ -170,10 +155,6 @@ def run_evaluate(cfg):
     target_keys_names = list(sorted(class_dict.items(), key=lambda x: x[1]))
     target_keys_names = list(zip(*target_keys_names))
     print(classification_report(target_iterator.classes, y_pred, labels=target_keys_names[1], target_names=target_keys_names[0]))
-    s_logger.write(
-        status_level=status_logging.Status.SUCCESS,
-        message="Evaluation finished successfully."
-    )
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -186,7 +167,6 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for continuous training of classification application."""
     run_evaluate(cfg)
-    logger.info("Evaluation finished successfully.")
 
 
 if __name__ == '__main__':

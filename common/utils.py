@@ -10,7 +10,9 @@ import argparse
 import logging
 import math
 from math import exp, log
+import numpy as np
 import os
+import random
 import struct
 import sys
 
@@ -32,6 +34,13 @@ ap_mode_dict = {0: "sample", 1: "integrate"}
 MB = 2 << 20
 
 CUSTOM_OBJS = {'swish': swish}
+
+
+def set_random_seed(seed):
+    """set random seed."""
+    random.seed(seed)
+    np.random.seed(seed)
+    tf.random.set_seed(seed)
 
 
 def encode_etlt(tmp_file_name, output_file_name, input_tensor_name, key):

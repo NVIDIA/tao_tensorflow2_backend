@@ -12,8 +12,8 @@ import tempfile
 import tensorflow as tf
 from tensorflow.python.util import deprecation
 
+from common.decorators import monitor_status
 from common.hydra.hydra_runner import hydra_runner
-import common.logging.logging as status_logging
 import common.no_warning # noqa pylint: disable=W0611
 from common.utils import encode_etlt
 
@@ -30,17 +30,19 @@ os.environ["TF_CPP_VMODULE"] = 'non_max_suppression_op=0,generate_box_proposals_
 supported_img_format = ['.jpg', '.jpeg', '.JPG', '.JPEG', '.png', '.PNG']
 
 
-def run_export(cfg, ci_run=False):
-    """Launch EfficientDet export."""
-    # disable_eager_execution()
+def setup_env():
+    """Setup export env."""
     tf.autograph.set_verbosity(0)
-    if not ci_run:
-        gpus = tf.config.experimental.list_physical_devices('GPU')
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        if gpus:
-            tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+    if gpus:
+        tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
 
+
+@monitor_status(name='efficientdet', mode='export')
+def run_export(cfg):
+    """Launch EfficientDet export."""
     # Parse and update hparams
     MODE = 'export'
     config = hparams_config.get_detection_config(cfg.model.name)
@@ -50,22 +52,6 @@ def run_export(cfg, ci_run=False):
     assert str(cfg.export.output_path).endswith('.etlt'), "Exported file must end with .etlt"
     output_dir = tempfile.mkdtemp()  # os.path.dirname(cfg.export.output_path)
     tf.keras.backend.set_learning_phase(0)
-
-    # set up status logger
-    status_file = os.path.join(cfg.results_dir, "status.json")
-    status_logging.set_status_logger(
-        status_logging.StatusLogger(
-            filename=status_file,
-            is_master=True,
-            verbosity=1,
-            append=True
-        )
-    )
-    s_logger = status_logging.get_status_logger()
-    s_logger.write(
-        status_level=status_logging.Status.STARTED,
-        message="Starting EfficientDet export."
-    )
 
     # Load model from graph json
     model = helper.load_model(cfg.export.model_path, cfg, MODE, is_qat=cfg.train.qat)
@@ -100,25 +86,6 @@ def run_export(cfg, ci_run=False):
     encode_etlt(onnx_file, cfg.export.output_path, "", cfg.key)
     # print(f"The exported model is saved at: {onnx_file}")
     os.remove(onnx_file)
-    s_logger.write(
-        status_level=status_logging.Status.SUCCESS,
-        message="Export finished successfully."
-    )
-
-    # print("Generating TensorRT engine...")
-    # # convert to engine
-    # if cfg.export.engine_file is not None or cfg.export.data_type == 'int8':
-
-    #     output_engine_path = cfg.export.engine_file
-    #     builder = EngineBuilder(cfg.verbose, workspace=cfg.export.max_workspace_size)
-    #     builder.create_network(onnx_file, batch_size=max_batch_size)
-    #     builder.create_engine(
-    #         output_engine_path,
-    #         cfg.export.data_type,
-    #         cfg.export.cal_image_dir,
-    #         cfg.export.cal_cache_file,
-    #         cfg.export.cal_batch_size * cfg.export.cal_batches,
-    #         cfg.export.cal_batch_size)
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -130,6 +97,7 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig):
     """Wrapper function for EfficientDet exporter."""
+    setup_env()
     run_export(cfg=cfg)
 
 

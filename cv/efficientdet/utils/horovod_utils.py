@@ -2,9 +2,10 @@
 """Horovod utils."""
 import os
 import multiprocessing
-import numpy as np
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
+
+from common.utils import set_random_seed
 
 
 def get_rank():
@@ -28,13 +29,14 @@ def is_main_process():
     return get_rank() == 0
 
 
-def initialize(config, training=True, ci_run=False):
+def initialize(cfg, training=True):
     """Initialize training."""
-    if training and config.set_num_threads:
+    use_xla = False
+    if training:
         os.environ['TF_NUM_INTRAOP_THREADS'] = '1'
         os.environ['TF_NUM_INTEROP_THREADS'] = str(max(2, (multiprocessing.cpu_count() // hvd.size()) - 2))
 
-    if config.use_xla:
+    if use_xla:
         # it turns out tf_xla_enable_lazy_compilation is used before importing tersorflow for the first time,
         # so setting this flag in the current function would have no effect. Thus, this flag is already
         # set in Dockerfile. The remaining XLA flags are set here.
@@ -44,20 +46,18 @@ def initialize(config, training=True, ci_run=False):
         tf.keras.backend.clear_session()
         tf.config.optimizer.set_jit(True)
 
-    if not ci_run:
-        gpus = tf.config.list_physical_devices('GPU')
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-            assert tf.config.experimental.get_memory_growth(gpu)
-        tf.config.experimental.set_visible_devices(gpus, 'GPU')
-        if gpus and training:
-            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+    gpus = tf.config.list_physical_devices('GPU')
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+        assert tf.config.experimental.get_memory_growth(gpu)
+    tf.config.experimental.set_visible_devices(gpus, 'GPU')
+    if gpus and training:
+        tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
 
     if training:
-        np.random.seed(config.seed)
-        tf.random.set_seed(config.seed)
+        set_random_seed(cfg.train.random_seed + hvd.rank())
 
-    if config.mixed_precision:
+    if cfg.train.amp:
         policy = tf.keras.mixed_precision.Policy('mixed_float16')
         tf.keras.mixed_precision.set_global_policy(policy)
     else:

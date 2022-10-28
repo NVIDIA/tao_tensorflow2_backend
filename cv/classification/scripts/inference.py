@@ -10,8 +10,8 @@ import tqdm
 import numpy as np
 import pandas as pd
 
+from common.decorators import monitor_status
 from common.hydra.hydra_runner import hydra_runner
-import common.logging.logging as status_logging
 
 from cv.classification.inferencer.keras_inferencer import KerasInferencer
 from cv.classification.config.default_config import ExperimentConfig
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 SUPPORTED_IMAGE_FORMAT = ['.jpg', '.png', '.jpeg']
 
 
+@monitor_status(name='classification', mode='inference')
 def run_inference(cfg):
     """Inference on a directory of images using a pretrained model file.
 
@@ -29,22 +30,7 @@ def run_inference(cfg):
         Directory Mode:
             write out a .csv file to store all the predictions
     """
-    logger.setLevel(logging.INFO)
-    # set up status logger
-    status_file = os.path.join(cfg.results_dir, "status.json")
-    status_logging.set_status_logger(
-        status_logging.StatusLogger(
-            filename=status_file,
-            is_master=True,
-            verbosity=1,
-            append=True
-        )
-    )
-    s_logger = status_logging.get_status_logger()
-    s_logger.write(
-        status_level=status_logging.Status.STARTED,
-        message="Starting classification inference."
-    )
+    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
     result_csv_path = os.path.join(cfg.results_dir, 'result.csv')
     assert os.path.exists(cfg.results_dir), "The results_dir doesn't exist."
     assert os.path.exists(cfg.inference.classmap), "inference.classmap doesn't exist."
@@ -81,10 +67,6 @@ def run_inference(cfg):
         df = pd.DataFrame(predictions)
         df.to_csv(csv_f, header=False, index=False)
     logger.info("The inference result is saved at: %s", result_csv_path)
-    s_logger.write(
-        status_level=status_logging.Status.SUCCESS,
-        message="Inference finished successfully."
-    )
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
