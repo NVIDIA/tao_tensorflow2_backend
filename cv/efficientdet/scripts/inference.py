@@ -45,7 +45,7 @@ def batch_generator(iterable, batch_size=1):
 
 def setup_env(cfg):
     """Setup inference env."""
-    initialize(cfg, training=True)
+    initialize(cfg, training=False)
     if not os.path.exists(cfg.results_dir):
         os.makedirs(cfg.results_dir)
 
