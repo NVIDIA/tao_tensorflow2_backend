@@ -18,25 +18,18 @@ find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
 
 #This makes sure the non-py files are retained. Py files are repplaced in th next step
 mkdir /dist
-cp -r ${REPO_ROOT}/backbones /dist/
-cp -r ${REPO_ROOT}/blocks /dist/
-cp -r ${REPO_ROOT}/common /dist/
-cp -r ${REPO_ROOT}/cv /dist/
-cp -r ${REPO_ROOT}/model_optimization /dist/
+cp -r ${REPO_ROOT}/nvidia_tao_tf2/* /dist/
 
 echo "Obfuscating the code using pyarmor"
 cd ${REPO_ROOT}
-python -c "from release.python.utils import encrypt_source_code; encrypt_source_code.encrypt_files('${REPO_ROOT}')"
+python -c "from release.python.utils import encrypt_source_code; encrypt_source_code.encrypt_files('${REPO_ROOT}/nvidia_tao_tf2')"
 
 echo "Migrating codebase"
 # Move sources to orig_src
 rm -rf /orig_src
 mkdir /orig_src
-mv ${REPO_ROOT}/backbones /orig_src/
-mv ${REPO_ROOT}/blocks /orig_src/
-mv ${REPO_ROOT}/common /orig_src/
-mv ${REPO_ROOT}/cv /orig_src/
-mv ${REPO_ROOT}/model_optimization /orig_src/
+mv ${REPO_ROOT}/nvidia_tao_tf2/* /orig_src/
 
 # Move obf_src files to src
-mv /dist/* ${REPO_ROOT}/
+mv /dist/* ${REPO_ROOT}/nvidia_tao_tf2/
+mv ${REPO_ROOT}/nvidia_tao_tf2/pytransform_vax_001219 ${REPO_ROOT}/

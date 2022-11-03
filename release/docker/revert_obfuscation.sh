@@ -6,14 +6,10 @@
 
 echo "Restoring the original project structure"
 # Move the obf_src files.
-rm -rf ${REPO_ROOT}/backbones
-rm -rf ${REPO_ROOT}/blocks
-rm -rf ${REPO_ROOT}/common
-rm -rf ${REPO_ROOT}/cv
-rm -rf ${REPO_ROOT}/model_optimization
+rm -rf ${REPO_ROOT}/nvidia_tao_tf2/*
 
 # Move back the original files
-mv /orig_src/* ${REPO_ROOT}/
+mv /orig_src/* ${REPO_ROOT}/nvidia_tao_tf2/
 
 # Remove the tmp folders.
 rm -rf /dist

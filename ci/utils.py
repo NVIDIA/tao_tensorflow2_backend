@@ -26,7 +26,12 @@ def configure_env():
 CI, DOCKER_ROOT, ROOT_DIR = configure_env()
 # Testing modules.
 RCFILE = ".pylintrc"
-TEST_MODULES = ['backbones', 'blocks', 'common', 'cv/efficientdet', 'cv/classification', 'model_optimization']
+TEST_MODULES = [DOCKER_ROOT+'/nvidia_tao_tf2/backbones',
+                DOCKER_ROOT+'/nvidia_tao_tf2/blocks',
+                DOCKER_ROOT+'/nvidia_tao_tf2/common',
+                DOCKER_ROOT+'/nvidia_tao_tf2/cv/efficientdet',
+                DOCKER_ROOT+'/nvidia_tao_tf2/cv/classification',
+                DOCKER_ROOT+'/nvidia_tao_tf2/model_optimization']
 
 
 def get_docker_information(manifest_file):

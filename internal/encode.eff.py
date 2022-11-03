@@ -4,7 +4,7 @@ import zipfile
 
 from eff.core import Archive, File
 from eff.callbacks import BinaryContentCallback
-from cv.efficientdet.utils.helper import encode_eff
+from nvidia_tao_tf2.cv.efficientdet.utils.helper import encode_eff
 
 def parse_command_line(args):
     '''Parse command line arguments.'''
