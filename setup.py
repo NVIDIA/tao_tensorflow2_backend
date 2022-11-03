@@ -8,11 +8,8 @@ import setuptools
 from release.python.utils import utils
 
 PACKAGE_LIST = [
-    "backbones", "blocks",
-    "common", "cv",
-    "model_optimization"
+    "nvidia_tao_tf2"
 ]
-
 
 version_locals = utils.get_version_details()
 setuptools_packages = []
@@ -47,8 +44,8 @@ setuptools.setup(
     zip_safe=False,
     entry_points={
         'console_scripts': [
-            'classification_tf2=cv.classification.entrypoint.classification:main',
-            'efficientdet_tf2=cv.efficientdet.entrypoint.efficientdet:main',
+            'classification_tf2=nvidia_tao_tf2.cv.classification.entrypoint.classification:main',
+            'efficientdet_tf2=nvidia_tao_tf2.cv.efficientdet.entrypoint.efficientdet:main',
         ]
     }
 )
