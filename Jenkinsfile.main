@@ -125,7 +125,7 @@ spec:
               }
             }
         }
-        container('base-image') {
+        container('cuda') {
             stage ('wheel_publish') {
                 gitlabCommitStatus(name: "wheel_publish", connection: gitLabConnection('git-lab-master')) {
                     // install jfrog first
