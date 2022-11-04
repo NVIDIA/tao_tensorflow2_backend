@@ -135,7 +135,7 @@ spec:
                     def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
                     def PYTHON_VER="cp38-cp38"
                     def ARCH="linux_x86_64"
-                    def SRC="dist/nvidia_tao_tf2-${VER}-${PYTHON_VER}-${ARCH}.whl"
+                    def SRC="${WORKSPACE}/dist/nvidia_tao_tf2-${VER}-${PYTHON_VER}-${ARCH}.whl"
                     def TARGET="sw-tao-pypi-local/nvidia-tao-tf2/${VER}/"
                     def PROP="component_name=nvidia_tao_tf2;arch=x86_64;os=linux;build_source=None;version=${VER};branch=main;release_approver=vpraveen"
                     withCredentials([usernamePassword(credentialsId: 'tao-artifactory-tkn', passwordVariable: 'JFROG_PASSWORD', usernameVariable: 'JFROG_USERNAME')]) {
