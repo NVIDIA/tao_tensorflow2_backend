@@ -21,7 +21,11 @@ def main():
     subtasks = get_subtasks(scripts)
 
     # Parse the arguments and launch the subtask.
-    launch(parser, subtasks, multigpu_support=['train', 'evaluate'])
+    launch(
+        parser, subtasks,
+        multigpu_support=['train', 'evaluate'],
+        task="efficientdet_tf2"
+    )
 
 
 if __name__ == '__main__':
