@@ -7,8 +7,11 @@ import os
 import pkgutil
 import subprocess
 import sys
+from time import time
 
 from nvidia_tao_tf2.common.entrypoint import download_specs
+from nvidia_tao_tf2.common.telemetry.nvml_utils import get_device_details
+from nvidia_tao_tf2.common.telemetry.telemetry import send_telemetry_data
 
 
 def get_subtasks(package):
@@ -164,13 +167,15 @@ def command_line_parser(parser, subtasks):
     return parser
 
 
-def launch(parser, subtasks, multigpu_support=['train']):
+def launch(parser, subtasks, multigpu_support=['train'], task="tao_tf2"):
     """Parse the command line and kick off the entrypoint.
 
     Args:
 
         parser (argparse.ArgumentParser): Parser object to define the command line args.
         subtasks (list): List of subtasks.
+        multigpu_support (list): List of tasks that support --gpus > 1.
+        task (str): Task entrypoint being called.
     """
     # Subtasks for a given model.
     parser = command_line_parser(parser, subtasks)
@@ -233,6 +238,9 @@ def launch(parser, subtasks, multigpu_support=['train']):
     if launch_cuda_blocking:
         task_command = f"CUDA_LAUNCH_BLOCKING=1 {task_command}"
     run_command = f"{mpi_command} bash -c \'{env_variables} {task_command}\'"
+
+    process_passed = True
+    start = time()
     try:
         subprocess.check_call(
             run_command,
@@ -241,7 +249,35 @@ def launch(parser, subtasks, multigpu_support=['train']):
             stdout=sys.stdout,
             stderr=sys.stderr
         )
+    except (KeyboardInterrupt, SystemExit):
+        print("Command was interrupted.")
     except subprocess.CalledProcessError as e:
+        process_passed = False
         if e.output is not None:
             print(f"TAO Toolkit task: {args['subtask']} failed with error:\n{e.output}")
-        sys.exit(-1)
+    end = time()
+    time_lapsed = end - start
+
+    # Computing and sending telemetry data.
+    try:
+        gpu_data = []
+        for device in get_device_details():
+            gpu_data.append(device.get_config())
+        print("Sending telemetry data.")
+        send_telemetry_data(
+            task,
+            args["subtask"],
+            gpu_data,
+            num_gpus=num_gpus,
+            time_lapsed=time_lapsed,
+            pass_status=process_passed
+        )
+    except Exception as e:
+        print("Telemetry data couldn't be sent, but the command ran successfully.")
+        print(f"[Error]: {e}")
+
+    if not process_passed:
+        print("Execution status: FAIL")
+        sys.exit(-1)  # returning non zero return code from the process.
+
+    print("Execution status: PASS")
