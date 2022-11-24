@@ -53,11 +53,13 @@ class KerasInferencer(Inferencer):
             interpolation=self.interpolation,
         )
         image = np.array(image).astype(np.float32)
+        if self.model_img_mode == 'grayscale' and image.ndim == 2:
+            image = np.expand_dims(image, axis=2)
         return preprocess_input(
             image,
             mode=self.preprocess_mode, color_mode=self.model_img_mode,
             img_mean=self.img_mean,
-            data_format='channels_last')
+            data_format='channels_last', img_depth=self.img_depth)
 
     def infer_single(self, img_path):
         """Run inference on a single image with the tlt model."""
