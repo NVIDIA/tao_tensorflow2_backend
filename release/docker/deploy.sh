@@ -5,7 +5,7 @@ set -eo pipefail
 
 registry="nvcr.io"
 tensorflow_version="2.9.1"
-tao_version="3.22.11"
+tao_version="4.0.0"
 repository="nvidia/tao-toolkit-tf"
 build_id="01"
 tag="v${tao_version}-tf${tensorflow_version}-py3-${build_id}"
