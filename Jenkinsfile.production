@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Pod
 metadata:
     labels:
-        some-label: tao-tf2-dev-build
+        some-label: tao-tf2-prod-build
 spec:
     imagePullSecrets:
       - name: tltimagepullsecret
@@ -40,19 +40,19 @@ spec:
 {
     node(POD_LABEL) {
         container('cuda') {
-            stage("checkout"){
-                gitlabCommitStatus(name: "checkout", connection: gitLabConnection('git-lab-master')) {
+            stage("PROD_checkout"){
+                gitlabCommitStatus(name: "PROD_checkout", connection: gitLabConnection('git-lab-master')) {
                     checkout scm
                     sh "ls -lrt"
                 }
             }
-            stage ('gpu_check') {
-                gitlabCommitStatus(name: "gpu_check", connection: gitLabConnection('git-lab-master')) {
+            stage ('PROD_gpu_check') {
+                gitlabCommitStatus(name: "PROD_gpu_check", connection: gitLabConnection('git-lab-master')) {
                     sh 'nvidia-smi'
                 }
             }
-            stage ('setup') {
-                gitlabCommitStatus(name: "setup", connection: gitLabConnection('git-lab-master')) {
+            stage ('PROD_setup') {
+                gitlabCommitStatus(name: "PROD_setup", connection: gitLabConnection('git-lab-master')) {
                     sh "source scripts/envsetup.sh"
                     def workspace_path = pwd()
                     def pythonpath_env = 'PYTHONPATH=' + workspace_path
@@ -60,7 +60,7 @@ spec:
                     command_env = pythonpath_env + ' ' + ci_path_env
                 }
             }
-            stage ('setup_scratch_space') {
+            stage ('PROD_setup_scratch_space') {
                 sh 'apt-get update'
                 sh 'apt-get install cifs-utils -y'
                 sh 'env | sort'
@@ -71,16 +71,16 @@ spec:
                 }
                 sh 'ls -l /home/scratch.metropolis2'
             }
-            stage("functional_tests"){
-                gitlabCommitStatus(name: "functional_tests", connection: gitLabConnection('git-lab-master')) {
+            stage("PROD_functional_tests"){
+                gitlabCommitStatus(name: "PROD_functional_tests", connection: gitLabConnection('git-lab-master')) {
                     println "started functional_tests .."
                     sh "${command_env} python ci/run_functional_tests.py"
                 }
             }
-            stage ('build_wheel') {
-                gitlabCommitStatus(name: "build_wheel", connection: gitLabConnection('git-lab-master')) {
+            stage ('PROD_build_wheel') {
+                gitlabCommitStatus(name: "PROD_build_wheel", connection: gitLabConnection('git-lab-master')) {
                     // Building the wheels for the tao source code.
-                    def BUILD_TYPE="dev"
+                    def BUILD_TYPE="rc"
                     def TAO_WHEEL_VERSION="4.0.0"
                     def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
                     def PYTHON_VER="cp38-cp38"
@@ -94,26 +94,26 @@ spec:
                     sh "classification_tf2 --help"
                 }
             }
-            stage ('cleanup_scratch_space') {
+            stage ('PROD_cleanup_scratch_space') {
                 sh 'umount /home/scratch.metropolis2'
                 sh 'ls -l /home/scratch.metropolis2'
             }
         }
         container("docker"){
-            stage ('build_publish_docker') {
-                gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
+            stage ('PROD_build_publish_docker') {
+                gitlabCommitStatus(name: "PROD_build_publish_docker", connection: gitLabConnection('git-lab-master')) {
                     withEnv(["TAO_VERSION=4.0.0", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
                         docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
-                            sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
+                            sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-rc-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
                         }
                         docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
-                            sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
+                            sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-rc-cuda${CUDA_VERSION}"
                         }
                     }
                 }
             }
-            stage ('wheeltamer_tests') {
-              gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
+            stage ('PROD_wheeltamer_tests') {
+              gitlabCommitStatus(name: "PROD_wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
                 docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
                   // Pull wheeltamer container and run wheeltamer test
                   sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer@sha256:3073e85762a2e7d8e4c4166863cfd24b25e1086026cae3ca19affc4212cb3c20"
@@ -126,12 +126,12 @@ spec:
             }
         }
         container('cuda') {
-            stage ('wheel_publish') {
-                gitlabCommitStatus(name: "wheel_publish", connection: gitLabConnection('git-lab-master')) {
+            stage ('PROD_wheel_publish') {
+                gitlabCommitStatus(name: "PROD_wheel_publish", connection: gitLabConnection('git-lab-master')) {
                     // install jfrog first
                     sh "bash ${WORKSPACE}/docker/install_jfrog.sh"
                     def TAO_WHEEL_VERSION="4.0.0"
-                    def BUILD_TYPE="dev"
+                    def BUILD_TYPE="rc"
                     def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
                     def PYTHON_VER="py3-none"
                     def ARCH="any"
