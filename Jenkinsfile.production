@@ -82,7 +82,7 @@ spec:
                     // Building the wheels for the tao source code.
                     def BUILD_TYPE="rc"
                     def TAO_WHEEL_VERSION="4.0.0"
-                    def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
+                    def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}${BUILD_TYPE}0"
                     def PYTHON_VER="cp38-cp38"
                     def ARCH="linux_x86_64"
                     sh "echo '${BUILD_NUMBER}-${BUILD_TYPE}' > build.info"
@@ -132,7 +132,7 @@ spec:
                     sh "bash ${WORKSPACE}/docker/install_jfrog.sh"
                     def TAO_WHEEL_VERSION="4.0.0"
                     def BUILD_TYPE="rc"
-                    def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
+                    def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}${BUILD_TYPE}0"
                     def PYTHON_VER="py3-none"
                     def ARCH="any"
                     def SRC="${WORKSPACE}/dist/nvidia_tao_tf2-${VER}-${PYTHON_VER}-${ARCH}.whl"
