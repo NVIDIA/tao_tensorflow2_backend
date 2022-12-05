@@ -132,7 +132,7 @@ class ExportConfig:
 
     max_batch_size: int = 8
     dynamic_batch_size: bool = True
-    min_score_thresh: float = 0.3
+    min_score_thresh: float = 0.01
     model_path: str = MISSING
     output_path: str = MISSING
     engine_file: str = ""
