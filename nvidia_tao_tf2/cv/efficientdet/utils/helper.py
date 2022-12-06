@@ -178,6 +178,7 @@ def encode_eff(filepath, eff_model_path, passphrase, is_pruned=False):
         is_pruned=is_pruned,
         description="Artifact from checkpoint",
         filepath=temp_zip_file,
+        encryption=True,
         content_callback=BinaryContentCallback,
     )
     Archive.save_artifact(
