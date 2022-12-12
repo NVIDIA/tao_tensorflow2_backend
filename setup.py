@@ -38,7 +38,7 @@ setuptools.setup(
     keywords=version_locals['__keywords__'],
     packages=setuptools_packages,
     package_data={
-        '': ['*.py', "*.pyc", "*.yaml", "*.so"]
+        '': ['*.py', "*.pyc", "*.yaml", "*.so", "*.pdf"]
     },
     include_package_data=True,
     zip_safe=False,
