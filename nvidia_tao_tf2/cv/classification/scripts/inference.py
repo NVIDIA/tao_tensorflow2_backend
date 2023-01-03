@@ -52,15 +52,20 @@ def run_inference(cfg):
         interpolation=interpolation,
         img_depth=image_depth)
     predictions = []
-    for img_name in tqdm.tqdm(sorted(os.listdir(cfg.inference.image_dir))):
-        _, ext = os.path.splitext(img_name)
-        if ext.lower() in SUPPORTED_IMAGE_FORMAT:
-            raw_predictions = inferencer.infer_single(
-                os.path.join(cfg.inference.image_dir, img_name))
-            class_index = np.argmax(raw_predictions)
-            class_labels = reverse_mapping[class_index]
-            class_conf = np.max(raw_predictions)
-            predictions.append((img_name, class_labels, class_conf))
+
+    imgpath_list = [os.path.join(root, filename)
+                    for root, subdirs, files in os.walk(cfg.inference.image_dir)
+                    for filename in files
+                    if os.path.splitext(filename)[1].lower()
+                    in SUPPORTED_IMAGE_FORMAT
+                    ]
+
+    for img_name in tqdm.tqdm(imgpath_list):
+        raw_predictions = inferencer.infer_single(img_name)
+        class_index = np.argmax(raw_predictions)
+        class_labels = reverse_mapping[class_index]
+        class_conf = np.max(raw_predictions)
+        predictions.append((img_name, class_labels, class_conf))
 
     with open(result_csv_path, 'w', encoding='utf-8') as csv_f:
         # Write predictions to file
