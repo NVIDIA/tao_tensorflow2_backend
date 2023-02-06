@@ -333,6 +333,7 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig) -> None:
     """Convert COCO format json and images into TFRecords."""
+    setup_env(cfg)
     run_conversion(cfg)
 
 
