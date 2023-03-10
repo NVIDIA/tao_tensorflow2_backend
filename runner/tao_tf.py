@@ -103,7 +103,8 @@ def instantiate_dev_docker(gpus, mount_file,
                            mount_cli_list,
                            env_var_list,
                            tag, command, ulimit=None,
-                           shm_size="16G", run_as_user=False):
+                           shm_size="16G", run_as_user=False,
+                           port_mapping=None):
     """Instiate the docker container."""
     docker_image = "{}/{}@{}".format(DOCKER_REGISTRY, DOCKER_REPOSITORY, DOCKER_DIGEST)
     if tag is not None:
@@ -154,10 +155,15 @@ def instantiate_dev_docker(gpus, mount_file,
     working_directory = "/workspace/tao-tf2"
     working_dir_option = f"-w {working_directory}"
 
-    final_command = "{} {} {} {} {} {} {} {} {} {}".format(
+    port_option = "--net=host"
+    if port_mapping:
+        port_option += f" -p {port_mapping}"
+
+    final_command = "{} {} {} {} {} {} {} {} {} {} {}".format(
         run_command, gpu_string,
         mount_string, env_variables,
         shm_option, ulimit_options, user_option, working_dir_option,
+        port_option,
         docker_image, " ".join(command)
     )
     print(final_command)
@@ -170,14 +176,12 @@ def parse_cli_args(args=None):
         prog="tao_tf2",
         description="Tool to run the TAO Toolkit TensorFlow2 container.",
         add_help=True)
-
     parser.add_argument(
         "--gpus",
         default="all",
         type=str,
         help="Comma separated GPU indices to be exposed to the docker."
     )
-
     parser.add_argument(
         "--volume",
         action="append",
@@ -185,7 +189,6 @@ def parse_cli_args(args=None):
         default=[],
         help="Volumes to bind."
     )
-
     parser.add_argument(
         "--env",
         action="append",
@@ -193,28 +196,24 @@ def parse_cli_args(args=None):
         default=[],
         help="Environment variables to bind."
     )
-
     parser.add_argument(
         "--mounts_file", 
         help="Path to the mounts file.", 
         default="", 
         type=str
     )
-
     parser.add_argument(
         "--shm_size",
         help="Shared memory size for docker",
         default="16G",
         type=str
     )
-
     parser.add_argument(
         "--run_as_user",
         help="Flag to run as user",
         action="store_true",
         default=False
     )
-
     parser.add_argument(
         "--tag",
         help="The tag value for the local dev docker.",
@@ -225,6 +224,12 @@ def parse_cli_args(args=None):
         "--ulimit",
         action='append',
         help="Docker ulimits for the host machine."
+    )
+    parser.add_argument(
+        "--port",
+        type=str,
+        default=None,
+        help="Port mapping (e.g. 8889:8889)."
     )
     args = vars(parser.parse_args(args))
     return args
@@ -250,7 +255,8 @@ def main(cl_args=None):
             args["volume"], args["env"],
             args["tag"], command_args,
             args["ulimit"], args["shm_size"],
-            args["run_as_user"]
+            args["run_as_user"],
+            args['port']
         )
     except subprocess.CalledProcessError:
         # Do nothing - the errors are printed in entrypoint launch.

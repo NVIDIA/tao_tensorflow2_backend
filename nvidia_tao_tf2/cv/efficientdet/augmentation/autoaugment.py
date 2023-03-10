@@ -1629,7 +1629,7 @@ def distort_image_with_autoaugment(image,
 
     policy = available_policies[augmentation_name]()
     # Hparams that will be used for AutoAugment.
-    augmentation_hparams = hparams_config.Config(dict(
+    augmentation_hparams = hparams_config.Config(dict(  # noqa pylint: disable=R1735
         cutout_max_pad_fraction=0.75,
         cutout_bbox_replace_with_mean=False,
         cutout_const=100,
@@ -1645,7 +1645,7 @@ def distort_image_with_autocolor(image, bboxes, num_layers, magnitude):
     replace_value = [128, 128, 128]
 
     augmentation_hparams = hparams_config.Config(
-        dict(
+        dict(  # noqa pylint: disable=R1735
             cutout_max_pad_fraction=0.75,
             cutout_bbox_replace_with_mean=False,
             cutout_const=100,
@@ -1685,7 +1685,7 @@ def distort_image_with_autotranslate(image, bboxes, num_layers, magnitude):
     replace_value = [128, 128, 128]
 
     augmentation_hparams = hparams_config.Config(
-        dict(
+        dict(  # noqa pylint: disable=R1735
             cutout_max_pad_fraction=0.75,
             cutout_bbox_replace_with_mean=False,
             cutout_const=100,

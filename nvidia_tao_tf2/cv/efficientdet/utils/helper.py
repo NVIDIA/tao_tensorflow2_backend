@@ -71,7 +71,7 @@ def decode_eff(eff_model_path, passphrase=None):
     return ckpt_path, ckpt_name
 
 
-def load_model(eff_model_path, cfg, mode='train', is_qat=False):
+def load_model(eff_model_path, hparams, mode='train', is_qat=False):
     """Load hdf5 or EFF model.
 
     Args:
@@ -81,7 +81,7 @@ def load_model(eff_model_path, cfg, mode='train', is_qat=False):
     Returns:
         Keras model: Loaded model
     """
-    ckpt_path, ckpt_name = decode_eff(eff_model_path, cfg.key)
+    ckpt_path, ckpt_name = decode_eff(eff_model_path, hparams.key)
     if mode != 'train':
         mode = 'eval'
     model = load_json_model(
@@ -91,7 +91,7 @@ def load_model(eff_model_path, cfg, mode='train', is_qat=False):
     keras_utils.restore_ckpt(
         model,
         os.path.join(ckpt_path, ckpt_name),
-        cfg.train.moving_average_decay,
+        hparams.train.moving_average_decay,
         steps_per_epoch=0,
         expect_partial=True)
     return model

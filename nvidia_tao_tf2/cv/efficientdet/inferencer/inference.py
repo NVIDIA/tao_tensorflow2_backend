@@ -1,11 +1,6 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION. All rights reserved.
 """Inference related utilities."""
 
-from __future__ import absolute_import
-from __future__ import division
-# gtype import
-from __future__ import print_function
-
 import functools
 import logging
 import os
@@ -78,7 +73,7 @@ def batch_image_preprocess(raw_images,
     """Preprocess batched images for inference.
 
     Args:
-        raw_images: a list of images, each image can be a tensor or a numpy arary.
+        raw_images: a list of images, each image can be a tensor or a numpy array.
         image_size: single integer of image size for square image or tuple of two
             integers, in the format of (image_height, image_width).
         batch_size: if None, use map_fn to deal with dynamic batch size.
@@ -267,15 +262,15 @@ def visualize_image_prediction(image,
                                disable_pyfun=True,
                                label_id_mapping=None,
                                **kwargs):
-    """Viusalize detections on a given image.
+    """Visualize detections on a given image.
 
     Args:
         image: Image content in shape of [height, width, 3].
         prediction: a list of vector, with each vector has the format of [image_id,
             ymin, xmin, ymax, xmax, score, class].
-        disable_pyfun: disable pyfunc for faster post processing.
+        disable_pyfunc: disable pyfunc for faster post processing.
         label_id_mapping: a map from label id to name.
-        **kwargs: extra parameters for vistualization, such as min_score_thresh,
+        **kwargs: extra parameters for visualization, such as min_score_thresh,
             max_boxes_to_draw, and line_thickness.
 
     Returns:

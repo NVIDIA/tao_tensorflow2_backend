@@ -21,27 +21,27 @@ from nvidia_tao_tf2.cv.efficientdet.visualize import vis_utils
 class COCOEvalCallback(tf.keras.callbacks.Callback):
     """COCO Evaluation Callback."""
 
-    def __init__(self, eval_dataset, eval_model, eval_freq, start_eval_epoch, eval_params, **kwargs):
+    def __init__(self, eval_dataset, eval_model, eval_freq, start_eval_epoch, hparams, **kwargs):
         """Init."""
         super().__init__(**kwargs)
         self.dataset = eval_dataset
         self.eval_model = eval_model
         self.eval_freq = eval_freq
         self.start_eval_epoch = start_eval_epoch
-        self.eval_params = eval_params
+        self.hparams = hparams
         self.ema_opt = None
-        self.postpc = EfficientDetPostprocessor(self.eval_params)
-        log_dir = os.path.join(eval_params.results_dir, 'eval')
+        self.postpc = EfficientDetPostprocessor(self.hparams)
+        log_dir = os.path.join(hparams['results_dir'], 'eval')
         self.file_writer = tf.summary.create_file_writer(log_dir)
-        label_map = label_utils.get_label_map(eval_params.evaluate.label_map)
+        label_map = label_utils.get_label_map(hparams['eval_label_map'])
         self.evaluator = coco_metric.EvaluationMetric(
-            filename=eval_params.data.val_json_file, label_map=label_map)
-        self.pbar = tf.keras.utils.Progbar(eval_params.evaluate.num_samples)
+            filename=hparams['val_json_file'], label_map=label_map)
+        self.pbar = tf.keras.utils.Progbar(hparams['eval_samples'])
         self.s_logger = status_logging.get_status_logger()
 
     def set_model(self, model):
         """Set model."""
-        if self.eval_params.train.moving_average_decay > 0:
+        if self.hparams['moving_average_decay'] > 0:
             self.ema_opt = fetch_optimizer(model, MovingAverage)
         return super().set_model(model)
 
@@ -74,7 +74,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
 
     def evaluate(self, epoch):
         """Run evalution at Nth epoch."""
-        if self.eval_params.train.moving_average_decay > 0:
+        if self.hparams['moving_average_decay'] > 0:
             self.ema_opt.swap_weights()  # get ema weights
         self.eval_model.set_weights(self.model.get_weights())
         self.evaluator.reset_states()
@@ -82,10 +82,10 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         for i, (images, labels) in enumerate(self.dataset):
             detections, scales = self.eval_model_fn(images, labels)
             # [id, x1, y1, x2, y2, score, class]
-            if self.eval_params.train.image_preview and i == 0:
+            if self.hparams['image_preview'] and i == 0:
                 bs_index = 0
                 image = np.copy(images[bs_index])
-                if self.eval_params.data_format == 'channels_first':
+                if self.hparams['data_format'] == 'channels_first':
                     image = np.transpose(image, (1, 2, 0))
                 # decode image
                 image = vis_utils.denormalize_image(image)
@@ -132,7 +132,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
                 # We let this pass because we do not want the json file writing to crash the whole job.
                 pass
 
-        if self.eval_params.train.moving_average_decay > 0:
+        if self.hparams['moving_average_decay'] > 0:
             self.ema_opt.swap_weights()  # get base weights
 
         MPI.COMM_WORLD.Barrier()   # noqa pylint: disable=I1101

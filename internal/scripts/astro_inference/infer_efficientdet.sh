@@ -31,7 +31,7 @@ generic=(
 "P1000328"
 "P1450794"
 )
-astro=(
+office=(
 "IVA-0009-KPI-05_190916_10ft-30deg.mp4"
 "IVA-0009-KPI-05_190916_10ft-45-deg.mp4"
 "IVA-0009-KPI-05_190916_10ft-60-deg.mp4"
@@ -77,8 +77,7 @@ lowc=(
 "IVA-0009-KPI-11_220320_NVR_ch2_main_20220201180404_20220201190000_4_cut_7.mp4"
 "IVA-0009-KPI-11_220320_NVR_ch9_main_20220201182012_20220201190003_1_1.mp4"
 )
-seqs=$lowc
-for val1 in ${seqs[*]}; do
+for val1 in ${maxine[*]}; do
     echo $val1
     cmd0="cd /workspace/tao-tf2/nvidia_tao_tf2/cv/efficientdet/entrypoint && python efficientdet.py inference -e ${exp}/inference.yaml inference.image_dir=${rootdir}/${val1}/images inference.output_dir=${exp}/results/${val1}"
     eval $cmd0

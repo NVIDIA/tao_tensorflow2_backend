@@ -1,8 +1,30 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Patch keras.utils.image_utils.load_img() with cropping support."""
 import random
+try:
+    from PIL import Image as pil_image
+
+    try:
+        pil_image_resampling = pil_image.Resampling
+    except AttributeError:
+        pil_image_resampling = pil_image
+except ImportError:
+    pil_image = None
+    pil_image_resampling = None
+
+
+if pil_image_resampling is not None:
+    _PIL_INTERPOLATION_METHODS = {
+        "nearest": pil_image_resampling.NEAREST,
+        "bilinear": pil_image_resampling.BILINEAR,
+        "bicubic": pil_image_resampling.BICUBIC,
+        "hamming": pil_image_resampling.HAMMING,
+        "box": pil_image_resampling.BOX,
+        "lanczos": pil_image_resampling.LANCZOS,
+    }
+
 import keras
-import keras_preprocessing.image
+import tensorflow as tf
 
 from nvidia_tao_tf2.cv.classification.utils.helper import color_augmentation
 
@@ -52,7 +74,7 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
         if ":" in interpolation else (interpolation, "none")
 
     if crop == "none":
-        return keras_preprocessing.image.utils.load_img(
+        return tf.keras.preprocessing.image.load_img(
             path,
             grayscale=grayscale,
             color_mode=color_mode,
@@ -60,7 +82,7 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
             interpolation=interpolation)
 
     # Load original size image using Keras
-    img = keras_preprocessing.image.utils.load_img(
+    img = tf.keras.preprocessing.image.load_img(
         path,
         grayscale=grayscale,
         color_mode=color_mode,
@@ -77,15 +99,15 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
             if crop not in ["center", "random"]:
                 raise ValueError(f'Invalid crop method {crop} specified.')
 
-            if interpolation not in keras_preprocessing.image.utils._PIL_INTERPOLATION_METHODS:
+            if interpolation not in _PIL_INTERPOLATION_METHODS:
                 raise ValueError(
                     'Invalid interpolation method {} specified. Supported '  # noqa pylint: disable=C0209
                     'methods are {}'.format(
                         interpolation,
                         ", ".join(
-                            keras_preprocessing.image.utils._PIL_INTERPOLATION_METHODS.keys())))
+                            _PIL_INTERPOLATION_METHODS.keys())))
 
-            resample = keras_preprocessing.image.utils._PIL_INTERPOLATION_METHODS[interpolation]
+            resample = _PIL_INTERPOLATION_METHODS[interpolation]
 
             width, height = img.size
 
@@ -146,5 +168,5 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
     return img
 
 
-# Monkey patch for TF2.9.1
+# Monkey patch for TF2
 keras.utils.image_utils.load_img = load_and_crop_img

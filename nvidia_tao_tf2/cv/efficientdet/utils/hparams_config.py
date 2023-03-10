@@ -297,12 +297,16 @@ def default_detection_configs():
     h.use_xla = False
     h.seed = 42
     h.results_dir = None
+    h.freeze_blocks = None
+    h.freeze_bn = False
+    h.key = None
+    h.qat = False
     return h
 
 
 efficientdet_model_param_dict = {
     'resdet18':
-        dict(
+        dict(  # noqa pylint: disable=R1735
             name='resdet18',
             backbone_name='resnet18',
             image_size=512,
@@ -311,7 +315,7 @@ efficientdet_model_param_dict = {
             box_class_repeats=3,
         ),
     'resdet34':
-        dict(
+        dict(  # noqa pylint: disable=R1735
             name='resdet34',
             backbone_name='resnet34',
             image_size=512,
@@ -320,7 +324,7 @@ efficientdet_model_param_dict = {
             box_class_repeats=3,
         ),
     'efficientdet-d0':
-        dict(
+        dict(  # noqa pylint: disable=R1735
             name='efficientdet-d0',
             backbone_name='efficientnet-b0',
             image_size=512,
@@ -329,7 +333,7 @@ efficientdet_model_param_dict = {
             box_class_repeats=3,
         ),
     'efficientdet-d1':
-        dict(
+        dict(  # noqa pylint: disable=R1735
             name='efficientdet-d1',
             backbone_name='efficientnet-b1',
             image_size=640,
@@ -338,7 +342,7 @@ efficientdet_model_param_dict = {
             box_class_repeats=3,
         ),
     'efficientdet-d2':
-        dict(
+        dict(  # noqa pylint: disable=R1735
             name='efficientdet-d2',
             backbone_name='efficientnet-b2',
             image_size=768,
@@ -347,7 +351,7 @@ efficientdet_model_param_dict = {
             box_class_repeats=3,
         ),
     'efficientdet-d3':
-        dict(
+        dict(  # noqa pylint: disable=R1735
             name='efficientdet-d3',
             backbone_name='efficientnet-b3',
             image_size=896,
@@ -356,7 +360,7 @@ efficientdet_model_param_dict = {
             box_class_repeats=4,
         ),
     'efficientdet-d4':
-        dict(
+        dict(  # noqa pylint: disable=R1735
             name='efficientdet-d4',
             backbone_name='efficientnet-b4',
             image_size=1024,
@@ -365,7 +369,7 @@ efficientdet_model_param_dict = {
             box_class_repeats=4,
         ),
     'efficientdet-d5':
-        dict(
+        dict(  # noqa pylint: disable=R1735
             name='efficientdet-d5',
             backbone_name='efficientnet-b5',
             image_size=1280,
@@ -374,7 +378,7 @@ efficientdet_model_param_dict = {
             box_class_repeats=4,
         ),
     'efficientdet-d6':
-        dict(
+        dict(  # noqa pylint: disable=R1735
             name='efficientdet-d6',
             backbone_name='efficientnet-b6',
             image_size=1280,
@@ -384,7 +388,7 @@ efficientdet_model_param_dict = {
             fpn_weight_method='sum',  # Use unweighted sum for stability.
         ),
     'efficientdet-d7':
-        dict(
+        dict(  # noqa pylint: disable=R1735
             name='efficientdet-d7',
             backbone_name='efficientnet-b6',
             image_size=1536,
@@ -395,7 +399,7 @@ efficientdet_model_param_dict = {
             fpn_weight_method='sum',  # Use unweighted sum for stability.
         ),
     'efficientdet-d7x':
-        dict(
+        dict(  # noqa pylint: disable=R1735
             name='efficientdet-d7x',
             backbone_name='efficientnet-b7',
             image_size=1536,

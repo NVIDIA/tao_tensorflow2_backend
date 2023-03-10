@@ -719,16 +719,6 @@ def efficientdet(input_shape, inputs=None, training=True, model_name=None, confi
                 survival_prob=config.survival_prob,
                 data_format=config.data_format)
 
-        if head == 'segmentation':
-            seg_head = SegmentationHead(
-                num_classes=config.seg_num_classes,
-                num_filters=num_filters,
-                min_level=config.min_level,
-                max_level=config.max_level,
-                is_training_bn=config.is_training_bn,
-                act_type=config.act_type,
-                data_format=config.data_format)
-
     # call backbone network.
     all_feats = model_builder.build_backbone(inputs, config)
 
@@ -748,9 +738,6 @@ def efficientdet(input_shape, inputs=None, training=True, model_name=None, confi
         class_outputs = class_net(fpn_feats, training)
         box_outputs = box_net(fpn_feats, training)
         outputs.extend([class_outputs, box_outputs])
-    if 'segmentation' in config.heads:
-        seg_outputs = seg_head(fpn_feats, training)
-        outputs.append(seg_outputs)
 
     final_model = tf.keras.Model(inputs=inputs, outputs=outputs, name=config.name)
     return final_model

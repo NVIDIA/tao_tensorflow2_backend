@@ -1,79 +1,15 @@
 """Model utils."""
 import contextlib
-import logging
 from typing import Text, Tuple, Union
 import numpy as np
-# import tensorflow.compat.v1 as tf
 import tensorflow as tf
 # pylint: disable=logging-format-interpolation
 
 
-def get_ema_vars():
-    """Get all exponential moving average (ema) variables."""
-    ema_vars = tf.trainable_variables() + tf.get_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES)
-    for v in tf.global_variables():
-        # We maintain mva for batch norm moving mean and variance as well.
-        if 'moving_mean' in v.name or 'moving_variance' in v.name:
-            ema_vars.append(v)
-    return list(set(ema_vars))
-
-
-def get_ckpt_var_map(ckpt_path, ckpt_scope, var_scope, skip_mismatch=None):
-    """Get a var map for restoring from pretrained checkpoints.
-
-    Args:
-        ckpt_path: string. A pretrained checkpoint path.
-        ckpt_scope: string. Scope name for checkpoint variables.
-        var_scope: string. Scope name for model variables.
-        skip_mismatch: skip variables if shape mismatch.
-
-    Returns:
-        var_map: a dictionary from checkpoint name to model variables.
-    """
-    logging.info('Init model from checkpoint %s', ckpt_path)
-    if not ckpt_scope.endswith('/') or not var_scope.endswith('/'):
-        raise ValueError('Please specific scope name ending with /')
-    if ckpt_scope.startswith('/'):
-        ckpt_scope = ckpt_scope[1:]
-    if var_scope.startswith('/'):
-        var_scope = var_scope[1:]
-
-    var_map = {}
-    # Get the list of vars to restore.
-    model_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=var_scope)
-    reader = tf.train.load_checkpoint(ckpt_path)
-    ckpt_var_name_to_shape = reader.get_variable_to_shape_map()
-    ckpt_var_names = set(reader.get_variable_to_shape_map().keys())
-
-    for i, v in enumerate(model_vars):
-        if not v.op.name.startswith(var_scope):
-            logging.info('skip %s -- does not match scope %s', v.op.name, var_scope)
-        ckpt_var = ckpt_scope + v.op.name[len(var_scope):]
-        if (ckpt_var not in ckpt_var_names and
-                v.op.name.endswith('/ExponentialMovingAverage')):
-            ckpt_var = ckpt_scope + v.op.name[:-len('/ExponentialMovingAverage')]
-
-        if ckpt_var not in ckpt_var_names:
-            if 'Momentum' in ckpt_var or 'RMSProp' in ckpt_var:
-                # Skip optimizer variables.
-                continue
-            if skip_mismatch:
-                logging.info('skip %s (%s) -- not in ckpt', v.op.name, ckpt_var)
-                continue
-            raise ValueError(f'{v.op} is not in ckpt {ckpt_path}')
-
-        if v.shape != ckpt_var_name_to_shape[ckpt_var]:
-            if skip_mismatch:
-                logging.info('skip %s (%s vs %s) -- shape mismatch', v.op.name, v.shape, ckpt_var_name_to_shape[ckpt_var])
-                continue
-            raise ValueError(f'shape mismatch {v.op.name} ({v.shape} vs {ckpt_var_name_to_shape[ckpt_var]})')
-
-        if i < 5:
-            # Log the first few elements for sanity check.
-            logging.info('Init %s from ckpt var %s', v.op.name, ckpt_var)
-        var_map[ckpt_var] = v
-
-    return var_map
+def num_params(model):
+    """Return number of parameters."""
+    return np.sum(
+        [np.prod(v.get_shape().as_list()) for v in model.trainable_variables])
 
 
 def drop_connect(inputs, is_training, survival_prob):
@@ -92,22 +28,6 @@ def drop_connect(inputs, is_training, survival_prob):
     # needed at test time.
     output = inputs / survival_prob * binary_tensor
     return output
-
-
-def num_params_flops(readable_format=True):
-    """Return number of parameters and flops."""
-    nparams = np.sum(
-        [np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
-    options = tf.profiler.ProfileOptionBuilder.float_operation()
-    options['output'] = 'none'
-    flops = tf.profiler.profile(
-        tf.get_default_graph(), options=options).total_float_ops
-    # We use flops to denote multiply-adds, which is counted as 2 ops in tfprof.
-    flops = flops // 2
-    if readable_format:
-        nparams = float(nparams) * 1e-6
-        flops = float(flops) * 1e-9
-    return nparams, flops
 
 
 def parse_image_size(image_size: Union[Text, int, Tuple[int, int]]):

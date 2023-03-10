@@ -180,9 +180,9 @@ class StatusLogger(BaseLogger):
         """Logger to write out the status."""
         super().__init__(is_master=is_master, verbosity=verbosity)
         self.log_path = os.path.realpath(filename)
-        if os.path.exists(self.log_path):
-            logger.info("Log file already exists at %s", self.log_path)
         if is_master:
+            if os.path.exists(self.log_path):
+                logger.info("Log file already exists at %s", self.log_path)
             self.l_file = open(self.log_path, "a" if append else "w", encoding='utf-8')  # noqa pylint: disable=R1732
             atexit.register(self.l_file.close)
 

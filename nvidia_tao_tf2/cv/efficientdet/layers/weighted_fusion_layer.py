@@ -1,15 +1,11 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Weighted fusion layer."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import tensorflow as tf
 
 
 class WeightedFusion(tf.keras.layers.Layer):
-    """Weighted Fusion Layer."""
+    """Weighted Fusion Layer (Fast Attention)."""
 
     def __init__(self, inputs_offsets=None, **kwargs):
         """Init."""
@@ -23,19 +19,19 @@ class WeightedFusion(tf.keras.layers.Layer):
             name = 'WSM' + ('' if i == 0 else '_' + str(i))
             self.vars.append(self.add_weight(initializer='ones', name=name))
 
-    def call(self, nodes):
+    def call(self, inputs):
         """Call."""
-        dtype = nodes[0].dtype
+        dtype = inputs[0].dtype
         edge_weights = []
         for var in self.vars:
-            var = tf.cast(var, dtype=dtype)
+            var = tf.nn.relu(tf.cast(var, dtype=dtype))
             edge_weights.append(var)
         weights_sum = tf.add_n(edge_weights)
-        nodes = [
-            nodes[i] * edge_weights[i] / (weights_sum + 1e-4)
-            for i in range(len(nodes))
+        inputs = [
+            inputs[i] * edge_weights[i] / (weights_sum + 1e-4)
+            for i in range(len(inputs))
         ]
-        new_node = tf.add_n(nodes)
+        new_node = tf.add_n(inputs)
         return new_node
 
     def get_config(self):
