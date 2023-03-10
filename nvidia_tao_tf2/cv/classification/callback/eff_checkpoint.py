@@ -19,7 +19,7 @@ class EffCheckpoint(ModelCheckpoint):
     """Save the encrypted model after every epoch.
 
     Attributes:
-        ENC_KEY: API key to encrypt the model.
+        passphrase: API key to encrypt the model.
         epocs_since_last_save: Number of epochs since model was last saved.
         save_best_only: Flag to save model with best accuracy.
         best: saved instance of best model.

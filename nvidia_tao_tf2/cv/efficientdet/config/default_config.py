@@ -60,6 +60,11 @@ class TrainConfig:
     checkpoint_interval: int = 10
     image_preview: bool = True
     qat: bool = False
+    label_smoothing: float = 0.0
+    box_loss_weight: float = 50.0
+    iou_loss_type: str = ""
+    iou_loss_weight: float = 1.0
+
     wandb: WandBConfig = WandBConfig(
         name="efficientdet",
         tags=["efficientdet", "training", "tao-toolkit"]

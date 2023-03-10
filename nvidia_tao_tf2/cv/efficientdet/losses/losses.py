@@ -30,7 +30,7 @@ class FocalLoss(tf.keras.losses.Loss):
         self.label_smoothing = label_smoothing
 
     @tf.autograph.experimental.do_not_convert
-    def call(self, y, y_pred):
+    def call(self, y, y_pred):  # noqa pylint: disable=W0237
         """Compute focal loss for y and y_pred.
 
         Args:
@@ -111,7 +111,7 @@ class StableFocalLoss(tf.keras.losses.Loss):
         self.label_smoothing = label_smoothing
 
     @tf.autograph.experimental.do_not_convert
-    def call(self, y, y_pred):
+    def call(self, y, y_pred):  # noqa pylint: disable=W0237
         """Compute focal loss for y and y_pred.
 
         Args:
@@ -156,7 +156,7 @@ class BoxLoss(tf.keras.losses.Loss):
         self.huber = tf.keras.losses.Huber(delta, reduction=tf.keras.losses.Reduction.NONE)
 
     @tf.autograph.experimental.do_not_convert
-    def call(self, y_true, box_outputs):
+    def call(self, y_true, box_outputs):  # noqa pylint: disable=W0237
         """Call."""
         num_positives, box_targets = y_true
         normalizer = num_positives * 4.0
@@ -182,13 +182,13 @@ class BoxIouLoss(tf.keras.losses.Loss):
                                              image_size)
 
     @tf.autograph.experimental.do_not_convert
-    def call(self, y_true, box_outputs):
+    def call(self, y_true, box_outputs):  # noqa pylint: disable=W0237
         """Call."""
         anchor_boxes = tf.tile(
             self.input_anchors.boxes,
             [box_outputs.shape[0] // self.input_anchors.boxes.shape[0], 1])
         num_positives, box_targets = y_true
-        mask = tf.cast(box_targets != 0.0, box_targets.dtype)
+        mask = tf.cast(box_targets != 0.0, tf.float32)
         box_outputs = anchors.decode_box_outputs(box_outputs, anchor_boxes) * mask
         box_targets = anchors.decode_box_outputs(box_targets, anchor_boxes) * mask
         normalizer = num_positives * 4.0

@@ -6,15 +6,13 @@ from abc import ABC, abstractmethod
 
 
 class Trainer(ABC):
-    """Abstract class for TAO model trainer.
+    """Abstract class for TAO model trainer."""
 
-    Usage: TODO
-    """
-
-    @abstractmethod
-    def __init__(self, model):
+    def __init__(self, model, config, callbacks=None):
         """Initialize."""
-        pass
+        self.model = model
+        self.callbacks = callbacks
+        self.config = config
 
     def set_callbacks(self, callbacks):
         """Set callbacks."""
@@ -22,17 +20,18 @@ class Trainer(ABC):
 
     @abstractmethod
     def fit(self, train_dataset, eval_dataset,
-            config=None):
+            num_epochs,
+            steps_per_epoch,
+            initial_epoch,
+            validation_steps,
+            verbose):
         """Run model fitting."""
-        # 1. override config
-        # 2. check config is dict
-        # 3. call model.fit or custom loop
         pass
 
-    def train_step(self, step, x, y):
+    def train_step(self, data):
         """Train step."""
         pass
 
-    def test_step(self, step, x, y):
+    def test_step(self, data):
         """Test step."""
         pass

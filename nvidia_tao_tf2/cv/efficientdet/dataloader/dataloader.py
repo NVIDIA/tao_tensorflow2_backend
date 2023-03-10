@@ -59,8 +59,7 @@ class InputProcessor:
 
     def normalize_image(self, dtype=tf.float32):
         """Normalize the image to zero mean and unit variance."""
-        # The image normalization is identical to Cloud TPU ResNet.
-        self._image = tf.image.convert_image_dtype(self._image, dtype=tf.float32)
+        self._image = tf.image.convert_image_dtype(self._image, dtype=dtype)
         offset = tf.constant([0.485, 0.456, 0.406])
         offset = tf.expand_dims(offset, axis=0)
         offset = tf.expand_dims(offset, axis=0)
@@ -93,7 +92,7 @@ class InputProcessor:
             target_size = self._output_size
         target_size = model_utils.parse_image_size(target_size)
         if is_main_process():
-            logger.info('target_size = %s, output_size = %s', target_size, self._output_size)
+            logger.debug('target_size = %s, output_size = %s', target_size, self._output_size)
 
         # Select a random scale factor.
         random_scale_factor = tf.random.uniform([], scale_min, scale_max)
@@ -377,7 +376,7 @@ class CocoDataset(Dataset):
                 dtype = get_mixed_precision_policy().compute_dtype
                 image = tf.cast(image, dtype=dtype)
                 box_targets = tf.nest.map_structure(
-                    lambda box_target: tf.cast(box_target, dtype=dtype), box_targets)
+                    lambda box_target: tf.cast(box_target, dtype=tf.float32), box_targets)
             return (image, cls_targets, box_targets, num_positives, source_id,
                     image_scale, boxes, is_crowds, areas, classes, image_masks)
 

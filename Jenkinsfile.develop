@@ -16,7 +16,7 @@ spec:
         - name: DOCKER_TLS_CERTDIR
           value: ""
     - name: cuda
-      image: gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:d0ed7ead05903fe3efd3c2efc0c635ee2d80952e4c912c203c9b5cf667d1d968
+      image: gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:70a81db7a1429073633437737685ac657331bd6bf4258a3c3a019c0b7ea6dc88
       securityContext:
         privileged: true
       command:
@@ -33,8 +33,8 @@ spec:
     backoffLimit: 4
     nodeSelector:
       kubernetes.io/os: linux
-      nvidia.com/driver_version: "510.41"
-      nvidia.com/gpu_type: TITAN_V
+      nvidia.com/driver_version: "525.60.13"
+      nvidia.com/gpu_type: A40
     """
 )
 {

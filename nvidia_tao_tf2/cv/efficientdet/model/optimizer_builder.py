@@ -143,20 +143,24 @@ def get_optimizer(params, steps_per_epoch):
     """Get optimizer.
 
     Args:
-        params (TrainConfig): train config loaded by Hydra.
+        params (hparams_config.Config): Hyperparameter config.
         steps_per_epoch (int): Number of steps per epoch.
     """
     lr = learning_rate.learning_rate_schedule(params, steps_per_epoch)
-    if params.optimizer.name.lower() == 'sgd':
-        logging.info('Use SGD optimizer')
-        optimizer = tf.keras.optimizers.SGD(
-            lr, momentum=params.optimizer.momentum)
+    if params['optimizer'].lower() == 'sgd':
+        logging.debug('Use SGD optimizer')
+        optimizer = tf.keras.optimizers.legacy.SGD(
+            lr, momentum=params['momentum'])
+    elif params['optimizer'].lower() == 'adam':
+        logging.debug('Use Adam optimizer')
+        optimizer = tf.keras.optimizers.legacy.Adam(
+            lr, beta_1=params['momentum'])
     else:
-        raise ValueError('optimizer should be sgd')
+        raise ValueError('optimizer should be sgd or adam')
 
-    moving_average_decay = params.moving_average_decay
+    moving_average_decay = params['moving_average_decay']
     if moving_average_decay is not None and moving_average_decay > 0.0:
-        optimizer = HvdMovingAverage(optimizer, average_decay=moving_average_decay, dynamic_decay=True)
+        optimizer = HvdMovingAverage(optimizer, average_decay=moving_average_decay, dynamic_decay=True)  # noqa pylint: disable=E0110
 
     if params.get('mixed_precision', None):
         optimizer = tf.keras.mixed_precision.LossScaleOptimizer(

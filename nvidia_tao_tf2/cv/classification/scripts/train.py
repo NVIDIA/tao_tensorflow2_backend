@@ -11,7 +11,7 @@ from tensorflow_quantization.quantize import quantize_model
 
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import CSVLogger, TensorBoard
+from tensorflow.keras.callbacks import TensorBoard
 from PIL import Image, ImageFile
 
 import horovod.tensorflow.keras as hvd
@@ -24,6 +24,7 @@ from nvidia_tao_tf2.common.mlops.utils import init_mlops
 from nvidia_tao_tf2.common.mlops.wandb import is_wandb_initialized
 from nvidia_tao_tf2.common.utils import set_random_seed
 
+from nvidia_tao_tf2.cv.classification.callback.cvs_callback import CSVLoggerWithStatus
 from nvidia_tao_tf2.cv.classification.callback.eff_checkpoint import EffCheckpoint
 from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.classification.model.model_builder import get_model
@@ -108,9 +109,10 @@ def setup_callbacks(ckpt_freq, results_dir, lr_config,
 
         # Set up the CSV logger, logging statistics after every epoch.
         csvfilename = os.path.join(results_dir, 'training.csv')
-        csvlogger = CSVLogger(csvfilename,
-                              separator=',',
-                              append=False)
+        csvlogger = CSVLoggerWithStatus(
+            csvfilename,
+            separator=',',
+            append=False)
         callbacks.append(csvlogger)
         if is_wandb_initialized():
             callbacks.append(WandbCallback())
@@ -268,17 +270,17 @@ def run_experiment(cfg):
     if cfg['model']['arch'] in ["byom"] and cfg['model']['byom_model'] == '':
         raise ValueError('{} requires .tltb file to be processed by TAO'.format(cfg['model']['arch']))  # noqa pylint: disable=C0209
 
-    ka = dict(
-        nlayers=cfg['model']['n_layers'],
-        use_batch_norm=cfg['model']['use_batch_norm'],
-        use_pooling=cfg['model']['use_pooling'],
-        freeze_bn=cfg['model']['freeze_bn'],
-        use_bias=cfg['model']['use_bias'],
-        all_projections=cfg['model']['all_projections'],
-        dropout=cfg['model']['dropout'],
-        model_config_path=cfg['model']['byom_model'],
-        passphrase=cfg['key']
-    )
+    ka = {
+        'nlayers': cfg['model']['n_layers'],
+        'use_batch_norm': cfg['model']['use_batch_norm'],
+        'use_pooling': cfg['model']['use_pooling'],
+        'freeze_bn': cfg['model']['freeze_bn'],
+        'use_bias': cfg['model']['use_bias'],
+        'all_projections': cfg['model']['all_projections'],
+        'dropout': cfg['model']['dropout'],
+        'model_config_path': cfg['model']['byom_model'],
+        'passphrase': cfg['key']
+    }
     input_shape = (nchannels, image_height, image_width) \
         if cfg['data_format'] == 'channels_first' else (image_height, image_width, nchannels)
 

@@ -16,54 +16,54 @@ from nvidia_tao_tf2.cv.efficientdet.callback.moving_average_callback import Movi
 from nvidia_tao_tf2.cv.efficientdet.utils.horovod_utils import is_main_process
 
 
-def get_callbacks(params, eval_dataset, steps_per_epoch,
+def get_callbacks(hparams, eval_dataset, steps_per_epoch,
                   eval_model=None, initial_epoch=0):
-    """Get callbacks for given params."""
+    """Get callbacks for given hparams."""
     callbacks = [hvd_callbacks.BroadcastGlobalVariablesCallback(0)]
     if is_main_process():
         tb_callback = tf.keras.callbacks.TensorBoard(
-            log_dir=params['results_dir'], profile_batch=0, histogram_freq=1)
+            log_dir=hparams['results_dir'], profile_batch=0, histogram_freq=1)
         callbacks.append(tb_callback)
         # set up checkpointing callbacks
-        ckpt_dir = os.path.join(params['results_dir'], 'weights')
+        ckpt_dir = os.path.join(hparams['results_dir'], 'weights')
         if not os.path.exists(ckpt_dir):
             os.makedirs(ckpt_dir, exist_ok=True)
-        if params['train']['moving_average_decay'] > 0:
+        if hparams['moving_average_decay'] > 0:
             ckpt_callback = EffEmaCheckpoint(
                 eff_dir=ckpt_dir,
-                key=params['key'],
+                key=hparams['key'],
                 update_weights=False,
-                amp=params['train']['amp'],
+                amp=hparams['mixed_precision'],
                 verbose=0,
                 save_freq='epoch',
                 save_weights_only=True,
-                period=params['train']['checkpoint_interval'],
-                is_qat=params['train']['qat'])
+                period=hparams['checkpoint_interval'],
+                is_qat=hparams['qat'])
         else:
             ckpt_callback = EffCheckpoint(
                 eff_dir=ckpt_dir,
-                key=params['key'],
+                key=hparams['key'],
                 verbose=0,
                 save_freq='epoch',
                 save_weights_only=True,
-                period=params['train']['checkpoint_interval'],
-                is_qat=params['train']['qat'])
+                period=hparams['checkpoint_interval'],
+                is_qat=hparams['qat'])
         callbacks.append(ckpt_callback)
 
         model_callback = EffCheckpoint(
-            eff_dir=params['results_dir'],
-            key=params['key'],
+            eff_dir=hparams['results_dir'],
+            key=hparams['key'],
             graph_only=True,
             verbose=0,
             save_freq='epoch',
             save_weights_only=True,
-            period=params['train']['checkpoint_interval'])
+            period=hparams['checkpoint_interval'])
         callbacks.append(model_callback)
 
         # log LR in tensorboard
-        callbacks.append(LRTensorBoard(steps_per_epoch, initial_epoch, log_dir=params['results_dir']))
+        callbacks.append(LRTensorBoard(steps_per_epoch, initial_epoch, log_dir=hparams['results_dir']))
         # status logging
-        callbacks.append(MetricLogging(params['train']['num_epochs'], steps_per_epoch, initial_epoch))
+        callbacks.append(MetricLogging(hparams['num_epochs'], steps_per_epoch, initial_epoch))
 
         # Setup the wandb logging callback if weights
         # and biases have been initialized.
@@ -73,12 +73,12 @@ def get_callbacks(params, eval_dataset, steps_per_epoch,
     cocoeval = COCOEvalCallback(
         eval_dataset,
         eval_model=eval_model,
-        eval_freq=params['train']['checkpoint_interval'],
-        start_eval_epoch=params['evaluate']['start_eval_epoch'],
-        eval_params=params)
+        eval_freq=hparams['checkpoint_interval'],
+        start_eval_epoch=hparams['eval_start'],
+        hparams=hparams)
     callbacks.append(cocoeval)
 
-    if params['train']['moving_average_decay']:
+    if hparams['moving_average_decay']:
         callbacks.append(MovingAverageCallback())
 
     return callbacks

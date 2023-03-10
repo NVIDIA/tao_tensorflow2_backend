@@ -60,7 +60,6 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         # train config
         num_examples_per_epoch=cfg['train']['num_examples_per_epoch'],
         checkpoint=cfg['train']['checkpoint'],
-        ckpt=None,
         mode=mode,
         is_training_bn=mode == 'train',
         checkpoint_interval=cfg['train']['checkpoint_interval'],
@@ -68,27 +67,39 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         seed=cfg['train']['random_seed'] or 42,
         pruned_model_path=cfg['train']['pruned_model_path'],
         moving_average_decay=cfg['train']['moving_average_decay'],
-        amp=cfg['train']['amp'],
         mixed_precision=cfg['train']['amp'] and not cfg['train']['qat'],
+        qat=cfg['train']['qat'],
         data_format=cfg['data_format'],
         l2_weight_decay=cfg['train']['l2_weight_decay'],
         l1_weight_decay=cfg['train']['l1_weight_decay'],
         clip_gradients_norm=cfg['train']['clip_gradients_norm'] or 5.0,
         skip_checkpoint_variables=cfg['train']['skip_checkpoint_variables'],
         num_epochs=cfg['train']['num_epochs'],
+        image_preview=cfg['train']['image_preview'],
         # LR config
         lr_decay_method=cfg['train']['lr_schedule']['name'],
         learning_rate=cfg['train']['lr_schedule']['learning_rate'],
         lr_warmup_epoch=cfg['train']['lr_schedule']['warmup_epoch'] or 5,
         lr_warmup_init=cfg['train']['lr_schedule']['warmup_init'] or 0.00001,
+        lr_annealing_epoch=cfg['train']['lr_schedule']['annealing_epoch'] or 10,
         # Optimizer config
         momentum=cfg['train']['optimizer']['momentum'] or 0.9,
         optimizer=cfg['train']['optimizer']['name'] or 'sgd',
         # eval config
         eval_batch_size=cfg['evaluate']['batch_size'],
         eval_samples=cfg['evaluate']['num_samples'],
+        eval_start=cfg['evaluate']['start_eval_epoch'],
+        eval_label_map=cfg['evaluate']['label_map'],
+        eval_sigma=cfg['evaluate']['sigma'],
+        max_output_size=cfg['evaluate']['max_detections_per_image'],
+        max_nms_inputs=cfg['evaluate']['max_nms_inputs'],
         #
-        results_dir=cfg['results_dir']
+        results_dir=cfg['results_dir'],
+        key=cfg['key'],
+        iou_loss_type=cfg['train']['iou_loss_type'],
+        box_loss_weight=cfg['train']['box_loss_weight'],
+        iou_loss_weight=cfg['train']['iou_loss_weight'],
+        label_smoothing=cfg['train']['label_smoothing'],
     )
 
 

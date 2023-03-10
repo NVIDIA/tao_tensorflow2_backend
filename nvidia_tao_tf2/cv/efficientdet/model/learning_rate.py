@@ -4,6 +4,7 @@ import math
 import logging
 from typing import Any, Mapping
 import tensorflow as tf
+logger = logging.getLogger(__name__)
 
 
 @tf.keras.utils.register_keras_serializable(package='Custom')
@@ -21,7 +22,7 @@ class CosineLrSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
             total_steps: `int`, Total train steps.
         """
         super().__init__()
-        logging.info('LR schedule method: cosine')
+        logger.debug('LR schedule method: cosine')
         self.base_lr = base_lr
         self.lr_warmup_init = lr_warmup_init
         self.lr_warmup_step = lr_warmup_step
@@ -73,7 +74,7 @@ class SoftStartAnnealingLearningRateScheduler(tf.keras.optimizers.schedules.Lear
                  annealing_start, total_steps):
         """__init__ method."""
         super().__init__()
-
+        logger.debug('LR schedule method: SoftStartAnnealing')
         if not 0.0 <= soft_start <= 1.0:
             raise ValueError('The soft_start variable should be >= 0.0 or <= 1.0.')
         if not 0.0 <= annealing_start <= 1.0:
@@ -127,19 +128,19 @@ def learning_rate_schedule(params, steps_per_epoch):
         steps_per_epoch (int): Number of steps per epoch.
     """
     supported_schedules = ['cosine', 'soft_anneal']
-    lr_warmup_step = int(params.lr_schedule.warmup_epoch * steps_per_epoch)
+    lr_warmup_step = int(params.lr_warmup_epoch * steps_per_epoch)
     total_steps = int(params.num_epochs * steps_per_epoch)
-    lr_decay_method = str(params.lr_schedule.name)
+    lr_decay_method = str(params.lr_decay_method)
     if lr_decay_method == 'cosine':
-        return CosineLrSchedule(params.lr_schedule.learning_rate,
-                                params.lr_schedule.warmup_init, lr_warmup_step,
+        return CosineLrSchedule(params.learning_rate,
+                                params.lr_warmup_init, lr_warmup_step,
                                 total_steps)
     if lr_decay_method == 'soft_anneal':
         return SoftStartAnnealingLearningRateScheduler(
-            params.lr_schedule.learning_rate,
-            params.lr_schedule.warmup_init,
-            params.lr_schedule.warmup_epoch / params.num_epochs,
-            params.lr_schedule.annealing_epoch / params.num_epochs,
+            params.learning_rate,
+            params.lr_warmup_init,
+            params.lr_warmup_epoch / params.num_epochs,
+            params.lr_annealing_epoch / params.num_epochs,
             total_steps)
 
     raise ValueError(f'unknown lr_decay_method: {lr_decay_method}. \

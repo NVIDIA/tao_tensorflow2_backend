@@ -31,6 +31,7 @@ def is_main_process():
 
 def initialize(cfg, training=True):
     """Initialize training."""
+    hvd.init()
     use_xla = False
     if training:
         os.environ['TF_NUM_INTRAOP_THREADS'] = '1'
@@ -57,10 +58,8 @@ def initialize(cfg, training=True):
     if training:
         set_random_seed(cfg.train.random_seed + hvd.rank())
 
-    if cfg.train.amp:
+    if cfg.train.amp and not cfg.train.qat:
         policy = tf.keras.mixed_precision.Policy('mixed_float16')
         tf.keras.mixed_precision.set_global_policy(policy)
     else:
         os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '0'
-        # policy = tf.keras.mixed_precision.Policy('float32')
-        # tf.keras.mixed_precision.set_global_policy(policy)

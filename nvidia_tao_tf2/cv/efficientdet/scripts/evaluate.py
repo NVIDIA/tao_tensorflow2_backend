@@ -57,7 +57,7 @@ def run_experiment(cfg):
     # Load model from graph json
     model = helper.load_model(cfg.evaluate.model_path, cfg, MODE, is_qat=cfg.train.qat)
     # Set up postprocessor
-    postpc = EfficientDetPostprocessor(cfg)
+    postpc = EfficientDetPostprocessor(config)
     label_map = label_utils.get_label_map(cfg.evaluate.label_map)
     evaluator = coco_metric.EvaluationMetric(
         filename=cfg.data.val_json_file, label_map=label_map)
