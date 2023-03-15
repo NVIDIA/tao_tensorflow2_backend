@@ -2,7 +2,7 @@
 
 """Default config file"""
 
-from typing import List
+from typing import List, Optional
 from dataclasses import dataclass, field
 from omegaconf import MISSING
 
@@ -73,6 +73,7 @@ class TrainConfig:
         task="efficientdet_train",
         tags=["efficientdet", "training", "tao-toolkit"]
     )
+    results_dir: Optional[str] = None
 
 
 @dataclass
@@ -90,6 +91,17 @@ class ModelConfig:
 
 
 @dataclass
+class AugmentationConfig:
+    """Augmentation config."""
+
+    rand_hflip: bool = True
+    random_crop_min_scale: float = 0.1
+    random_crop_max_scale: float = 2
+    auto_color_distortion: bool = False
+    auto_translate_xy: bool = False
+
+
+@dataclass
 class DataConfig:
     """Data config."""
 
@@ -104,6 +116,7 @@ class DataConfig:
     use_fake_data: bool = False
     image_size: str = '512x512'
     loader: LoaderConfig = LoaderConfig()
+    augmentation: AugmentationConfig = AugmentationConfig()
 
 
 @dataclass
@@ -118,17 +131,7 @@ class EvalConfig:
     model_path: str = ''
     start_eval_epoch: int = 1
     sigma: float = 0.5
-
-
-@dataclass
-class AugmentationConfig:
-    """Augmentation config."""
-
-    rand_hflip: bool = True
-    random_crop_min_scale: float = 0.1
-    random_crop_max_scale: float = 2
-    auto_color_distortion: bool = False
-    auto_translate_xy: bool = False
+    results_dir: Optional[str] = None
 
 
 @dataclass
@@ -139,7 +142,7 @@ class ExportConfig:
     dynamic_batch_size: bool = True
     min_score_thresh: float = 0.01
     model_path: str = MISSING
-    output_path: str = MISSING
+    onnx_file: str = MISSING
     engine_file: str = ""
     data_type: str = "fp32"
     max_workspace_size: int = 2  # in Gb
@@ -147,6 +150,7 @@ class ExportConfig:
     cal_cache_file: str = ""
     cal_batch_size: int = 16
     cal_batches: int = 10
+    results_dir: Optional[str] = None
 
 
 @dataclass
@@ -155,7 +159,7 @@ class InferenceConfig:
 
     model_path: str = MISSING
     image_dir: str = MISSING
-    output_dir: str = MISSING
+    results_dir: Optional[str] = None
     dump_label: bool = False
     batch_size: int = 1
     min_score_thresh: float = 0.3
@@ -169,7 +173,7 @@ class PruneConfig:
 
     model_path: str = MISSING
     normalizer: str = 'max'
-    output_path: str = MISSING
+    results_dir: Optional[str] = None
     equalization_criterion: str = 'union'
     granularity: int = 8
     threshold: float = MISSING
@@ -183,11 +187,10 @@ class DatasetConvertConfig:
 
     image_dir: str = MISSING
     annotations_file: str = MISSING
-    output_dir: str = MISSING
+    results_dir: str = MISSING
     tag: str = ''
     num_shards: int = 256
     include_masks: bool = False
-    log_dir: str = ''
 
 
 @dataclass
@@ -197,13 +200,11 @@ class ExperimentConfig:
     train: TrainConfig = TrainConfig()
     model: ModelConfig = ModelConfig()
     evaluate: EvalConfig = EvalConfig()
-    data: DataConfig = DataConfig()
-    augment: AugmentationConfig = AugmentationConfig()
+    dataset: DataConfig = DataConfig()
     export: ExportConfig = ExportConfig()
     inference: InferenceConfig = InferenceConfig()
     prune: PruneConfig = PruneConfig()
     dataset_convert: DatasetConvertConfig = DatasetConvertConfig()
-    key: str = MISSING
+    encryption_key: Optional[str] = None
     data_format: str = 'channels_last'
-    verbose: bool = False
     results_dir: str = MISSING

@@ -39,8 +39,6 @@ MAX_DETECTIONS_PER_IMAGE = 100
 
 # The minimal score threshold.
 MIN_SCORE_THRESH = 0.4
-logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-                    level='INFO')
 logger = logging.getLogger(__name__)
 
 

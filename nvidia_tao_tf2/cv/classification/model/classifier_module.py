@@ -28,8 +28,7 @@ class ClassifierModule(TAOModule):
         self.steps_per_epoch = steps_per_epoch
         self.pretrained_model = None
         self.model = self._build_models(cfg)
-        if hvd.rank() == 0:
-            self.model.summary()
+
         self.initial_epoch, ckpt_path = self._get_latest_checkpoint(
             os.path.join(cfg.results_dir, 'weights'), self.model.name)
 
@@ -39,6 +38,8 @@ class ClassifierModule(TAOModule):
         self.configure_losses(cfg)
         self._quantize_models(cfg)
         self.compile()
+        if hvd.rank() == 0:
+            self.model.summary()
 
     def _quantize_models(self, cfg):
         """Quantize models."""

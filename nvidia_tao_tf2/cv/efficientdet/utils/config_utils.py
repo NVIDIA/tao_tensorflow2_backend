@@ -38,25 +38,25 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         freeze_blocks=cfg['model']['freeze_blocks']
         if cfg['model']['freeze_blocks'] else None,
         # data config
-        val_json_file=cfg['data']['val_json_file'],
-        num_classes=cfg['data']['num_classes'],
-        max_instances_per_image=cfg['data']['max_instances_per_image'] or 100,
-        skip_crowd_during_training=cfg['data']['skip_crowd_during_training'],
+        val_json_file=cfg['dataset']['val_json_file'],
+        num_classes=cfg['dataset']['num_classes'],
+        max_instances_per_image=cfg['dataset']['max_instances_per_image'] or 100,
+        skip_crowd_during_training=cfg['dataset']['skip_crowd_during_training'],
         # Parse image size in case it is in string format. (H, W)
-        image_size=model_utils.parse_image_size(cfg['data']['image_size']),
+        image_size=model_utils.parse_image_size(cfg['dataset']['image_size']),
         # Loader config
-        shuffle_file=cfg['data']['loader']['shuffle_file'],
-        shuffle_buffer=cfg['data']['loader']['shuffle_buffer'] or 1024,
-        cycle_length=cfg['data']['loader']['cycle_length'] or 32,
-        block_length=cfg['data']['loader']['block_length'] or 16,
-        prefetch_size=cfg['data']['loader']['prefetch_size'] or 2,  # set to 0 for AUTOTUNE
+        shuffle_file=cfg['dataset']['loader']['shuffle_file'],
+        shuffle_buffer=cfg['dataset']['loader']['shuffle_buffer'] or 1024,
+        cycle_length=cfg['dataset']['loader']['cycle_length'] or 32,
+        block_length=cfg['dataset']['loader']['block_length'] or 16,
+        prefetch_size=cfg['dataset']['loader']['prefetch_size'] or 2,  # set to 0 for AUTOTUNE
         # augmentation config
-        input_rand_hflip=cfg['augment']['rand_hflip'],
-        jitter_min=cfg['augment']['random_crop_min_scale'] or 0.1,
-        jitter_max=cfg['augment']['random_crop_max_scale'] or 2.0,
-        auto_color=cfg['augment']['auto_color_distortion'],
-        auto_translate_xy=cfg['augment']['auto_translate_xy'],
-        auto_augment=cfg['augment']['auto_color_distortion'] or cfg['augment']['auto_translate_xy'],
+        input_rand_hflip=cfg['dataset']['augmentation']['rand_hflip'],
+        jitter_min=cfg['dataset']['augmentation']['random_crop_min_scale'] or 0.1,
+        jitter_max=cfg['dataset']['augmentation']['random_crop_max_scale'] or 2.0,
+        auto_color=cfg['dataset']['augmentation']['auto_color_distortion'],
+        auto_translate_xy=cfg['dataset']['augmentation']['auto_translate_xy'],
+        auto_augment=cfg['dataset']['augmentation']['auto_color_distortion'] or cfg['dataset']['augmentation']['auto_translate_xy'],
         # train config
         num_examples_per_epoch=cfg['train']['num_examples_per_epoch'],
         checkpoint=cfg['train']['checkpoint'],
@@ -95,7 +95,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         max_nms_inputs=cfg['evaluate']['max_nms_inputs'],
         #
         results_dir=cfg['results_dir'],
-        key=cfg['key'],
+        encryption_key=cfg['encryption_key'],
         iou_loss_type=cfg['train']['iou_loss_type'],
         box_loss_weight=cfg['train']['box_loss_weight'],
         iou_loss_weight=cfg['train']['iou_loss_weight'],
@@ -143,13 +143,20 @@ def spec_checker(cfg):
         "Number of evaluation samples must be positive."
 
     # dataset config
-    assert cfg.data.train_tfrecords, \
+    assert cfg.dataset.train_tfrecords, \
         "train_tfrecords must be specified."
-    assert cfg.data.val_tfrecords, \
+    assert cfg.dataset.val_tfrecords, \
         "val_tfrecords must be specified."
-    assert 1 < cfg.data.num_classes, \
+    assert 1 < cfg.dataset.num_classes, \
         "num_classes is number of categories + 1 (background). It must be greater than 1."
 
-    # augment config
-    assert cfg.augment.random_crop_max_scale >= cfg.augment.random_crop_min_scale > 0, \
+    # augmentation config
+    assert cfg.dataset.augmentation.random_crop_max_scale >= cfg.dataset.augmentation.random_crop_min_scale > 0, \
         "random_crop_min_scale should be positive and no greater than random_crop_max_scale."
+
+    assert cfg.prune.equalization_criterion in \
+        ['arithmetic_mean', 'geometric_mean', 'union', 'intersection'], \
+        "Equalization criterion are [arithmetic_mean, geometric_mean, union, \
+         intersection]."
+    assert cfg.prune.normalizer in ['L2', 'max'], \
+        "normalizer options are [L2, max]."

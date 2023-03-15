@@ -19,7 +19,7 @@ class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
 
     def __init__(self,
                  eff_dir: str,
-                 key: str,
+                 encryption_key: str,
                  graph_only: bool = False,
                  monitor: str = 'val_loss',
                  verbose: int = 0,
@@ -40,7 +40,7 @@ class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
             save_freq=save_freq,
             **kwargs)
         self.eff_dir = eff_dir
-        self.passphrase = key
+        self.passphrase = encryption_key
         self.graph_only = graph_only
         self.is_qat = is_qat
 

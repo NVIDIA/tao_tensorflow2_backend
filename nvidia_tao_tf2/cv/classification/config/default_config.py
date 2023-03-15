@@ -79,6 +79,7 @@ class TrainConfig:
         task="classification_train",
         tags=["classification", "training", "tao-toolkit"]
     )
+    results_dir: Optional[str] = None
 
 
 @dataclass
@@ -100,6 +101,7 @@ class DataConfig:
     val_dataset_path: str = MISSING
     preprocess_mode: str = 'caffe'
     image_mean: List[float] = field(default_factory=lambda: [103.939, 116.779, 123.68])
+    augmentation: AugmentConfig = AugmentConfig()
 
 
 @dataclass
@@ -129,12 +131,13 @@ class ModelConfig:
 class EvalConfig:
     """Eval config."""
 
-    dataset_path: str = ''
-    model_path: str = ''
+    dataset_path: str = MISSING
+    model_path: str = MISSING
     batch_size: int = 64
     n_workers: int = 64
     top_k: int = 3
     classmap: str = ""
+    results_dir: Optional[str] = None
 
 
 @dataclass
@@ -142,7 +145,7 @@ class ExportConfig:
     """Export config."""
 
     model_path: str = ''
-    output_path: str = ''
+    onnx_file: str = MISSING
     data_type: str = "fp32"
     engine_file: str = ""
     max_workspace_size: int = 2  # in Gb
@@ -154,6 +157,7 @@ class ExportConfig:
     max_batch_size: int = 1
     min_batch_size: int = 1
     opt_batch_size: int = 1
+    results_dir: Optional[str] = None
 
 
 @dataclass
@@ -163,6 +167,7 @@ class InferConfig:
     model_path: str = MISSING
     image_dir: str = MISSING
     classmap: str = MISSING
+    results_dir: Optional[str] = None
 
 
 @dataclass
@@ -170,9 +175,9 @@ class PruneConfig:
     """Pruning config."""
 
     model_path: str = MISSING
-    byom_model_path: str = MISSING
+    byom_model_path: Optional[str] = None
     normalizer: str = 'max'
-    output_path: str = MISSING
+    results_dir: Optional[str] = None
     equalization_criterion: str = 'union'
     granularity: int = 8
     threshold: float = MISSING
@@ -185,13 +190,12 @@ class ExperimentConfig:
     """Experiment config."""
 
     train: TrainConfig = TrainConfig()
-    augment: AugmentConfig = AugmentConfig()
-    data: DataConfig = DataConfig()
+    dataset: DataConfig = DataConfig()
     model: ModelConfig = ModelConfig()
     evaluate: EvalConfig = EvalConfig()
     export: ExportConfig = ExportConfig()
     inference: InferConfig = InferConfig()
     prune: PruneConfig = PruneConfig()
     results_dir: str = MISSING
-    encryption_key: str = 'nvidia_tlt'
+    encryption_key: Optional[str] = None
     data_format: str = 'channels_first'

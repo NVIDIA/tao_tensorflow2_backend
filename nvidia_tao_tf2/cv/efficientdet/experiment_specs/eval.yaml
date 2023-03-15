@@ -1,4 +1,4 @@
-data:
+dataset:
   train_tfrecords:
     - '/home/scratch.p3/yuw/datasets/coco/train-*'
   val_tfrecords:
@@ -14,4 +14,4 @@ evaluate:
   num_samples: 5000
   model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/efficientdet-d0_245.tlt'
 results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0'
-key: 'nvidia_tlt'
+encryption_key: 'nvidia_tlt'

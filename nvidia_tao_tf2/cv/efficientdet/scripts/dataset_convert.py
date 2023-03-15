@@ -23,15 +23,6 @@ import nvidia_tao_tf2.common.logging.logging as status_logging
 from nvidia_tao_tf2.cv.efficientdet.config.default_config import ExperimentConfig
 
 
-def setup_env(cfg):
-    """Setup data conversion env."""
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
-    if not os.path.exists(cfg.results_dir):
-        os.makedirs(cfg.results_dir)
-    if not os.path.exists(cfg.dataset_convert.output_dir):
-        os.mkdir(cfg.dataset_convert.output_dir)
-
-
 def create_tf_example(image,
                       bbox_annotations,
                       image_dir,
@@ -304,11 +295,12 @@ def _create_tf_record_from_coco_annotations(object_annotations_file,
 @monitor_status(name="efficientdet", mode="data conversion")
 def run_conversion(cfg):
     """Run data conversion."""
-    log_dir = cfg.dataset_convert.output_dir
-
     # config output files
+    results_dir = cfg.dataset_convert.results_dir
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir, exist_ok=True)
     tag = cfg.dataset_convert.tag or os.path.splitext(os.path.basename(cfg.dataset_convert.annotations_file))[0]
-    output_path = os.path.join(cfg.dataset_convert.output_dir, tag)
+    output_path = os.path.join(results_dir, tag)
 
     log_total, cat_total = _create_tf_record_from_coco_annotations(
         cfg.dataset_convert.annotations_file,
@@ -318,7 +310,7 @@ def run_conversion(cfg):
         num_shards=cfg.dataset_convert.num_shards)
 
     if log_total:
-        with open(os.path.join(log_dir, f'{tag}_warnings.json'), "w", encoding='utf-8') as f:
+        with open(os.path.join(results_dir, f'{tag}_warnings.json'), "w", encoding='utf-8') as f:
             json.dump(log_total, f)
 
     status_logging.get_status_logger().categorical = {'num_objects': cat_total}
@@ -333,7 +325,6 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig) -> None:
     """Convert COCO format json and images into TFRecords."""
-    setup_env(cfg)
     run_conversion(cfg)
 
 

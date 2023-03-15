@@ -2,10 +2,6 @@
 
 """Base class to export trained .tlt models to etlt file."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import copy
 import os
 import shutil
@@ -17,7 +13,6 @@ import tensorflow as tf
 
 from tf2onnx import tf_loader, utils, convert
 
-from nvidia_tao_tf2.common.utils import encode_etlt
 from nvidia_tao_tf2.cv.classification.utils.helper import decode_eff
 
 TRT_VERSION = trt.__version__
@@ -34,11 +29,7 @@ class Exporter:
                  opt_batch_size=4,
                  max_batch_size=8,
                  **kwargs):
-        """Initialize the classification exporter.
-
-        Args:
-            key (str): Key to load the model.
-        """
+        """Initialize the classification exporter."""
         self.config = config
         if config.export.data_type == "int8":
             self._dtype = trt.DataType.INT8
@@ -95,19 +86,22 @@ class Exporter:
         )
 
         # 3. Convert tf2onnx and save onnx file
+        if str(self.config.export.onnx_file).endswith('.onnx'):
+            onnx_path = self.config.export.onnx_file
+        else:
+            raise ValueError("The exported file must use .onnx as the extension.")
         model_proto, _ = convert._convert_common(
             graph_def,
             name=self._saved_model,
             opset=13,
             input_names=inputs,
             output_names=outputs,
-            output_path=self.tmp_onnx,
+            output_path=onnx_path,
             optimizers=updated_optimizers
         )
 
-        utils.save_protobuf(self.tmp_onnx, model_proto)
-        logger.debug("ONNX conversion Done!")
-        encode_etlt(self.tmp_onnx, self.config.export.output_path, "", self.config.encryption_key)
+        utils.save_protobuf(onnx_path, model_proto)
+        logger.info("ONNX conversion completed.")
 
     def export_engine(self, verbose=True) -> None:
         """Parse the model file through TensorRT and build TRT engine."""
@@ -125,7 +119,7 @@ class Exporter:
         with trt.Builder(TRT_LOGGER) as builder, builder.create_network(
                 flags=network_flags
         ) as network, trt.OnnxParser(network, TRT_LOGGER) as parser:
-            with open(self.config.export.output_path, "rb") as model:
+            with open(self.config.export.onnx_file, "rb") as model:
                 if not parser.parse(model.read()):
                     print("ERROR: Failed to parse the ONNX file.")
                     for error in range(parser.num_errors):
@@ -164,7 +158,7 @@ class Exporter:
             if not trt_engine:
                 logger.info("TensorRT engine failed.")
             if self.config.export.save_engine:
-                engine_path = self.config.export.output_path + f'.{self.config.export.data_type}.engine'
+                engine_path = self.config.export.onnx_file + f'.{self.config.export.data_type}.engine'
                 with open(engine_path, "wb") as engine_file:
                     engine_file.write(trt_engine.serialize())
             return None
@@ -177,7 +171,7 @@ class Exporter:
         """Export to EFF and TensorRT engine."""
         self._set_input_shape()
         self.export_onnx()
-        logger.info("The etlt model is saved at %s", self.config.export.output_path)
+        logger.info("The etlt model is saved at %s", self.config.export.onnx_file)
         # INTERNAL only: self.export_engine()
         self._del()
 

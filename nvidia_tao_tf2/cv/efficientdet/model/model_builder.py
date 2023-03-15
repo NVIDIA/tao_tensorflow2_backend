@@ -9,8 +9,6 @@ from nvidia_tao_tf2.backbones.efficientnet_tf import EfficientNetB0, EfficientNe
 from nvidia_tao_tf2.backbones.efficientnet_tf import EfficientNetB2, EfficientNetB3
 from nvidia_tao_tf2.backbones.efficientnet_tf import EfficientNetB4, EfficientNetB5
 from nvidia_tao_tf2.backbones.resnet_tf import ResNet
-logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-                    level='INFO')
 logger = logging.getLogger(__name__)
 
 

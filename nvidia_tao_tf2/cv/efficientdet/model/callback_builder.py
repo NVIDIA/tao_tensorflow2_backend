@@ -22,7 +22,8 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
     callbacks = [hvd_callbacks.BroadcastGlobalVariablesCallback(0)]
     if is_main_process():
         tb_callback = tf.keras.callbacks.TensorBoard(
-            log_dir=hparams['results_dir'], profile_batch=0, histogram_freq=1)
+            log_dir=os.path.join(hparams['results_dir'], 'tb_events'),
+            profile_batch=0, histogram_freq=1)
         callbacks.append(tb_callback)
         # set up checkpointing callbacks
         ckpt_dir = os.path.join(hparams['results_dir'], 'weights')
@@ -31,7 +32,7 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
         if hparams['moving_average_decay'] > 0:
             ckpt_callback = EffEmaCheckpoint(
                 eff_dir=ckpt_dir,
-                key=hparams['key'],
+                encryption_key=hparams['encryption_key'],
                 update_weights=False,
                 amp=hparams['mixed_precision'],
                 verbose=0,
@@ -42,7 +43,7 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
         else:
             ckpt_callback = EffCheckpoint(
                 eff_dir=ckpt_dir,
-                key=hparams['key'],
+                encryption_key=hparams['encryption_key'],
                 verbose=0,
                 save_freq='epoch',
                 save_weights_only=True,
@@ -52,7 +53,7 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
 
         model_callback = EffCheckpoint(
             eff_dir=hparams['results_dir'],
-            key=hparams['key'],
+            encryption_key=hparams['encryption_key'],
             graph_only=True,
             verbose=0,
             save_freq='epoch',
@@ -61,7 +62,11 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
         callbacks.append(model_callback)
 
         # log LR in tensorboard
-        callbacks.append(LRTensorBoard(steps_per_epoch, initial_epoch, log_dir=hparams['results_dir']))
+        callbacks.append(
+            LRTensorBoard(
+                steps_per_epoch,
+                initial_epoch,
+                log_dir=os.path.join(hparams['results_dir'], 'tb_events')))
         # status logging
         callbacks.append(MetricLogging(hparams['num_epochs'], steps_per_epoch, initial_epoch))
 

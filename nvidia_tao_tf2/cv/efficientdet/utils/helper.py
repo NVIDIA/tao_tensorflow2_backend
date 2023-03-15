@@ -81,7 +81,7 @@ def load_model(eff_model_path, hparams, mode='train', is_qat=False):
     Returns:
         Keras model: Loaded model
     """
-    ckpt_path, ckpt_name = decode_eff(eff_model_path, hparams.key)
+    ckpt_path, ckpt_name = decode_eff(eff_model_path, hparams.encryption_key)
     if mode != 'train':
         mode = 'eval'
     model = load_json_model(

@@ -1,4 +1,4 @@
-data:
+dataset:
   loader:
     shuffle_file: False
   train_tfrecords:
@@ -6,9 +6,9 @@ data:
   val_tfrecords:
     - '/home/scratch.p3/yuw/datasets/coco/val-*'
   val_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'
-augment:
-  auto_color_distortion: True
-  auto_translate_xy: True
+  augmentation:
+    auto_color_distortion: True
+    auto_translate_xy: True
 train:
   amp: True
   num_examples_per_epoch: 120000
@@ -20,4 +20,4 @@ evaluate:
   num_samples: 5000
   model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/efficientdet-d0_245.tlt'
 results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0'
-key: 'nvidia_tlt'
+encryption_key: 'nvidia_tlt'

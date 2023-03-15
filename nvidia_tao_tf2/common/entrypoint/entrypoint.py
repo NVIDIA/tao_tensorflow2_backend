@@ -99,11 +99,6 @@ def command_line_parser(parser, subtasks):
         help="Subtask for a given task/model.",
     )
     parser.add_argument(
-        "-k",
-        "--key",
-        help="User specific encoding key to save or load a .tlt model."
-    )
-    parser.add_argument(
         "-e",
         "--experiment_spec",
         help="Path to the experiment spec file.",

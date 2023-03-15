@@ -15,10 +15,7 @@
 
 import logging
 import onnx_graphsurgeon as gs
-
-logging.basicConfig(level=logging.INFO)
-logging.getLogger("EfficientDetHelper").setLevel(logging.INFO)
-log = logging.getLogger("EfficientDetHelper")
+logger = logging.getLogger(__name__)
 
 
 @gs.Graph.register()
@@ -33,7 +30,7 @@ def elt_const(self, op, name, input, value): # noqa pylint: disable=W0622
     :param name: The name to use for the node.
     """
     input_tensor = input if type(input) is gs.Variable else input[0]
-    log.debug("Created {} node '{}': {}".format(op, name, value.squeeze()))  # noqa pylint: disable=C0209
+    logger.debug("Created {} node '{}': {}".format(op, name, value.squeeze()))  # noqa pylint: disable=C0209
     const = gs.Constant(name=f"{name}_value:0", values=value)
     return self.layer(
         name=name, op=op,
@@ -51,7 +48,7 @@ def unsqueeze(self, name, input, axes=None): # noqa pylint: disable=W0622
     :return: The first output tensor, to allow chained graph construction.
     """
     input_tensor = input if type(input) is gs.Variable else input[0]
-    log.debug("Created Unsqueeze node '{}': {}".format(name, axes))  # noqa pylint: disable=C0209
+    logger.debug("Created Unsqueeze node '{}': {}".format(name, axes))  # noqa pylint: disable=C0209
     return self.layer(
         name=name, op="Unsqueeze",
         inputs=[input_tensor], outputs=[name + ":0"], attrs={'axes': axes})
@@ -68,7 +65,7 @@ def transpose(self, name, input, perm): # noqa pylint: disable=W0622
     :return: The first output tensor, to allow chained graph construction.
     """
     input_tensor = input if type(input) is gs.Variable else input[0]
-    log.debug("Created Transpose node '{}': {}".format(name, perm))  # noqa pylint: disable=C0209
+    logger.debug("Created Transpose node '{}': {}".format(name, perm))  # noqa pylint: disable=C0209
     return self.layer(
         name=name, op="Transpose",
         inputs=[input_tensor], outputs=[name + ":0"], attrs={'perm': perm})
@@ -84,7 +81,7 @@ def sigmoid(self, name, input): # noqa pylint: disable=W0622
     :return: The first output tensor, to allow chained graph construction.
     """
     input_tensor = input if type(input) is gs.Variable else input[0]
-    log.debug("Created Sigmoid node '{}'".format(name))   # noqa pylint: disable=C0209
+    logger.debug("Created Sigmoid node '{}'".format(name))   # noqa pylint: disable=C0209
     return self.layer(
         name=name, op="Sigmoid",
         inputs=[input_tensor], outputs=[name + ":0"])
@@ -104,7 +101,7 @@ def plugin(self, op, name, inputs, outputs, attrs): # noqa pylint: disable=W0622
     :return: The first output tensor, to allow chained graph construction.
     """
     input_tensors = inputs if type(inputs) is list else [inputs]
-    log.debug("Created TRT Plugin node '{}': {}".format(name, attrs))   # noqa pylint: disable=C0209
+    logger.debug("Created TRT Plugin node '{}': {}".format(name, attrs))   # noqa pylint: disable=C0209
     return self.layer(
         op=op, name=name,
         inputs=input_tensors, outputs=outputs, attrs=attrs)

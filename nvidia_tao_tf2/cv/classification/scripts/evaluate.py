@@ -15,6 +15,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 import nvidia_tao_tf2.common.logging.logging as status_logging
 from nvidia_tao_tf2.common.decorators import monitor_status
+from nvidia_tao_tf2.common.utils import update_results_dir
 
 from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.classification.utils import preprocess_crop  # noqa pylint: disable=unused-import
@@ -34,6 +35,8 @@ def run_evaluate(cfg):
     """
     # Set up logger verbosity.
     logger.setLevel(logging.INFO)
+    if not os.path.exists(cfg.results_dir):
+        os.makedirs(cfg.results_dir, exist_ok=True)
     # Decrypt EFF
     final_model = load_model(
         str(cfg.evaluate.model_path),
@@ -54,7 +57,7 @@ def run_evaluate(cfg):
     final_model.summary()
 
     # Get input shape
-    image_height, image_width, nchannels = get_input_shape(final_model)
+    image_height, image_width, nchannels = get_input_shape(final_model, cfg.data_format)
     image_depth = cfg['model']['input_image_depth']
     assert image_depth in [8, 16], "Only 8-bit and 16-bit images are supported"
 
@@ -65,28 +68,28 @@ def run_evaluate(cfg):
     color_mode = "rgb"
     if nchannels == 1:
         color_mode = "grayscale"
-    interpolation = cfg['model']['resize_interpolation_method']
-    if cfg['augment']['enable_center_crop']:
+    interpolation = cfg.model.resize_interpolation_method
+    if cfg.dataset.augmentation.enable_center_crop:
         interpolation += ":center"
 
     # Initializing data generator
     target_datagen = ImageDataGenerator(
         preprocessing_function=partial(preprocess_input,
-                                       data_format=cfg['data_format'],
-                                       mode=cfg['data']['preprocess_mode'],
-                                       img_mean=list(cfg['data']['image_mean']),
+                                       data_format=cfg.data_format,
+                                       mode=cfg.dataset.preprocess_mode,
+                                       img_mean=list(cfg.dataset.image_mean),
                                        color_mode=color_mode,
                                        img_depth=image_depth),
         horizontal_flip=False,
         data_format=cfg['data_format'])
 
-    if cfg['evaluate']['classmap']:
+    if cfg.evaluate.classmap:
         # If classmap is provided, then we explicitly set it in ImageDataGenerator
-        with open(cfg['evaluate']['classmap'], "r", encoding='utf-8') as cmap_file:
+        with open(cfg.evaluate.classmap, "r", encoding='utf-8') as cmap_file:
             try:
                 data = json.load(cmap_file)
             except json.decoder.JSONDecodeError as e:
-                print(f"Loading the {cfg['evaluate']['classmap']} failed with error\n{e}")
+                print(f"Loading the {cfg.evaluate.classmap} failed with error\n{e}")
                 sys.exit(-1)
             except Exception as e:
                 if e.output is not None:
@@ -167,6 +170,7 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for continuous training of classification application."""
+    cfg = update_results_dir(cfg, 'evaluate')
     run_evaluate(cfg)
 
 

@@ -1,4 +1,4 @@
-data:
+dataset:
   loader:
     prefetch_size: 4
     shuffle_file: False
@@ -27,5 +27,5 @@ train:
 evaluate:
   batch_size: 20
   num_samples: 5000
-key: 'nvidia_tlt'
+encryption_key: 'nvidia_tlt'
 results_dir: '/home/scratch.p3/vpraveen/tao-tf2/efficientdet_b0_wandb'

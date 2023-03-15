@@ -1,7 +1,5 @@
 export:
   model_path: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.tlt'
-  # model_path: '/home/binz/Tao/tao-tf2/results_resnet18/weights/resnet18_bn_001.tlt'
   output_path: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.onnx'
-  # output_path: '/home/binz/Tao/tao-tf2/results_resnet18/weights/resnet18_bn_001.tlt'
   data_type: 'fp16'
 encryption_key: 'nvidia_tlt'

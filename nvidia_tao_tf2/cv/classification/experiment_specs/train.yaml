@@ -1,7 +1,7 @@
 # train minist with efficientnet-b0
 results_dir: '/home/binz/tao-tf2/results_enb0'
 encryption_key: nvidia_tlt
-data:
+dataset:
   train_dataset_path: '/home/binz/tao-tf2/dataset/flower_17/train'
   val_dataset_path: '/home/binz/tao-tf2/dataset/flower_17/validation'
   # image_mean: [33.328] # mean of MNIST (0.1307 *255)

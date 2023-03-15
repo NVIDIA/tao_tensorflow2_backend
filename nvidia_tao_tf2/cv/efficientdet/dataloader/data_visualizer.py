@@ -29,8 +29,8 @@ def visualize(cfg):
 
     # Set up dataloader
     eval_sources = datasource.DataSource(
-        cfg.data.val_tfrecords,
-        cfg.data.val_dirs)
+        cfg.dataset.val_tfrecords,
+        cfg.dataset.val_dirs)
     eval_dl = dataloader.CocoDataset(
         eval_sources,
         is_training=True,

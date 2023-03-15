@@ -22,7 +22,7 @@ class Pruner(ABC):
         """Initialize."""
         self.cfg = cfg
         self.model_path = cfg.prune.model_path
-        self.key = cfg.key
+        self.key = cfg.encryption_key
         self.normalizer = cfg.prune.normalizer
         self.criterion = 'L2'
         self.granularity = cfg.prune.granularity

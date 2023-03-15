@@ -1,7 +1,7 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 
 """Export EfficientDet model to etlt and TRT engine."""
-
+import logging
 import os
 import tempfile
 
@@ -11,29 +11,20 @@ from tensorflow.python.util import deprecation
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 import nvidia_tao_tf2.common.no_warning # noqa pylint: disable=W0611
-from nvidia_tao_tf2.common.utils import encode_etlt
+from nvidia_tao_tf2.common.utils import update_results_dir
 
 from nvidia_tao_tf2.cv.efficientdet.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.efficientdet.exporter.onnx_exporter import EfficientDetGraphSurgeon
 from nvidia_tao_tf2.cv.efficientdet.inferencer import inference
 from nvidia_tao_tf2.cv.efficientdet.utils import helper, hparams_config
 from nvidia_tao_tf2.cv.efficientdet.utils.config_utils import generate_params_from_cfg
-
+from nvidia_tao_tf2.cv.efficientdet.utils.horovod_utils import initialize
 deprecation._PRINT_DEPRECATION_WARNINGS = False
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 os.environ["TF_CPP_VMODULE"] = 'non_max_suppression_op=0,generate_box_proposals_op=0,executor=0'
-supported_img_format = ['.jpg', '.jpeg', '.JPG', '.JPEG', '.png', '.PNG']
-
-
-def setup_env():
-    """Setup export env."""
-    tf.autograph.set_verbosity(0)
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
-    if gpus:
-        tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level='INFO')
+logger = logging.getLogger(__name__)
 
 
 @monitor_status(name='efficientdet', mode='export')
@@ -45,8 +36,8 @@ def run_export(cfg):
     config.update(generate_params_from_cfg(config, cfg, mode=MODE))
     params = config.as_dict()
 
-    assert str(cfg.export.output_path).endswith('.etlt'), "Exported file must end with .etlt"
-    output_dir = tempfile.mkdtemp()  # os.path.dirname(cfg.export.output_path)
+    assert cfg.export.onnx_file.endswith('.onnx'), "Exported file must end with .onnx"
+    output_dir = tempfile.mkdtemp()
     tf.keras.backend.set_learning_phase(0)
 
     # Load model from graph json
@@ -78,10 +69,8 @@ def run_export(cfg):
     effdet_gs.update_shapes()
     effdet_gs.update_nms(threshold=cfg.export.min_score_thresh)
     # convert onnx to eff
-    onnx_file = effdet_gs.save()
-    encode_etlt(onnx_file, cfg.export.output_path, "", cfg.key)
-    # print(f"The exported model is saved at: {onnx_file}")
-    os.remove(onnx_file)
+    onnx_file = effdet_gs.save(cfg.export.onnx_file)
+    logger.info("The exported model is saved at: %s", onnx_file)
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -92,8 +81,9 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     config_name="export", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig):
-    """Wrapper function for EfficientDet exporter."""
-    setup_env()
+    """Wrapper function for EfficientDet export."""
+    cfg = update_results_dir(cfg, 'export')
+    initialize(cfg, logger, training=False)
     run_export(cfg=cfg)
 
 

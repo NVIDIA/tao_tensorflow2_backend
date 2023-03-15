@@ -83,7 +83,7 @@ class EffCheckpoint(ModelCheckpoint):
             name=eff_filename,
             description="Artifact from checkpoint",
             filepath=self.temp_zip_file,
-            encryption=True,
+            encryption=bool(self.passphrase),
             content_callback=BinaryContentCallback,
         )
         eff_filepath = os.path.join(self.eff_dir, eff_filename)

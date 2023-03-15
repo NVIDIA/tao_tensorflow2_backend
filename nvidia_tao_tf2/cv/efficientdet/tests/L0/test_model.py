@@ -40,7 +40,7 @@ def cfg():
      ('efficientdet-d4', '512x256', 20725700),
      ('efficientdet-d5', '512x128', 33655916),])
 def test_arch(model_name, input_size, expected, cfg):
-    cfg.data.image_size = input_size
+    cfg.dataset.image_size = input_size
     cfg.model.name = model_name
     config = hparams_config.get_efficientdet_config(model_name)
     config.update(generate_params_from_cfg(config, cfg, mode='train'))
@@ -60,7 +60,7 @@ def test_arch(model_name, input_size, expected, cfg):
      ('efficientdet-d4', '512x256',),
      ('efficientdet-d5', '512x128',),])
 def test_backbone(model_name, input_size, cfg):
-    cfg.data.image_size = input_size
+    cfg.dataset.image_size = input_size
     cfg.model.name = model_name
     config = hparams_config.get_efficientdet_config(model_name)
     config.update(generate_params_from_cfg(config, cfg, mode='train'))

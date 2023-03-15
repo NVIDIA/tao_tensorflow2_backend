@@ -1,11 +1,13 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """Horovod utils."""
+import logging
 import os
 import multiprocessing
 import tensorflow as tf
 import horovod.tensorflow.keras as hvd
 
 from nvidia_tao_tf2.common.utils import set_random_seed
+logger = logging.getLogger(__name__)
 
 
 def get_rank():
@@ -29,8 +31,9 @@ def is_main_process():
     return get_rank() == 0
 
 
-def initialize(cfg, training=True):
+def initialize(cfg, logger, training=True):
     """Initialize training."""
+    logger.setLevel(logging.INFO)
     hvd.init()
     use_xla = False
     if training:
@@ -52,7 +55,7 @@ def initialize(cfg, training=True):
         tf.config.experimental.set_memory_growth(gpu, True)
         assert tf.config.experimental.get_memory_growth(gpu)
     tf.config.experimental.set_visible_devices(gpus, 'GPU')
-    if gpus and training:
+    if gpus:
         tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
 
     if training:
@@ -63,3 +66,7 @@ def initialize(cfg, training=True):
         tf.keras.mixed_precision.set_global_policy(policy)
     else:
         os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '0'
+
+    if is_main_process():
+        if not os.path.exists(cfg.results_dir):
+            os.makedirs(cfg.results_dir, exist_ok=True)

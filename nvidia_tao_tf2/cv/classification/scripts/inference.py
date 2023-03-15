@@ -12,6 +12,7 @@ import pandas as pd
 
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 from nvidia_tao_tf2.common.decorators import monitor_status
+from nvidia_tao_tf2.common.utils import update_results_dir
 
 from nvidia_tao_tf2.cv.classification.inferencer.keras_inferencer import KerasInferencer
 from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
@@ -31,6 +32,8 @@ def run_inference(cfg):
             write out a .csv file to store all the predictions
     """
     logger.setLevel(logging.INFO)
+    if not os.path.exists(cfg.results_dir):
+        os.makedirs(cfg.results_dir, exist_ok=True)
     result_csv_path = os.path.join(cfg.results_dir, 'result.csv')
     with open(cfg.inference.classmap, "r", encoding='utf-8') as cm:
         class_dict = json.load(cm)
@@ -39,13 +42,13 @@ def run_inference(cfg):
     image_depth = cfg.model.input_image_depth
     assert image_depth in [8, 16], "Only 8-bit and 16-bit images are supported"
     interpolation = cfg.model.resize_interpolation_method
-    if cfg.augment.enable_center_crop:
+    if cfg.dataset.augmentation.enable_center_crop:
         interpolation += ":center"
     inferencer = KerasInferencer(
         cfg.inference.model_path,
         key=cfg.encryption_key,
-        img_mean=list(cfg.data.image_mean),
-        preprocess_mode=cfg.data.preprocess_mode,
+        img_mean=list(cfg.dataset.image_mean),
+        preprocess_mode=cfg.dataset.preprocess_mode,
         interpolation=interpolation,
         img_depth=image_depth)
     predictions = []
@@ -79,7 +82,8 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     config_name="infer", schema=ExperimentConfig
 )
 def main(cfg: ExperimentConfig) -> None:
-    """Wrapper function for continuous training of classification application."""
+    """Wrapper function for classification inference."""
+    cfg = update_results_dir(cfg, 'inference')
     run_inference(cfg)
 
 

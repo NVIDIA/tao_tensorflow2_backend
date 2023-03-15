@@ -48,7 +48,7 @@ def setup_callbacks(ckpt_freq, results_dir, lr_config,
         # Set up the custom TensorBoard callback. It will log the loss
         # after every step, and some images and user-set summaries only on
         # the first step of every epoch.
-        tensorboard = TensorBoard(log_dir=results_dir)
+        tensorboard = TensorBoard(log_dir=os.path.join(results_dir, 'tb_events'))
         callbacks.append(tensorboard)
 
         # Set up the CSV logger, logging statistics after every epoch.

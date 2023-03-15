@@ -1,5 +1,5 @@
 results_dir: '/home/scratch.p3/sean/tlt3_experiments/imagenet/tf2_byom_res18'
-data:
+dataset:
   train_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   val_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   preprocess_mode: 'torch'

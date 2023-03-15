@@ -1,14 +1,15 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
 """EfficientDet standalone evaluation script."""
+import logging
 import os
 from mpi4py import MPI
 import tensorflow as tf
-import horovod.tensorflow.keras as hvd
 
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 import nvidia_tao_tf2.common.logging.logging as status_logging
 import nvidia_tao_tf2.common.no_warning # noqa pylint: disable=W0611
+from nvidia_tao_tf2.common.utils import update_results_dir
 
 from nvidia_tao_tf2.cv.efficientdet.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.efficientdet.dataloader import dataloader, datasource
@@ -16,17 +17,10 @@ from nvidia_tao_tf2.cv.efficientdet.processor.postprocessor import EfficientDetP
 from nvidia_tao_tf2.cv.efficientdet.utils import coco_metric, label_utils
 from nvidia_tao_tf2.cv.efficientdet.utils import helper, hparams_config
 from nvidia_tao_tf2.cv.efficientdet.utils.config_utils import generate_params_from_cfg
-from nvidia_tao_tf2.cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size, get_rank
-
-
-def setup_env():
-    """Setup evaluation env."""
-    hvd.init()
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
-    if gpus:
-        tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+from nvidia_tao_tf2.cv.efficientdet.utils.horovod_utils import (
+    initialize, is_main_process, get_world_size, get_rank)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level='INFO')
+logger = logging.getLogger(__name__)
 
 
 @monitor_status(name='efficientdet', mode='evaluation')
@@ -39,8 +33,8 @@ def run_experiment(cfg):
 
     # Set up dataloader
     eval_sources = datasource.DataSource(
-        cfg.data.val_tfrecords,
-        cfg.data.val_dirs)
+        cfg.dataset.val_tfrecords,
+        cfg.dataset.val_dirs)
     eval_dl = dataloader.CocoDataset(
         eval_sources,
         is_training=False,
@@ -60,7 +54,7 @@ def run_experiment(cfg):
     postpc = EfficientDetPostprocessor(config)
     label_map = label_utils.get_label_map(cfg.evaluate.label_map)
     evaluator = coco_metric.EvaluationMetric(
-        filename=cfg.data.val_json_file, label_map=label_map)
+        filename=cfg.dataset.val_json_file, label_map=label_map)
 
     @tf.function
     def eval_model_fn(images, labels):
@@ -127,7 +121,8 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for EfficientDet evaluation."""
-    setup_env()
+    cfg = update_results_dir(cfg, 'evaluate')
+    initialize(cfg, logger, training=False)
     run_experiment(cfg)
 
 
