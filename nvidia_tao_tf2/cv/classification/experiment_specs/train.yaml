@@ -1,6 +1,6 @@
 # train minist with efficientnet-b0
 results_dir: '/home/binz/tao-tf2/results_enb0'
-key: nvidia_tlt
+encryption_key: nvidia_tlt
 data:
   train_dataset_path: '/home/binz/tao-tf2/dataset/flower_17/train'
   val_dataset_path: '/home/binz/tao-tf2/dataset/flower_17/validation'
@@ -19,8 +19,6 @@ train:
       - "training"
       - "classification"
 model:
-  arch: 'efficientnet-b0'
-  # n_layers: 18
-  input_image_size: [1,500,500]
+  backbone: 'efficientnet-b0'
   input_image_depth: 8
 

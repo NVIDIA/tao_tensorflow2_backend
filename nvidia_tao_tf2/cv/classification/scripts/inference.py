@@ -15,7 +15,7 @@ from nvidia_tao_tf2.common.decorators import monitor_status
 
 from nvidia_tao_tf2.cv.classification.inferencer.keras_inferencer import KerasInferencer
 from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
-
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s', level='INFO')
 logger = logging.getLogger(__name__)
 SUPPORTED_IMAGE_FORMAT = ['.jpg', '.png', '.jpeg']
 
@@ -30,11 +30,8 @@ def run_inference(cfg):
         Directory Mode:
             write out a .csv file to store all the predictions
     """
-    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
+    logger.setLevel(logging.INFO)
     result_csv_path = os.path.join(cfg.results_dir, 'result.csv')
-    assert os.path.exists(cfg.results_dir), "The results_dir doesn't exist."
-    assert os.path.exists(cfg.inference.classmap), "inference.classmap doesn't exist."
-    assert os.path.exists(cfg.inference.model_path), "inference.model_path doesn't exist."
     with open(cfg.inference.classmap, "r", encoding='utf-8') as cm:
         class_dict = json.load(cm)
     reverse_mapping = {v: k for k, v in class_dict.items()}
@@ -46,7 +43,7 @@ def run_inference(cfg):
         interpolation += ":center"
     inferencer = KerasInferencer(
         cfg.inference.model_path,
-        key=cfg.key,
+        key=cfg.encryption_key,
         img_mean=list(cfg.data.image_mean),
         preprocess_mode=cfg.data.preprocess_mode,
         interpolation=interpolation,

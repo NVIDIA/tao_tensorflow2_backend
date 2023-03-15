@@ -34,9 +34,9 @@ warnings.simplefilter('ignore', category=errors.NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=errors.NumbaPendingDeprecationWarning)
 
 opt_dict = {
-    'sgd': keras.optimizers.SGD,
-    'adam': keras.optimizers.Adam,
-    'rmsprop': keras.optimizers.RMSprop
+    'sgd': keras.optimizers.legacy.SGD,
+    'adam': keras.optimizers.legacy.Adam,
+    'rmsprop': keras.optimizers.legacy.RMSprop
 }
 
 scope_dict = {'dense': keras.layers.Dense,

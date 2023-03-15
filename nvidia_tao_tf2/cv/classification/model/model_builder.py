@@ -526,7 +526,7 @@ model_choose = {"resnet": get_resnet,
                 "byom": get_byom}
 
 
-def get_model(arch="resnet",
+def get_model(backbone="resnet_18",
               input_shape=(3, 224, 224),
               data_format=None,
               nclasses=1000,
@@ -537,39 +537,41 @@ def get_model(arch="resnet",
               **kwargs):
     """Wrapper to choose feature extractor given backbone name."""
     kwa = {}
-    if arch == 'resnet':
-        kwa['nlayers'] = kwargs['nlayers']
+    if 'resnet' in backbone:
+        kwa['nlayers'] = int(backbone.split('_')[-1])
         kwa['use_batch_norm'] = kwargs['use_batch_norm']
         kwa['use_pooling'] = kwargs['use_pooling']
         kwa['freeze_bn'] = kwargs['freeze_bn']
         kwa['use_bias'] = kwargs['use_bias']
         kwa['all_projections'] = kwargs['all_projections']
-    elif 'efficientnet-b' in arch:
+        backbone = backbone.split('_')[0]
+    elif 'efficientnet-b' in backbone:
         kwa['use_bias'] = kwargs['use_bias']
         kwa['freeze_bn'] = kwargs['freeze_bn']
-        kwa['activation_type'] = None  # TODO(@yuw): kwargs['activation'].activation_type
-    elif arch == 'mobilenet_v1':
+        kwa['activation_type'] = kwargs['activation_type']
+    elif 'mobilenet_v1' == backbone:
         kwa['use_batch_norm'] = kwargs['use_batch_norm']
         kwa['use_bias'] = kwargs['use_bias']
         kwa['freeze_bn'] = kwargs['freeze_bn']
-    elif arch == 'mobilenet_v2':
+    elif 'mobilenet_v2' == backbone:
         kwa['use_batch_norm'] = kwargs['use_batch_norm']
         kwa['use_bias'] = kwargs['use_bias']
         kwa['freeze_bn'] = kwargs['freeze_bn']
         kwa['all_projections'] = kwargs['all_projections']
-    elif arch == 'byom':
+    elif 'byom' == backbone:
         kwa['model_config_path'] = kwargs['model_config_path']
         kwa['passphrase'] = kwargs['passphrase']
     else:
-        raise ValueError(f'Unsupported architecture: {arch}')
+        raise ValueError(f'Unsupported architecture: {backbone}')
 
-    model = model_choose[arch](input_shape=input_shape,
-                               nclasses=nclasses,
-                               data_format=data_format,
-                               kernel_regularizer=kernel_regularizer,
-                               bias_regularizer=bias_regularizer,
-                               retain_head=retain_head,
-                               freeze_blocks=freeze_blocks,
-                               input_name='Input',
-                               **kwa)
+    model = model_choose[backbone](
+        input_shape=input_shape,
+        nclasses=nclasses,
+        data_format=data_format,
+        kernel_regularizer=kernel_regularizer,
+        bias_regularizer=bias_regularizer,
+        retain_head=retain_head,
+        freeze_blocks=freeze_blocks,
+        input_name='Input',
+        **kwa)
     return model

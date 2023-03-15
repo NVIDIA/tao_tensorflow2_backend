@@ -1521,3 +1521,110 @@ def force_stride16(block_args):
     # pop the layer with last stride 2 and following layers
     # to keep the total stride of 16
     block_args = block_args[:last_block]
+
+
+def add_deconv_layer(
+    model,
+    inputs,
+    use_batch_norm,
+    filters,
+    upsampling,
+    activation_type="relu",
+    activation_kwargs=None,
+    data_format=None,
+    kernel_regularizer=None,
+    bias_regularizer=None,
+    layer_name=None,
+    padding="same",
+):
+    """Add a deconv layer.
+
+    Args:
+        model (tensor): the model on top of which the head should be created.
+        inputs (tensor): the inputs (tensor) to the previously supplied model.
+        use_batch_norm (bool): use batch norm.
+        filters (int): the number of filters.
+        upsampling (int): the amount of upsampling the transpose convolution should do.
+        activation_type (str): activation function name, e.g., 'relu'.
+        activation_kwargs (dict): Additional activation keyword arguments to be fed to
+            the add_activation function.
+        data_format (str): either 'channels_last' or 'channels_first'.
+        kernel_regularizer (`regularizer`): regularizer for the kernels.
+        bias_regularizer (`regularizer`): regularizer for the biases.
+        layer_name (str): layer_name prefix.
+
+    Returns:
+        Model: A model with a deconv layer stacked on top of the `model` input.
+    """
+    if data_format is None:
+        data_format = keras.backend.image_data_format()
+    x = model.outputs[0]
+    if layer_name is not None:
+        layer_name = f"{layer_name}_m{filters}_d{upsampling}"
+    x = keras.layers.Conv2DTranspose(
+        filters=filters,
+        kernel_size=(upsampling, upsampling),
+        strides=(upsampling, upsampling),
+        padding=padding,
+        data_format=data_format,
+        kernel_regularizer=kernel_regularizer,
+        bias_regularizer=bias_regularizer,
+        name=layer_name,
+    )(x)
+
+    if use_batch_norm:
+        if layer_name is not None:
+            layer_name += "_bn"
+        x = keras.layers.BatchNormalization(
+            axis=get_batchnorm_axis(data_format), name=layer_name
+        )(x)
+    if activation_type:
+        activation_kwargs = activation_kwargs or {}
+        x = add_activation(activation_type, **activation_kwargs)(x)
+    model = keras.models.Model(
+        inputs=inputs, outputs=x, name=f"{model.name}_d{upsampling}"
+    )
+
+    return model
+
+
+def add_deconv_head(
+    model,
+    inputs,
+    nmaps,
+    upsampling,
+    activation_type="sigmoid",
+    activation_kwargs=None,
+    data_format=None,
+    padding="same",
+):
+    """Create a model that stacks a deconvolutional (transpose conv) head on top of another model.
+
+    Args:
+        model (tensor): the model on top of which the head should be created.
+        inputs (tensor): the inputs (tensor) to the previously supplied model.
+        nmaps (int): the amount of maps (output filters) the transpose convolution should
+            have.
+        upsampling (int): the amount of upsampling the transpose convolution should do.
+        activation_type (str): activation function name, e.g., 'softmax'.
+        activation_kwargs (dict): Additional activation keyword arguments to be fed to
+            the add_activation function.
+        data_format (str): either 'channels_last' or 'channels_first'.
+
+    Returns:
+        Model: A model with the head stacked on top of the `model` input.
+    """
+    return add_deconv_layer(
+        model,
+        inputs,
+        use_batch_norm=False,
+        filters=nmaps,
+        upsampling=upsampling,
+        activation_type=activation_type,
+        activation_kwargs=activation_kwargs,
+        data_format=data_format,
+        kernel_regularizer=None,
+        bias_regularizer=None,
+        layer_name="head_deconv",
+        padding=padding,
+    )

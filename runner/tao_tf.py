@@ -90,7 +90,7 @@ def get_docker_gpus_prefix(gpus):
         if gpus == "all":
             gpu_string += "all"
         else:
-            gpu_string += "device={}".format(gpus)
+            gpu_string += "\'\"device={}\"\'".format(gpus)
     else:
         # Stick to the older version of getting the gpu's using runtime=nvidia
         gpu_string = "--runtime=nvidia -e NVIDIA_DRIVER_CAPABILITIES=all "

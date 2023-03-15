@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from nvidia_tao_tf2.cv.classification.model.model_builder import get_model
-from nvidia_tao_tf2.cv.classification.scripts.train import setup_config
+from nvidia_tao_tf2.cv.classification.utils.helper import setup_config
 
 
 class RegConfig():
@@ -30,7 +30,7 @@ bn_config = (False, True)
 def test_freeze_bn(freeze_bn):
     keras.backend.clear_session()
     model = get_model(
-        "resnet",
+        "resnet_10",
         input_shape=(3, 224, 224),
         data_format="channels_first",
         freeze_bn=freeze_bn,

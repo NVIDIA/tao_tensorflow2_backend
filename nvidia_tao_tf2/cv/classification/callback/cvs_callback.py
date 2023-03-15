@@ -16,8 +16,14 @@ class CSVLoggerWithStatus(CSVLogger):
             training). False: overwrite existing file.
     """
 
+    def __init__(self, *args, **kwargs) -> None:
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.s_logger = status_logging.get_status_logger()
+
     def on_epoch_end(self, epoch, logs=None):
         """Add metrics to status logger on epoch end."""
-        super().on_epoch_end(epoch, logs)
+        epoch = epoch + 1
         for key in self.keys:
-            status_logging.get_status_logger().kpi[key] = float(logs[key])
+            self.s_logger.kpi[key] = float(logs[key])
+        super().on_epoch_end(epoch, logs)

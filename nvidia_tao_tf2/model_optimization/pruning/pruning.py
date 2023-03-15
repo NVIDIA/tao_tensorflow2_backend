@@ -1503,6 +1503,7 @@ def find_prunable_parent(prunable_parents,
     Return:
         A list of keras layers which are prunable inputs to the given layer.
     """
+    visited = visited or {}
     if byom_custom_layers:
         assert isinstance(byom_custom_layers, list), \
             f"Invalid data type for byom_custom_layers, {type(byom_custom_layers)}"

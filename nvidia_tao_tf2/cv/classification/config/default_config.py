@@ -2,7 +2,7 @@
 
 """Default config file"""
 
-from typing import List
+from typing import List, Optional
 from dataclasses import dataclass, field
 from omegaconf import MISSING
 
@@ -106,10 +106,12 @@ class DataConfig:
 class ModelConfig:
     """Model config."""
 
-    arch: str = 'resnet'
-    input_image_size: List[int] = field(default_factory=lambda: [3, 224, 224])
+    backbone: str = 'resnet_18'
+    input_width: int = 224
+    input_height: int = 224
+    input_channels: int = 3
     input_image_depth: int = 8
-    n_layers: int = 18
+    num_classes: int = MISSING
     use_batch_norm: bool = True
     use_bias: bool = False
     use_pooling: bool = True
@@ -119,6 +121,7 @@ class ModelConfig:
     retain_head: bool = False
     dropout: float = 0.0
     resize_interpolation_method: str = 'bilinear'  # 'bicubic'
+    activation_type: Optional[str] = None  # only used in efficientnets
     byom_model: str = ''
 
 
@@ -157,9 +160,9 @@ class ExportConfig:
 class InferConfig:
     """Inference config."""
 
-    model_path: str = ''
-    image_dir: str = ''
-    classmap: str = ''
+    model_path: str = MISSING
+    image_dir: str = MISSING
+    classmap: str = MISSING
 
 
 @dataclass
@@ -190,6 +193,5 @@ class ExperimentConfig:
     inference: InferConfig = InferConfig()
     prune: PruneConfig = PruneConfig()
     results_dir: str = MISSING
-    key: str = 'nvidia_tlt'
+    encryption_key: str = 'nvidia_tlt'
     data_format: str = 'channels_first'
-    verbose: bool = False

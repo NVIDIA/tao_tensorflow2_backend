@@ -28,12 +28,10 @@ class TAOModule(ABC):
         """Compile model."""
         pass
 
-    @abstractmethod
     def train_step(self, data):
         """Train step."""
         pass
 
-    @abstractmethod
     def test_step(self, data):
         """Test step."""
         pass

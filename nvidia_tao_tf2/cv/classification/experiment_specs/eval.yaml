@@ -15,10 +15,7 @@ evaluate:
   batch_size: 16
   n_workers: 0
 model:
-  arch: 'efficientnet-b0'
-  # arch: 'resnet'
-  # n_layers: 18
-  input_image_size: [3,500,500]
+  backbone: 'efficientnet-b0'
   input_image_depth: 8
-key: 'nvidia_tlt'
+encryption_key: 'nvidia_tlt'
 data_format: 'channels_last'

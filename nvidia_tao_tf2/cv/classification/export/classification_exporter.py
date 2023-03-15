@@ -57,12 +57,12 @@ class Exporter:
         self.min_batch_size = min_batch_size
         self.opt_batch_size = opt_batch_size
 
-        if not self.config.key:  # TODO(@yuw): for internal usage only
+        if not self.config.encryption_key:
             self._saved_model = self.config.export.model_path
         else:
             self._saved_model = decode_eff(
                 str(self.config.export.model_path),
-                self.config.key)
+                self.config.encryption_key)
         _handle, self.tmp_onnx = tempfile.mkstemp(suffix='onnx')
         os.close(_handle)
 
@@ -107,7 +107,7 @@ class Exporter:
 
         utils.save_protobuf(self.tmp_onnx, model_proto)
         logger.debug("ONNX conversion Done!")
-        encode_etlt(self.tmp_onnx, self.config.export.output_path, "", self.config.key)
+        encode_etlt(self.tmp_onnx, self.config.export.output_path, "", self.config.encryption_key)
 
     def export_engine(self, verbose=True) -> None:
         """Parse the model file through TensorRT and build TRT engine."""

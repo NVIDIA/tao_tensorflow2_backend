@@ -106,7 +106,7 @@ def build_model_base(images, model_name='efficientdet-d0',
         kernel_regularizer=None,
         bias_regularizer=None,
         stride16=False,
-        activation_type=None)  # TODO(@yuw): swish -> option to use relu?
+        activation_type=None)
     return [model.get_layer(fmap).output for fmap in mappings[model_name]]
 
 

@@ -1,6 +1,6 @@
 # train 16 bit images with efficientnet-b0
 results_dir: '/home/binz/tao-tf2/results_enb0_16bit'
-key: nvidia_tlt
+encryption_key: nvidia_tlt
 data:
   train_dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
   val_dataset_path: '/home/binz/tao-tf2/dataset/target_chips'
@@ -14,7 +14,6 @@ train:
 augment:
   enable_random_crop: True
 model:
-  arch: 'efficientnet-b0'
-  input_image_size: [1,640,640]
+  backbone: 'efficientnet-b0'
   input_image_depth: 16
 

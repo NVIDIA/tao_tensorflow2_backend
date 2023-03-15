@@ -1,21 +1,19 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
-"""EfficientDet Trainer."""
+"""Classification Trainer."""
 import logging
 
 from nvidia_tao_tf2.blocks.trainer import Trainer
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level='INFO')
 logger = logging.getLogger(__name__)
 
 
-class EfficientDetTrainer(Trainer):
-    """EfficientDet Trainer."""
+class ClassifierTrainer(Trainer):
+    """Classifier Trainer."""
 
-    def __init__(self, num_epochs, qat=False, callbacks=None):
+    def __init__(self, num_epochs, callbacks=None, cfg=None):
         """Init."""
         self.num_epochs = num_epochs
         self.callbacks = callbacks
-        self.qat = qat
+        self.cfg = cfg
 
     def fit(self,
             module,
@@ -31,7 +29,9 @@ class EfficientDetTrainer(Trainer):
                 initial_epoch=module.initial_epoch,
                 callbacks=self.callbacks,
                 verbose=verbose,
+                workers=self.cfg['train']['n_workers'],
                 validation_data=eval_dataset,
-                validation_steps=module.num_samples)
+                validation_steps=len(eval_dataset),
+                validation_freq=1)
         else:
             logger.info("Training (%d epochs) has finished.", self.num_epochs)
