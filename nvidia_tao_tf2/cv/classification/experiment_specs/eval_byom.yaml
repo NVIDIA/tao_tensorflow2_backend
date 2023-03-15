@@ -13,5 +13,5 @@ evaluate:
   top_k: 1
   batch_size: 64
   n_workers: 10
-key: 'nvidia_tlt'
+encryption_key: 'nvidia_tlt'
 data_format: 'channels_first'

@@ -1,5 +1,5 @@
 results_dir: '/home/binz/tao-tf2/results_enb0'
-key: nvidia_tlt
+encryption_key: nvidia_tlt
 prune:
   model_path: '/home/binz/tao-tf2/results_enb0/weights/efficientnet-b0_010.tlt'
   output_path: '/home/binz/tao-tf2/results_enb0/weights/efficientnet-b0_010.prune.tlt'

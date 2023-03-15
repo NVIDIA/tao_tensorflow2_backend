@@ -9,7 +9,7 @@ import sys
 import numpy as np
 from PIL import ImageFile
 from sklearn.metrics import classification_report, confusion_matrix
-from tensorflow import keras
+import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
@@ -21,6 +21,7 @@ from nvidia_tao_tf2.cv.classification.utils import preprocess_crop  # noqa pylin
 from nvidia_tao_tf2.cv.classification.utils.preprocess_input import preprocess_input
 from nvidia_tao_tf2.cv.classification.utils.helper import get_input_shape, load_model
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s', level='INFO')
 logger = logging.getLogger(__name__)
 
 
@@ -32,16 +33,16 @@ def run_evaluate(cfg):
        Dictionary arguments containing parameters parsed in the main function.
     """
     # Set up logger verbosity.
-    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
+    logger.setLevel(logging.INFO)
     # Decrypt EFF
     final_model = load_model(
-        str(cfg['evaluate']['model_path']),
-        cfg['key'])
+        str(cfg.evaluate.model_path),
+        cfg.encryption_key)
 
     # Defining optimizer
-    opt = keras.optimizers.SGD(lr=0, decay=1e-6, momentum=0.9, nesterov=False)
+    opt = tf.keras.optimizers.legacy.SGD(lr=0, decay=1e-6, momentum=0.9, nesterov=False)
     # Define precision/recall and F score metrics
-    topk_acc = partial(keras.metrics.top_k_categorical_accuracy,
+    topk_acc = partial(tf.keras.metrics.top_k_categorical_accuracy,
                        k=cfg['evaluate']['top_k'])
     topk_acc.__name__ = 'topk_acc'
     # Compile model

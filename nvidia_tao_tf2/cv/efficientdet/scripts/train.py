@@ -80,7 +80,6 @@ def run_experiment(cfg):
         efficientdet,
         train_dataset,
         eval_dataset,
-        config.num_epochs,
         verbose=1 if is_main_process() else 0)
 
 

@@ -3,8 +3,7 @@ inference:
   model_path: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.onnx.fp16.engine'
   image_dir: '/home/binz/tao-tf2/dataset/target_chips/T72'
 model:
-  arch: 'efficientnet-b0'
+  backbone: 'efficientnet-b0'
   input_image_depth: 16
-  input_image_size: [1,640,640]
 train:
   image_mean: [7834.4968]

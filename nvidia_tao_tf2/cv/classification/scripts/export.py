@@ -9,13 +9,14 @@ from nvidia_tao_tf2.common.decorators import monitor_status
 
 from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.classification.export.classification_exporter import Exporter
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s', level='INFO')
 logger = logging.getLogger(__name__)
 
 
 @monitor_status(name='classification', mode='export')
 def run_export(cfg=None):
     """Export classification model to etlt."""
-    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
+    logger.setLevel(logging.INFO)
     exporter = Exporter(config=cfg)
     exporter.export()
 

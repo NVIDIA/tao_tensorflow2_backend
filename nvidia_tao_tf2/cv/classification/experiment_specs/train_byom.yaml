@@ -1,5 +1,5 @@
 results_dir: '/home/scratch.p3/sean/tlt3_experiments/imagenet/tf2_byom_res18'
-key: nvidia_tlt
+encryption_key: nvidia_tlt
 data_format: 'channels_first'
 data:
   train_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
@@ -24,6 +24,6 @@ train:
   mixup_alpha: 0.2
 model:
   resize_interpolation_method: 'bicubic'
-  arch: 'byom'
+  backbone: 'byom'
   retain_head: False
   byom_model: '/home/projects2_metropolis/tmp/sean/converted_models_classification/mobilenetv3_large_100/mobilenetv3_large_100.tltb'

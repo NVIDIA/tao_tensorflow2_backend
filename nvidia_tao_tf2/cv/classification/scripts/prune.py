@@ -16,13 +16,14 @@ from nvidia_tao_tf2.cv.classification.pruner.pruner import ClassificationPruner
 from nvidia_tao_tf2.cv.classification.utils.helper import encode_eff
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.get_logger().setLevel('ERROR')
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s', level='INFO')
 logger = logging.getLogger(__name__)
 
 
 @monitor_status(name='classification', mode='pruning')
 def run_pruning(cfg):
     """Prune an encrypted Keras model."""
-    logger.setLevel(logging.DEBUG if cfg.verbose else logging.INFO)
+    logger.setLevel(logging.INFO)
     assert cfg.prune.equalization_criterion in \
         ['arithmetic_mean', 'geometric_mean', 'union', 'intersection'], \
         "Equalization criterion are [arithmetic_mean, geometric_mean, union, \
