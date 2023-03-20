@@ -115,9 +115,8 @@ def build_lr_scheduler(lr_config, hvd_size, max_iterations):
     return lrscheduler
 
 
-def get_input_shape(model):
+def get_input_shape(model, data_format):
     """Obtain input shape from a Keras model."""
-    data_format = model.layers[1].data_format
     # Computing shape of input tensor
     image_shape = model.layers[0].input_shape[0][1:4]
     # Setting input shape
@@ -410,7 +409,7 @@ def encode_eff(filepath, eff_model_path, passphrase):
         name=eff_filename,
         description="Artifact from checkpoint",
         filepath=temp_zip_file,
-        encryption=True,
+        encryption=bool(passphrase),
         content_callback=BinaryContentCallback,
     )
     Archive.save_artifact(

@@ -299,7 +299,7 @@ def default_detection_configs():
     h.results_dir = None
     h.freeze_blocks = None
     h.freeze_bn = False
-    h.key = None
+    h.encryption_key = None
     h.qat = False
     return h
 

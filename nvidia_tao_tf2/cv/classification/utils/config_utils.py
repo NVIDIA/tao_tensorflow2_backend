@@ -11,3 +11,10 @@ def spec_checker(cfg):
     assert cfg.model.input_image_depth in [8, 16], "Only 8-bit and 16-bit images are supported"
     assert cfg.model.num_classes > 1, \
         "Number of classes should be greater than 1. Consider adding a background class."
+
+    assert cfg.prune.equalization_criterion in \
+        ['arithmetic_mean', 'geometric_mean', 'union', 'intersection'], \
+        "Equalization criterion are [arithmetic_mean, geometric_mean, union, \
+         intersection]."
+    assert cfg.prune.normalizer in ['L2', 'max'], \
+        "normalizer options are [L2, max]."

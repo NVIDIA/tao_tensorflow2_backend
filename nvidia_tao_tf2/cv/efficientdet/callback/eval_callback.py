@@ -31,7 +31,7 @@ class COCOEvalCallback(tf.keras.callbacks.Callback):
         self.hparams = hparams
         self.ema_opt = None
         self.postpc = EfficientDetPostprocessor(self.hparams)
-        log_dir = os.path.join(hparams['results_dir'], 'eval')
+        log_dir = os.path.join(hparams['results_dir'], 'tb_events', 'eval')
         self.file_writer = tf.summary.create_file_writer(log_dir)
         label_map = label_utils.get_label_map(hparams['eval_label_map'])
         self.evaluator = coco_metric.EvaluationMetric(

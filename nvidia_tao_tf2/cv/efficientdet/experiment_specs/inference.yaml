@@ -1,4 +1,4 @@
-data:
+dataset:
   train_tfrecords:
     - '/home/scratch.p3/yuw/datasets/coco/train-*'
   val_tfrecords:
@@ -15,4 +15,4 @@ inference:
   image_dir: '/home/scratch.p3/yuw/datasets/coco/raw-data/val2017'
   batch_size: 4
 results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp'
-key: 'nvidia_tlt'
+encryption_key: 'nvidia_tlt'

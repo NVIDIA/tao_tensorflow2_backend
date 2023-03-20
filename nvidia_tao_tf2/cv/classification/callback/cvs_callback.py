@@ -24,6 +24,6 @@ class CSVLoggerWithStatus(CSVLogger):
     def on_epoch_end(self, epoch, logs=None):
         """Add metrics to status logger on epoch end."""
         epoch = epoch + 1
+        super().on_epoch_end(epoch, logs)
         for key in self.keys:
             self.s_logger.kpi[key] = float(logs[key])
-        super().on_epoch_end(epoch, logs)

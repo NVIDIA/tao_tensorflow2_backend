@@ -1,4 +1,4 @@
-data:
+dataset:
   train_tfrecords:
     - '/home/scratch.p3/yuw/datasets/coco/train-*'
   val_tfrecords:
@@ -13,12 +13,12 @@ train:
 export:
   # QAT
   # max_batch_size: 4
-  # output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-qat/weights/export/efficientdet-d0_030_int8.onnx'
+  # onnx_file: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-qat/weights/export/efficientdet-d0_030_int8.onnx'
   # model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-qat/weights/efficientdet-d0_030.tlt'
   # engine_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-qat/weights/export/efficientdet-d0_030.int8.engine"
   # nonQAT
   max_batch_size: 8
-  output_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/export/efficientdet-d0_245_b1_int8.onnx'
+  onnx_file: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/export/efficientdet-d0_245_b1_int8.onnx'
   model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/efficientdet-d0_245.tlt'
   engine_file: "/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/export/efficientdet-d0_245_b1.int8.engine"
   data_type: "int8"
@@ -28,4 +28,4 @@ export:
   cal_batches: 10
 data_format: 'channels_last'
 results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp'
-key: 'nvidia_tlt'
+encryption_key: 'nvidia_tlt'

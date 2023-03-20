@@ -15,7 +15,7 @@ import horovod.tensorflow.keras as hvd
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 from nvidia_tao_tf2.common.mlops.utils import init_mlops
-from nvidia_tao_tf2.common.utils import set_random_seed
+from nvidia_tao_tf2.common.utils import set_random_seed, update_results_dir
 
 from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.classification.model.classifier_module import ClassifierModule
@@ -53,7 +53,7 @@ def setup_env(cfg):
     # Create results dir
     if hvd.rank() == 0:
         if not os.path.exists(cfg.results_dir):
-            os.makedirs(cfg.results_dir)
+            os.makedirs(cfg.results_dir, exist_ok=True)
         init_mlops(cfg, name='classification')
 
 
@@ -92,8 +92,8 @@ def load_data(train_data,
     preprocessing_func = partial(
         preprocess_input,
         data_format=cfg.data_format,
-        mode=cfg.data.preprocess_mode,
-        img_mean=list(cfg.data.image_mean),
+        mode=cfg.dataset.preprocess_mode,
+        img_mean=list(cfg.dataset.image_mean),
         color_mode=color_mode,
         img_depth=image_depth)
 
@@ -147,17 +147,17 @@ def run_experiment(cfg):
     spec_checker(cfg)
     # Load augmented data
     train_iterator, val_iterator = load_data(
-        cfg.data.train_dataset_path,
-        cfg.data.val_dataset_path,
+        cfg.dataset.train_dataset_path,
+        cfg.dataset.val_dataset_path,
         cfg=cfg,
         batch_size=cfg.train.batch_size_per_gpu,
-        enable_random_crop=cfg.augment.enable_random_crop,
-        enable_center_crop=cfg.augment.enable_center_crop,
-        enable_color_augmentation=cfg.augment.enable_color_augmentation,
+        enable_random_crop=cfg.dataset.augmentation.enable_random_crop,
+        enable_center_crop=cfg.dataset.augmentation.enable_center_crop,
+        enable_color_augmentation=cfg.dataset.augmentation.enable_color_augmentation,
         interpolation=cfg.model.resize_interpolation_method,
         num_classes=cfg.model.num_classes,
-        mixup_alpha=cfg.augment.mixup_alpha,
-        no_horizontal_flip=cfg.augment.disable_horizontal_flip,
+        mixup_alpha=cfg.dataset.augmentation.mixup_alpha,
+        no_horizontal_flip=cfg.dataset.augmentation.disable_horizontal_flip,
         data_format=cfg.data_format)
 
     # Initialize classifier module
@@ -199,6 +199,7 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for continuous training of classification application."""
+    cfg = update_results_dir(cfg, 'train')
     setup_env(cfg)
     run_experiment(cfg=cfg)
 

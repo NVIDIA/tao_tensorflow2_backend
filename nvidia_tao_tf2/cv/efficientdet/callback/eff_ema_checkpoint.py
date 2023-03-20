@@ -30,7 +30,7 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
 
     def __init__(self,
                  eff_dir: str,
-                 key: str,
+                 encryption_key: str,
                  update_weights: bool,
                  monitor: str = 'val_loss',
                  verbose: int = 0,
@@ -53,7 +53,7 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         self.update_weights = update_weights
         self.ema_opt = None
         self.eff_dir = eff_dir
-        self.passphrase = key
+        self.passphrase = encryption_key
         self.is_qat = is_qat
 
     def set_model(self, model):

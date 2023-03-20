@@ -2,10 +2,6 @@
 
 """TAO common utils used across all apps."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import argparse
 import logging
 import math
@@ -24,6 +20,7 @@ from tensorflow.keras.regularizers import l1, l2
 
 import tensorflow as tf
 from nvidia_tao_tf2.backbones.utils_tf import swish
+logger = logging.getLogger(__name__)
 
 
 ENCRYPTION_OFF = False
@@ -34,6 +31,26 @@ ap_mode_dict = {0: "sample", 1: "integrate"}
 MB = 2 << 20
 
 CUSTOM_OBJS = {'swish': swish}
+
+
+def update_results_dir(cfg, task):
+    """Update global results_dir based on task.results_dir.
+
+    This function should be called at the beginning of a pipeline script.
+
+    Args:
+        cfg (Hydra config): Config object loaded by Hydra
+        task (str): TAO pipeline name
+    Return:
+        Updated cfg
+    """
+    if cfg[task]['results_dir']:
+        cfg.results_dir = cfg[task]['results_dir']
+    else:
+        cfg.results_dir = os.path.join(cfg.results_dir, task)
+        cfg[task]['results_dir'] = cfg.results_dir
+    logger.info(f"{task.capitalize()} results will be saved at: %s", cfg.results_dir)
+    return cfg
 
 
 def set_random_seed(seed):

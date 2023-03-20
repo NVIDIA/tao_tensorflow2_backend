@@ -23,10 +23,7 @@ import pycuda.driver as cuda
 import tensorrt as trt
 
 from nvidia_tao_tf2.cv.efficientdet.exporter.image_batcher import ImageBatcher
-
-logging.basicConfig(level=logging.INFO)
-logging.getLogger("EngineBuilder").setLevel(logging.INFO)
-log = logging.getLogger("EngineBuilder")
+logger = logging.getLogger(__name__)
 
 
 class EngineCalibrator(trt.IInt8EntropyCalibrator2):
@@ -76,12 +73,12 @@ class EngineCalibrator(trt.IInt8EntropyCalibrator2):
             return None
         try:
             batch, _, _ = next(self.batch_generator)
-            log.info("Calibrating image {} / {}".format(   # noqa pylint: disable=C0209
+            logger.info("Calibrating image {} / {}".format(   # noqa pylint: disable=C0209
                 self.image_batcher.image_index, self.image_batcher.num_images))
             cuda.memcpy_htod(self.batch_allocation, np.ascontiguousarray(batch))
             return [int(self.batch_allocation)]
         except StopIteration:
-            log.info("Finished calibration batches")
+            logger.info("Finished calibration batches")
             return None
 
     def read_calibration_cache(self):
@@ -92,7 +89,7 @@ class EngineCalibrator(trt.IInt8EntropyCalibrator2):
         """
         if os.path.exists(self.cache_file):
             with open(self.cache_file, "rb") as f:
-                log.info("Using calibration cache file: {}".format(self.cache_file))   # noqa pylint: disable=C0209
+                logger.info("Using calibration cache file: {}".format(self.cache_file))   # noqa pylint: disable=C0209
                 return f.read()
         return None
 
@@ -103,7 +100,7 @@ class EngineCalibrator(trt.IInt8EntropyCalibrator2):
         :param cache: The contents of the calibration cache to store.
         """
         with open(self.cache_file, "wb") as f:
-            log.info("Writing calibration cache data to: {}".format(self.cache_file))  # noqa pylint: disable=C0209
+            logger.info("Writing calibration cache data to: {}".format(self.cache_file))  # noqa pylint: disable=C0209
             f.write(cache)
 
 
@@ -144,18 +141,18 @@ class EngineBuilder:
         onnx_path = os.path.realpath(onnx_path)
         with open(onnx_path, "rb") as f:
             if not self.parser.parse(f.read()):
-                log.error("Failed to load ONNX file: {}".format(onnx_path))  # noqa pylint: disable=C0209
+                logger.error("Failed to load ONNX file: {}".format(onnx_path))  # noqa pylint: disable=C0209
                 for error in range(self.parser.num_errors):
-                    log.error(self.parser.get_error(error))
+                    logger.error(self.parser.get_error(error))
                 sys.exit(1)
 
         inputs = [self.network.get_input(i) for i in range(self.network.num_inputs)]
 
-        log.info("Network Description")
+        logger.info("Network Description")
         profile = self.builder.create_optimization_profile()
         dynamic_inputs = False
         for inp in inputs:
-            log.info("Input '{}' with shape {} and dtype {}".format(inp.name, inp.shape, inp.dtype))  # noqa pylint: disable=C0209
+            logger.info("Input '{}' with shape {} and dtype {}".format(inp.name, inp.shape, inp.dtype))  # noqa pylint: disable=C0209
             if inp.shape[0] == -1:
                 dynamic_inputs = True
                 if dynamic_batch_size:
@@ -166,12 +163,12 @@ class EngineBuilder:
                     opt_shape = [dynamic_batch_size[1]] + list(inp.shape[1:])
                     max_shape = [dynamic_batch_size[2]] + list(inp.shape[1:])
                     profile.set_shape(inp.name, min_shape, opt_shape, max_shape)
-                    log.info("Input '{}' Optimization Profile with shape MIN {} / OPT {} / MAX {}".format(  # noqa pylint: disable=C0209
+                    logger.info("Input '{}' Optimization Profile with shape MIN {} / OPT {} / MAX {}".format(  # noqa pylint: disable=C0209
                         inp.name, min_shape, opt_shape, max_shape))
                 else:
                     shape = [batch_size] + list(inp.shape[1:])
                     profile.set_shape(inp.name, shape, shape, shape)
-                    log.info("Input '{}' Optimization Profile with shape {}".format(inp.name, shape))  # noqa pylint: disable=C0209
+                    logger.info("Input '{}' Optimization Profile with shape {}".format(inp.name, shape))  # noqa pylint: disable=C0209
         if dynamic_inputs:
             self.config.add_optimization_profile(profile)
 
@@ -191,18 +188,18 @@ class EngineBuilder:
         engine_path = os.path.realpath(engine_path)
         engine_dir = os.path.dirname(engine_path)
         os.makedirs(engine_dir, exist_ok=True)
-        log.debug("Building {} Engine in {}".format(precision, engine_path))  # noqa pylint: disable=C0209
+        logger.debug("Building {} Engine in {}".format(precision, engine_path))  # noqa pylint: disable=C0209
 
         inputs = [self.network.get_input(i) for i in range(self.network.num_inputs)]
 
         if precision == "fp16":
             if not self.builder.platform_has_fast_fp16:
-                log.warning("FP16 is not supported natively on this platform/device")
+                logger.warning("FP16 is not supported natively on this platform/device")
             else:
                 self.config.set_flag(trt.BuilderFlag.FP16)
         elif precision == "int8":
             if not self.builder.platform_has_fast_int8:
-                log.warning("INT8 is not supported natively on this platform/device")
+                logger.warning("INT8 is not supported natively on this platform/device")
             elif self.is_qat:
                 print("Exporting a QAT model...")
                 self.config.set_flag(trt.BuilderFlag.INT8)
@@ -230,5 +227,5 @@ class EngineBuilder:
             del engine
         assert engine_bytes
         with open(engine_path, "wb") as f:
-            log.info("Serializing engine to file: {:}".format(engine_path))  # noqa pylint: disable=C0209
+            logger.info("Serializing engine to file: {:}".format(engine_path))  # noqa pylint: disable=C0209
             f.write(engine_bytes)

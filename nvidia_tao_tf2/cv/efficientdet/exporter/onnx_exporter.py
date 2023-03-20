@@ -31,10 +31,7 @@ from tf2onnx import optimizer, tf_loader, tf_utils, tfonnx
 from tf2onnx.utils import make_sure
 
 from nvidia_tao_tf2.cv.efficientdet.exporter import onnx_utils # noqa pylint: disable=W0611
-
-logging.basicConfig(level=logging.INFO)
-logging.getLogger("EfficientDetGraphSurgeon").setLevel(logging.INFO)
-log = logging.getLogger("EfficientDetGraphSurgeon")
+logger = logging.getLogger(__name__)
 
 
 def get_tf_tensor_data(tensor):
@@ -113,7 +110,7 @@ class EfficientDetGraphSurgeon:
             f"Converted from {saved_model_path}")
         self.graph = gs.import_onnx(onnx_model)
         assert self.graph
-        log.info("TF2ONNX graph created successfully")
+        logger.info("TF2ONNX graph created successfully")
         self.is_qat = is_qat
 
         # Fold constants via ONNX-GS that TF2ONNX may have missed
@@ -345,7 +342,7 @@ class EfficientDetGraphSurgeon:
                          if node.op == "Transpose" and name_scope in node.name]:
                 concat = self.graph.find_descendant_by_op(node, "Concat")
                 assert concat and len(concat.inputs) == 5
-                log.info("Found {} node '{}' as the tip of {}".format(  # noqa pylint: disable=C0209
+                logger.info("Found {} node '{}' as the tip of {}".format(  # noqa pylint: disable=C0209
                     concat.op, concat.name, name_scope))
                 return concat
 
@@ -481,7 +478,7 @@ class EfficientDetGraphSurgeon:
             inputs=nms_inputs,
             outputs=nms_outputs,
             attrs=nms_attrs)
-        log.info("Created NMS plugin '{}' with attributes: {}".format(nms_op, nms_attrs))  # noqa pylint: disable=C0209
+        logger.info("Created NMS plugin '{}' with attributes: {}".format(nms_op, nms_attrs))  # noqa pylint: disable=C0209
 
         self.graph.outputs = nms_outputs
 

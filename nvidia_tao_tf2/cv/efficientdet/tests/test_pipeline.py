@@ -28,9 +28,9 @@ def cfg():
     parent_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     spec_file = os.path.join(parent_dir, 'experiment_specs', 'default.yaml')
     default_cfg = omegaconf.OmegaConf.load(spec_file)
-    default_cfg.data.train_tfrecords = [DATA_DIR + '/val-*']
-    default_cfg.data.val_tfrecords = [DATA_DIR + '/val-*']
-    default_cfg.data.val_json_file = os.path.join(DATA_DIR, "annotations/instances_val2017.json")
+    default_cfg.dataset.train_tfrecords = [DATA_DIR + '/val-*']
+    default_cfg.dataset.val_tfrecords = [DATA_DIR + '/val-*']
+    default_cfg.dataset.val_json_file = os.path.join(DATA_DIR, "annotations/instances_val2017.json")
 
     default_cfg.train.num_examples_per_epoch = 128
     default_cfg.train.checkpoint = ''
@@ -101,11 +101,11 @@ def test_export(amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type,
         f'efficientdet-d0_00{num_epochs}.tlt')
     cfg.export.max_batch_size = max_bs
     cfg.export.dynamic_batch_size = dynamic_bs
-    cfg.export.output_path = os.path.join(
+    cfg.export.onnx_file = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",
-        f'efficientdet-d0_00{num_epochs}.etlt')
+        f'efficientdet-d0_00{num_epochs}.onnx')
     cfg.export.cal_cache_file = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",

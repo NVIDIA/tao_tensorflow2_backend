@@ -17,8 +17,6 @@ from nvidia_tao_tf2.cv.efficientdet.model import optimizer_builder
 from nvidia_tao_tf2.cv.efficientdet.utils import keras_utils
 from nvidia_tao_tf2.cv.efficientdet.utils.helper import decode_eff, dump_json, load_model, load_json_model
 from nvidia_tao_tf2.cv.efficientdet.utils.horovod_utils import is_main_process, get_world_size
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level='INFO')
 logger = logging.getLogger(__name__)
 
 
@@ -86,7 +84,7 @@ class EfficientDetModule(TAOModule):
     def _resume(self, hparams, steps_per_epoch):
         """Resume from checkpoint."""
         if self.resume:
-            ckpt_path, _ = decode_eff(self.resume_ckpt_path, hparams.key)
+            ckpt_path, _ = decode_eff(self.resume_ckpt_path, hparams.encryption_key)
             train_from_epoch = keras_utils.restore_ckpt(
                 self.model,
                 ckpt_path,
@@ -100,7 +98,8 @@ class EfficientDetModule(TAOModule):
         """Load pretrained weights."""
         if is_main_process() and not self.resume:
             if str(hparams.checkpoint).endswith(".tlt"):
-                ckpt_path, ckpt_name = decode_eff(str(hparams.checkpoint), hparams.key)
+                ckpt_path, ckpt_name = decode_eff(
+                    str(hparams.checkpoint), hparams.encryption_key)
             else:
                 ckpt_path = hparams.checkpoint
             if ckpt_path:

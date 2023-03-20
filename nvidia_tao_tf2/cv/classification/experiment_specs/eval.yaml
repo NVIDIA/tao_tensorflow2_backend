@@ -1,5 +1,5 @@
 results_dir: '/home/binz/tao-tf2/results_enb0'
-data:
+dataset:
   train_dataset_path: '/home/binz/tao-tf2/dataset/flower_17/train'
   val_dataset_path: '/home/binz/tao-tf2/dataset/flower_17/validation'
 train:

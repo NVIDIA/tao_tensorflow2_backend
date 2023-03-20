@@ -6,10 +6,10 @@ import os
 import tempfile
 import tensorflow as tf
 
+from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 import nvidia_tao_tf2.common.logging.logging as status_logging
-from nvidia_tao_tf2.common.utils import get_model_file_size
-from nvidia_tao_tf2.common.decorators import monitor_status
+from nvidia_tao_tf2.common.utils import get_model_file_size, update_results_dir
 
 from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.classification.pruner.pruner import ClassificationPruner
@@ -24,13 +24,8 @@ logger = logging.getLogger(__name__)
 def run_pruning(cfg):
     """Prune an encrypted Keras model."""
     logger.setLevel(logging.INFO)
-    assert cfg.prune.equalization_criterion in \
-        ['arithmetic_mean', 'geometric_mean', 'union', 'intersection'], \
-        "Equalization criterion are [arithmetic_mean, geometric_mean, union, \
-         intersection]."
-    assert cfg.prune.normalizer in ['L2', 'max'], \
-        "normalizer options are [L2, max]."
-
+    if not os.path.exists(cfg.results_dir):
+        os.makedirs(cfg.results_dir, exist_ok=True)
     pruner = ClassificationPruner(cfg)
 
     # Pruning trained model
@@ -41,7 +36,11 @@ def run_pruning(cfg):
     # Save the encrypted pruned model
     tmp_saved_model = tempfile.mkdtemp()
     pruned_model.save(tmp_saved_model)
-    encode_eff(tmp_saved_model, cfg.prune.output_path, cfg.key)
+    # Convert to EFF
+    output_path = os.path.join(
+        cfg.prune.results_dir,
+        f'model_th={cfg.prune.threshold}_eq={cfg.prune.equalization_criterion}.tlt')
+    encode_eff(tmp_saved_model, output_path, cfg.encryption_key)
     # Printing out pruned model summary
     logger.info("Model summary of the pruned model:")
     logger.info(pruned_model.summary())
@@ -51,7 +50,7 @@ def run_pruning(cfg):
     status_logging.get_status_logger().kpi.update(
         {'pruning_ratio': float(pruning_ratio),
          'param_count': pruned_model.count_params(),
-         'size': get_model_file_size(cfg.prune.output_path)})
+         'size': get_model_file_size(output_path)})
 
 
 spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -63,6 +62,7 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 def main(cfg: ExperimentConfig) -> None:
     """Wrapper function for classification pruning."""
+    cfg = update_results_dir(cfg, 'prune')
     run_pruning(cfg=cfg)
 
 

@@ -2,6 +2,5 @@ results_dir: '/home/binz/tao-tf2/results_enb0'
 encryption_key: nvidia_tlt
 prune:
   model_path: '/home/binz/tao-tf2/results_enb0/weights/efficientnet-b0_010.tlt'
-  output_path: '/home/binz/tao-tf2/results_enb0/weights/efficientnet-b0_010.prune.tlt'
   threshold: 0.3
   byom_model_path: ''

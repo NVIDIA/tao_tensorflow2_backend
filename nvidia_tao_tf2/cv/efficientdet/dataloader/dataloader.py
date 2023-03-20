@@ -26,8 +26,6 @@ from nvidia_tao_tf2.cv.efficientdet.utils.keras_utils import get_mixed_precision
 
 from nvidia_tao_tf2.cv.core import preprocessor
 from nvidia_tao_tf2.cv.core import tf_example_decoder
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level='INFO')
 logger = logging.getLogger(__name__)
 
 
