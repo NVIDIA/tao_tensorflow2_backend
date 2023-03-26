@@ -2,7 +2,6 @@
 
 """Utils for processing config file to run EfficientDet pipelines."""
 import six
-from nvidia_tao_tf2.cv.efficientdet.utils import model_utils
 
 
 def eval_str(s):
@@ -37,13 +36,12 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         freeze_bn=cfg['model']['freeze_bn'],
         freeze_blocks=cfg['model']['freeze_blocks']
         if cfg['model']['freeze_blocks'] else None,
+        image_size=(cfg['model']['input_height'], cfg['model']['input_width']),
         # data config
         val_json_file=cfg['dataset']['val_json_file'],
         num_classes=cfg['dataset']['num_classes'],
         max_instances_per_image=cfg['dataset']['max_instances_per_image'] or 100,
         skip_crowd_during_training=cfg['dataset']['skip_crowd_during_training'],
-        # Parse image size in case it is in string format. (H, W)
-        image_size=model_utils.parse_image_size(cfg['dataset']['image_size']),
         # Loader config
         shuffle_file=cfg['dataset']['loader']['shuffle_file'],
         shuffle_buffer=cfg['dataset']['loader']['shuffle_buffer'] or 1024,

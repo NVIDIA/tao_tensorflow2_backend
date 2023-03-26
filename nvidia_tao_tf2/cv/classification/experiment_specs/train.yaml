@@ -8,7 +8,7 @@ dataset:
   preprocess_mode: 'caffe'
 train:
   qat: False
-  # pretrained_model_path: '/home/binz/Tao/tao-tf2/results_enb0_16bit_train/weights/efficientnet-b0_004_prune.tlt'
+  # checkpoint: '/home/binz/Tao/tao-tf2/results_enb0_16bit_train/weights/efficientnet-b0_004_prune.tlt'
   batch_size_per_gpu: 128
   num_epochs: 10
   wandb:

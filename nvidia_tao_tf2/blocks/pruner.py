@@ -21,7 +21,7 @@ class Pruner(ABC):
     def __init__(self, cfg) -> None:
         """Initialize."""
         self.cfg = cfg
-        self.model_path = cfg.prune.model_path
+        self.model_path = cfg.prune.checkpoint
         self.key = cfg.encryption_key
         self.normalizer = cfg.prune.normalizer
         self.criterion = 'L2'

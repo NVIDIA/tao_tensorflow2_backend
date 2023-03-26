@@ -9,7 +9,7 @@ def spec_checker(cfg):
     assert cfg.model.input_height >= 16, "Image height should be greater than 15 pixels."
     assert cfg.model.input_width >= 16, "Image width should be greater than 15 pixels."
     assert cfg.model.input_image_depth in [8, 16], "Only 8-bit and 16-bit images are supported"
-    assert cfg.model.num_classes > 1, \
+    assert cfg.dataset.num_classes > 1, \
         "Number of classes should be greater than 1. Consider adding a background class."
 
     assert cfg.prune.equalization_criterion in \

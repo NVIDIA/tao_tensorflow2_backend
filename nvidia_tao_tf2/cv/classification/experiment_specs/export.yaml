@@ -1,5 +1,5 @@
 export:
-  model_path: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.tlt'
+  checkpoint: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.tlt'
   output_path: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.onnx'
   data_type: 'fp16'
 encryption_key: 'nvidia_tlt'

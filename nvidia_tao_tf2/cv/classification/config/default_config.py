@@ -60,7 +60,7 @@ class TrainConfig:
     """Train config."""
 
     qat: bool = True
-    pretrained_model_path: str = ''
+    checkpoint: str = ''
     checkpoint_interval: int = 1
     batch_size_per_gpu: int = 64
     num_epochs: int = 100
@@ -102,6 +102,7 @@ class DataConfig:
     preprocess_mode: str = 'caffe'
     image_mean: List[float] = field(default_factory=lambda: [103.939, 116.779, 123.68])
     augmentation: AugmentConfig = AugmentConfig()
+    num_classes: int = MISSING
 
 
 @dataclass
@@ -113,7 +114,6 @@ class ModelConfig:
     input_height: int = 224
     input_channels: int = 3
     input_image_depth: int = 8
-    num_classes: int = MISSING
     use_batch_norm: bool = True
     use_bias: bool = False
     use_pooling: bool = True
@@ -132,7 +132,7 @@ class EvalConfig:
     """Eval config."""
 
     dataset_path: str = MISSING
-    model_path: str = MISSING
+    checkpoint: str = MISSING
     batch_size: int = 64
     n_workers: int = 64
     top_k: int = 3
@@ -144,7 +144,7 @@ class EvalConfig:
 class ExportConfig:
     """Export config."""
 
-    model_path: str = ''
+    checkpoint: str = MISSING
     onnx_file: str = MISSING
     data_type: str = "fp32"
     engine_file: str = ""
@@ -164,7 +164,7 @@ class ExportConfig:
 class InferConfig:
     """Inference config."""
 
-    model_path: str = MISSING
+    checkpoint: str = MISSING
     image_dir: str = MISSING
     classmap: str = MISSING
     results_dir: Optional[str] = None
@@ -174,7 +174,7 @@ class InferConfig:
 class PruneConfig:
     """Pruning config."""
 
-    model_path: str = MISSING
+    checkpoint: str = MISSING
     byom_model_path: Optional[str] = None
     normalizer: str = 'max'
     results_dir: Optional[str] = None

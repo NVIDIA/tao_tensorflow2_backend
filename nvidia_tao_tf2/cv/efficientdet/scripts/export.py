@@ -41,7 +41,7 @@ def run_export(cfg):
     tf.keras.backend.set_learning_phase(0)
 
     # Load model from graph json
-    model = helper.load_model(cfg.export.model_path, cfg, MODE, is_qat=cfg.train.qat)
+    model = helper.load_model(cfg.export.checkpoint, cfg, MODE, is_qat=cfg.train.qat)
     model.summary()
     # Get input shape from model
     input_shape = list(model.layers[0].input_shape[0])

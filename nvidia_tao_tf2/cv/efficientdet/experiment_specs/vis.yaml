@@ -18,6 +18,6 @@ train:
 evaluate:
   batch_size: 16
   num_samples: 5000
-  model_path: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/efficientdet-d0_245.tlt'
+  checkpoint: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/efficientdet-d0_245.tlt'
 results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0'
 encryption_key: 'nvidia_tlt'

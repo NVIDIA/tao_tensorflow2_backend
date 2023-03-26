@@ -155,7 +155,7 @@ def run_experiment(cfg):
         enable_center_crop=cfg.dataset.augmentation.enable_center_crop,
         enable_color_augmentation=cfg.dataset.augmentation.enable_color_augmentation,
         interpolation=cfg.model.resize_interpolation_method,
-        num_classes=cfg.model.num_classes,
+        num_classes=cfg.dataset.num_classes,
         mixup_alpha=cfg.dataset.augmentation.mixup_alpha,
         no_horizontal_flip=cfg.dataset.augmentation.disable_horizontal_flip,
         data_format=cfg.data_format)

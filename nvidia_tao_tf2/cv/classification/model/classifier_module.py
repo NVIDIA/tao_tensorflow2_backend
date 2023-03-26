@@ -71,7 +71,7 @@ class ClassifierModule(TAOModule):
             backbone=cfg['model']['backbone'],
             input_shape=input_shape,
             data_format=cfg['data_format'],
-            nclasses=cfg['model']['num_classes'],
+            nclasses=cfg['dataset']['num_classes'],
             retain_head=cfg['model']['retain_head'],
             freeze_blocks=cfg['model']['freeze_blocks'],
             **ka)
@@ -117,7 +117,7 @@ class ClassifierModule(TAOModule):
 
     def _load_pretrained_weights(self, ckpt_path, cfg):
         """Load pretrained weights."""
-        ckpt_path = ckpt_path or cfg.train.pretrained_model_path
+        ckpt_path = ckpt_path or cfg.train.checkpoint
         if ckpt_path:
             if hvd.rank() == 0:
                 logger.info("Loading pretrained model from %s", ckpt_path)

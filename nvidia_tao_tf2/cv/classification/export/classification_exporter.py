@@ -48,12 +48,9 @@ class Exporter:
         self.min_batch_size = min_batch_size
         self.opt_batch_size = opt_batch_size
 
-        if not self.config.encryption_key:
-            self._saved_model = self.config.export.model_path
-        else:
-            self._saved_model = decode_eff(
-                str(self.config.export.model_path),
-                self.config.encryption_key)
+        self._saved_model = decode_eff(
+            str(self.config.export.checkpoint),
+            self.config.encryption_key)
         _handle, self.tmp_onnx = tempfile.mkstemp(suffix='onnx')
         os.close(_handle)
 

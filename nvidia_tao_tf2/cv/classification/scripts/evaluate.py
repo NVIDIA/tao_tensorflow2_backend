@@ -39,7 +39,7 @@ def run_evaluate(cfg):
         os.makedirs(cfg.results_dir, exist_ok=True)
     # Decrypt EFF
     final_model = load_model(
-        str(cfg.evaluate.model_path),
+        str(cfg.evaluate.checkpoint),
         cfg.encryption_key)
 
     # Defining optimizer
