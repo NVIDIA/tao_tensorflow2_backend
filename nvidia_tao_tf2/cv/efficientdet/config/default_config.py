@@ -88,6 +88,8 @@ class ModelConfig:
     num_scales: int = 3
     freeze_bn: bool = False
     freeze_blocks: List[int] = field(default_factory=lambda: [])
+    input_width: int = 512
+    input_height: int = 512
 
 
 @dataclass
@@ -114,7 +116,6 @@ class DataConfig:
     max_instances_per_image: int = 200
     skip_crowd_during_training: bool = True
     use_fake_data: bool = False
-    image_size: str = '512x512'
     loader: LoaderConfig = LoaderConfig()
     augmentation: AugmentationConfig = AugmentationConfig()
 
@@ -128,7 +129,7 @@ class EvalConfig:
     max_detections_per_image: int = 100
     label_map: str = ''
     max_nms_inputs: int = 5000
-    model_path: str = ''
+    checkpoint: str = ''
     start_eval_epoch: int = 1
     sigma: float = 0.5
     results_dir: Optional[str] = None
@@ -141,7 +142,7 @@ class ExportConfig:
     max_batch_size: int = 8
     dynamic_batch_size: bool = True
     min_score_thresh: float = 0.01
-    model_path: str = MISSING
+    checkpoint: str = MISSING
     onnx_file: str = MISSING
     engine_file: str = ""
     data_type: str = "fp32"
@@ -157,7 +158,7 @@ class ExportConfig:
 class InferenceConfig:
     """Inference config."""
 
-    model_path: str = MISSING
+    checkpoint: str = MISSING
     image_dir: str = MISSING
     results_dir: Optional[str] = None
     dump_label: bool = False
@@ -171,7 +172,7 @@ class InferenceConfig:
 class PruneConfig:
     """Pruning config."""
 
-    model_path: str = MISSING
+    checkpoint: str = MISSING
     normalizer: str = 'max'
     results_dir: Optional[str] = None
     equalization_criterion: str = 'union'

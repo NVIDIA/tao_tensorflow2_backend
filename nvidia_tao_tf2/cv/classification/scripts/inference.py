@@ -45,7 +45,7 @@ def run_inference(cfg):
     if cfg.dataset.augmentation.enable_center_crop:
         interpolation += ":center"
     inferencer = KerasInferencer(
-        cfg.inference.model_path,
+        cfg.inference.checkpoint,
         key=cfg.encryption_key,
         img_mean=list(cfg.dataset.image_mean),
         preprocess_mode=cfg.dataset.preprocess_mode,

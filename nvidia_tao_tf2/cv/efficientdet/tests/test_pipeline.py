@@ -71,7 +71,7 @@ def test_eval(amp, qat, batch_size, num_epochs, cfg):
     cfg.train.amp = amp
     cfg.train.qat = qat
 
-    cfg.evaluate.model_path = os.path.join(
+    cfg.evaluate.checkpoint = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",
@@ -94,7 +94,7 @@ def test_export(amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type,
     cfg.train.qat = qat
 
     cfg.export.data_type = data_type
-    cfg.export.model_path = os.path.join(
+    cfg.export.checkpoint = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",
@@ -136,7 +136,7 @@ def test_infer(amp, qat, batch_size, num_epochs, cfg):
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         'infer_output')
-    cfg.inference.model_path = os.path.join(
+    cfg.inference.checkpoint = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",
@@ -150,7 +150,7 @@ def test_prune(amp, qat, batch_size, num_epochs, cfg):
     cfg.train.num_epochs = num_epochs
     cfg.train.amp = amp
     cfg.train.qat = qat
-    cfg.prune.model_path = os.path.join(
+    cfg.prune.checkpoint = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",

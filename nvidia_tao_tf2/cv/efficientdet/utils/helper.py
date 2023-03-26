@@ -91,7 +91,7 @@ def load_model(eff_model_path, hparams, mode='train', is_qat=False):
     keras_utils.restore_ckpt(
         model,
         os.path.join(ckpt_path, ckpt_name),
-        hparams.train.moving_average_decay,
+        hparams.get('moving_average_decay', None) or hparams.train.moving_average_decay,
         steps_per_epoch=0,
         expect_partial=True)
     return model
@@ -178,7 +178,7 @@ def encode_eff(filepath, eff_model_path, passphrase, is_pruned=False):
         is_pruned=is_pruned,
         description="Artifact from checkpoint",
         filepath=temp_zip_file,
-        encryption=True,
+        encryption=bool(passphrase),
         content_callback=BinaryContentCallback,
     )
     Archive.save_artifact(

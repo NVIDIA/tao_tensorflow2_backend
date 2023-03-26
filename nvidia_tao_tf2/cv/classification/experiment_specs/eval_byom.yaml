@@ -4,12 +4,12 @@ dataset:
   val_dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
   preprocess_mode: 'torch'
 train:
-  pretrained_model_path: ''
+  checkpoint: ''
   batch_size_per_gpu: 64
   num_epochs: 80
 evaluate:
   dataset_path: '/home/projects2_metropolis/datasets/public/imagenet2012/val_yuw'
-  model_path: '/home/projects2_metropolis/tmp/sean/converted_models_classification/convnext_tiny/convnext_tiny.tltb'
+  checkpoint: '/home/projects2_metropolis/tmp/sean/converted_models_classification/convnext_tiny/convnext_tiny.tltb'
   top_k: 1
   batch_size: 64
   n_workers: 10

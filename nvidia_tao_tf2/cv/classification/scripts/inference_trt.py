@@ -31,7 +31,7 @@ def run_inference(cfg):
     # set backend
     # initialize()
     predictions = []
-    inferencer = TRTInferencer(cfg['inference']['model_path'], batch_size=1,
+    inferencer = TRTInferencer(cfg['inference']['checkpoint'], batch_size=1,
                                data_format=cfg['data_format'],
                                img_depth=cfg['model']['input_image_depth'])
 

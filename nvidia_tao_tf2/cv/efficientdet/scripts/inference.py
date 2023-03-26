@@ -64,8 +64,8 @@ def infer_tlt(cfg):
             label_id_mapping = get_label_dict(cfg.inference.label_map)
 
     # Load model from graph json
-    logger.info('Loading model from: %s', cfg.inference.model_path)
-    model = helper.load_model(cfg.inference.model_path, cfg, MODE, is_qat=cfg.train.qat)
+    logger.info('Loading model from: %s', cfg.inference.checkpoint)
+    model = helper.load_model(cfg.inference.checkpoint, cfg, MODE, is_qat=cfg.train.qat)
     infer_model = inference.InferenceModel(model, config.image_size, params,
                                            cfg.inference.batch_size,
                                            label_id_mapping=label_id_mapping,

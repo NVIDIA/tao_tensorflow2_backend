@@ -31,16 +31,17 @@ def cfg():
 
 
 @pytest.mark.parametrize(
-    "model_name, input_size, expected",
-    [('efficientdet-d0', '512x512', 3880652),
-     ('efficientdet-d0', '511x513', 3880652),
-     ('efficientdet-d1', '128x512', 6626699),
-     ('efficientdet-d2', '512x512', 8098056),
-     ('efficientdet-d3', '256x512', 12033745),
-     ('efficientdet-d4', '512x256', 20725700),
-     ('efficientdet-d5', '512x128', 33655916),])
-def test_arch(model_name, input_size, expected, cfg):
-    cfg.dataset.image_size = input_size
+    "model_name, input_height, input_width, expected",
+    [('efficientdet-d0', 512, 512, 3880652),
+     ('efficientdet-d0', 511, 513, 3880652),
+     ('efficientdet-d1', 128, 512, 6626699),
+     ('efficientdet-d2', 512, 512, 8098056),
+     ('efficientdet-d3', 256, 512, 12033745),
+     ('efficientdet-d4', 512, 256, 20725700),
+     ('efficientdet-d5', 512, 128, 33655916),])
+def test_arch(model_name, input_height, input_width, expected, cfg):
+    cfg.model.input_height = input_height
+    cfg.model.input_width = input_width
     cfg.model.name = model_name
     config = hparams_config.get_efficientdet_config(model_name)
     config.update(generate_params_from_cfg(config, cfg, mode='train'))
@@ -51,16 +52,17 @@ def test_arch(model_name, input_size, expected, cfg):
 
 
 @pytest.mark.parametrize(
-    "model_name, input_size",
-    [('efficientdet-d0', '512x512',),
-     ('efficientdet-d0', '512x128',),
-     ('efficientdet-d1', '128x512',),
-     ('efficientdet-d2', '512x512',),
-     ('efficientdet-d3', '256x512',),
-     ('efficientdet-d4', '512x256',),
-     ('efficientdet-d5', '512x128',),])
-def test_backbone(model_name, input_size, cfg):
-    cfg.dataset.image_size = input_size
+    "model_name, input_height, input_width",
+    [('efficientdet-d0', 512, 512,),
+     ('efficientdet-d0', 512, 128,),
+     ('efficientdet-d1', 128, 512,),
+     ('efficientdet-d2', 512, 512,),
+     ('efficientdet-d3', 256, 512,),
+     ('efficientdet-d4', 512, 256,),
+     ('efficientdet-d5', 512, 128,),])
+def test_backbone(model_name, input_height, input_width, cfg):
+    cfg.model.input_height = input_height
+    cfg.model.input_width = input_width
     cfg.model.name = model_name
     config = hparams_config.get_efficientdet_config(model_name)
     config.update(generate_params_from_cfg(config, cfg, mode='train'))
