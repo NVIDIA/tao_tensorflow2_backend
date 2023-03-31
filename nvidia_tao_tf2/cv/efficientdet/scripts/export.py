@@ -45,7 +45,7 @@ def run_export(cfg):
     model.summary()
     # Get input shape from model
     input_shape = list(model.layers[0].input_shape[0])
-    max_batch_size = 1 if cfg.export.dynamic_batch_size else cfg.export.max_batch_size
+    max_batch_size = 1 if cfg.export.dynamic_batch_size else cfg.export.batch_size
     input_shape[0] = max_batch_size
     # Build inference model
     export_model = inference.InferenceModel(

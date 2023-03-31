@@ -1,5 +1,4 @@
 export:
   checkpoint: '/home/scratch.p3/sean/tlt3_experiments/imagenet/tf2_byom_res18/weights/model_2_001.tlt'
-  output_path: '/home/scratch.p3/sean/tlt3_experiments/imagenet/tf2_byom_res18/weights/model_2_001.onnx'
-  data_type: 'fp16'
+  onnx_file: '/home/scratch.p3/sean/tlt3_experiments/imagenet/tf2_byom_res18/weights/model_2_001.onnx'
 encryption_key: 'nvidia_tlt'

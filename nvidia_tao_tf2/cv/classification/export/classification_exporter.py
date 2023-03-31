@@ -31,17 +31,6 @@ class Exporter:
                  **kwargs):
         """Initialize the classification exporter."""
         self.config = config
-        if config.export.data_type == "int8":
-            self._dtype = trt.DataType.INT8
-        elif config.export.data_type == "fp16":
-            self._dtype = trt.DataType.HALF
-        elif config.export.data_type == "fp32":
-            self._dtype = trt.DataType.FLOAT
-        else:
-            raise ValueError(f"Unsupported data type: {self._dtype}")
-
-        if config.train.qat and config.export.data_type != "int8":
-            raise ValueError("QAT only supports int8 export")
         self.backend = "onnx"
         self.input_shape = None
         self.max_batch_size = max_batch_size
@@ -100,66 +89,6 @@ class Exporter:
         utils.save_protobuf(onnx_path, model_proto)
         logger.info("ONNX conversion completed.")
 
-    def export_engine(self, verbose=True) -> None:
-        """Parse the model file through TensorRT and build TRT engine."""
-        # Create builder and network
-        if verbose:
-            TRT_LOGGER = trt.Logger(trt.Logger.VERBOSE)
-        else:
-            TRT_LOGGER = trt.Logger(trt.Logger.INFO)
-
-        network_flags = 1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
-        network_flags = network_flags | (
-            1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_PRECISION)
-        )
-
-        with trt.Builder(TRT_LOGGER) as builder, builder.create_network(
-                flags=network_flags
-        ) as network, trt.OnnxParser(network, TRT_LOGGER) as parser:
-            with open(self.config.export.onnx_file, "rb") as model:
-                if not parser.parse(model.read()):
-                    print("ERROR: Failed to parse the ONNX file.")
-                    for error in range(parser.num_errors):
-                        print(parser.get_error(error))
-                    return None
-                print("Parsed ONNX model successfully")
-
-            config = builder.create_builder_config()
-            config.max_workspace_size = 1 << 30
-            builder.max_batch_size = self.max_batch_size
-            if TRT_MAJOR >= 8.2:
-                config.profiling_verbosity = trt.ProfilingVerbosity.DETAILED
-            else:
-                config.profiling_verbosity = trt.ProfilingVerbosity.VERBOSE
-
-            if self._dtype == trt.DataType.HALF:
-                config.set_flag(trt.BuilderFlag.FP16)
-
-            if self._dtype == trt.DataType.INT8:
-                config.set_flag(trt.BuilderFlag.INT8)
-            # config.flags = config.flags | 1 << int(trt.BuilderFlag.INT8)
-            # Setting the (min, opt, max) batch sizes to be (1, 4, 8).
-            #   The users need to configure this according to their requirements.
-            config.add_optimization_profile(
-                self._build_profile(
-                    builder,
-                    network,
-                    profile_shapes={
-                        "Input": [(self.min_batch_size,) + self.input_shape,
-                                  (self.opt_batch_size,) + self.input_shape,
-                                  (self.max_batch_size,) + self.input_shape]
-                    },
-                )
-            )
-            trt_engine = builder.build_engine(network, config)  # build_serialized_network
-            if not trt_engine:
-                logger.info("TensorRT engine failed.")
-            if self.config.export.save_engine:
-                engine_path = self.config.export.onnx_file + f'.{self.config.export.data_type}.engine'
-                with open(engine_path, "wb") as engine_file:
-                    engine_file.write(trt_engine.serialize())
-            return None
-
     def _del(self):
         """Remove temp files."""
         shutil.rmtree(self._saved_model)
@@ -169,7 +98,6 @@ class Exporter:
         self._set_input_shape()
         self.export_onnx()
         logger.info("The etlt model is saved at %s", self.config.export.onnx_file)
-        # INTERNAL only: self.export_engine()
         self._del()
 
     def _build_profile(self, builder, network, profile_shapes, default_shape_value=1):
