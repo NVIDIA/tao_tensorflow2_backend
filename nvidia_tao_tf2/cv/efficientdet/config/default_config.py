@@ -139,19 +139,44 @@ class EvalConfig:
 class ExportConfig:
     """Export config."""
 
-    max_batch_size: int = 8
+    batch_size: int = 8
     dynamic_batch_size: bool = True
     min_score_thresh: float = 0.01
     checkpoint: str = MISSING
     onnx_file: str = MISSING
-    engine_file: str = ""
-    data_type: str = "fp32"
-    max_workspace_size: int = 2  # in Gb
+    results_dir: Optional[str] = None
+
+
+@dataclass
+class CalibrationConfig:
+    """Calibration config."""
+
     cal_image_dir: str = ""
     cal_cache_file: str = ""
-    cal_batch_size: int = 16
-    cal_batches: int = 10
+    cal_batch_size: int = 1
+    cal_batches: int = 1
+
+
+@dataclass
+class TrtConfig:
+    """Trt config."""
+
+    data_type: str = "fp32"
+    max_workspace_size: int = 2  # in Gb
+    min_batch_size: int = 1
+    opt_batch_size: int = 1
+    max_batch_size: int = 1
+    calibration: CalibrationConfig = CalibrationConfig()
+
+
+@dataclass
+class GenTrtEngineConfig:
+    """Gen TRT Engine experiment config."""
+
     results_dir: Optional[str] = None
+    onnx_file: str = MISSING
+    trt_engine: Optional[str] = None
+    tensorrt: TrtConfig = TrtConfig()
 
 
 @dataclass

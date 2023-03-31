@@ -74,18 +74,11 @@ evaluate:
   start_eval_epoch: 1
   results_dir: ''
 export:
-  max_batch_size: 8
+  batch_size: 8
   dynamic_batch_size: True
   min_score_thresh: 0.3
   checkpoint: ""
   onnx_file: ""
-  engine_file: ""
-  data_type: "fp32"
-  max_workspace_size: 2  # in Gb
-  cal_image_dir: ""
-  cal_cache_file: ""
-  cal_batch_size: 16
-  cal_batches: 10
   results_dir: ''
 inference:
   checkpoint: ""

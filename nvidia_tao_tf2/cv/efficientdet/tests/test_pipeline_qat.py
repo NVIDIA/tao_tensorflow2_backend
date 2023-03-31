@@ -94,30 +94,18 @@ def test_export(amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type,
     cfg.train.amp = amp
     cfg.train.qat = qat
 
-    cfg.export.data_type = data_type
     cfg.export.checkpoint = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",
         f'efficientdet-d0_00{num_epochs}.tlt')
-    cfg.export.max_batch_size = max_bs
+    cfg.export.batch_size = max_bs
     cfg.export.dynamic_batch_size = dynamic_bs
     cfg.export.onnx_file = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         "weights",
         f'efficientdet-d0_00{num_epochs}.onnx')
-    cfg.export.cal_cache_file = os.path.join(
-        TMP_MODEL_DIR,
-        f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
-        "weights",
-        f'efficientdet-d0_00{num_epochs}.cal')
-    cfg.export.engine_file = os.path.join(
-        TMP_MODEL_DIR,
-        f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
-        "weights",
-        f'efficientdet-d0_00{num_epochs}.engine')
-    cfg.export.cal_image_dir = os.path.join(DATA_DIR, "raw-data", "test2017")
 
     run_export(cfg)
     tf.keras.backend.clear_session()
