@@ -74,7 +74,6 @@ def test_eval(amp, qat, batch_size, num_epochs, cfg):
     cfg.evaluate.checkpoint = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
-        "weights",
         f'efficientdet-d0_00{num_epochs}.tlt')
     cfg.evaluate.batch_size = batch_size
     run_evaluate(cfg)
@@ -96,14 +95,12 @@ def test_export(amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type,
     cfg.export.checkpoint = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
-        "weights",
         f'efficientdet-d0_00{num_epochs}.tlt')
     cfg.export.batch_size = max_bs
     cfg.export.dynamic_batch_size = dynamic_bs
     cfg.export.onnx_file = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
-        "weights",
         f'efficientdet-d0_00{num_epochs}.onnx')
 
     run_export(cfg)
@@ -127,7 +124,6 @@ def test_infer(amp, qat, batch_size, num_epochs, cfg):
     cfg.inference.checkpoint = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
-        "weights",
         f'efficientdet-d0_00{num_epochs}.tlt')
     infer_tlt(cfg)
 
@@ -141,11 +137,9 @@ def test_prune(amp, qat, batch_size, num_epochs, cfg):
     cfg.prune.checkpoint = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
-        "weights",
         f'efficientdet-d0_00{num_epochs}.tlt')
     cfg.prune.output_path = os.path.join(
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
-        "weights",
         f'efficientdet-d0_00{num_epochs}_pruned.tlt')
     run_pruning(cfg)

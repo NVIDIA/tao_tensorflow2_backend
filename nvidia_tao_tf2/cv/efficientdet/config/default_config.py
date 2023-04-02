@@ -130,6 +130,7 @@ class EvalConfig:
     label_map: str = ''
     max_nms_inputs: int = 5000
     checkpoint: str = ''
+    trt_engine: Optional[str] = None
     start_eval_epoch: int = 1
     sigma: float = 0.5
     results_dir: Optional[str] = None
@@ -184,6 +185,7 @@ class InferenceConfig:
     """Inference config."""
 
     checkpoint: str = MISSING
+    trt_engine: Optional[str] = None
     image_dir: str = MISSING
     results_dir: Optional[str] = None
     dump_label: bool = False
@@ -231,6 +233,7 @@ class ExperimentConfig:
     inference: InferenceConfig = InferenceConfig()
     prune: PruneConfig = PruneConfig()
     dataset_convert: DatasetConvertConfig = DatasetConvertConfig()
+    gen_trt_engine: GenTrtEngineConfig = GenTrtEngineConfig()
     encryption_key: Optional[str] = None
     data_format: str = 'channels_last'
     results_dir: str = MISSING

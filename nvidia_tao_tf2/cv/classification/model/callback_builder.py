@@ -36,7 +36,7 @@ def setup_callbacks(ckpt_freq, results_dir, lr_config,
 
     if hvd.rank() == 0:
         # Set up the checkpointer.
-        save_weights_dir = os.path.join(results_dir, 'weights')
+        save_weights_dir = results_dir  # no longer in `weights` dir
         if not os.path.exists(results_dir):
             os.mkdir(results_dir)
         if not os.path.exists(save_weights_dir):

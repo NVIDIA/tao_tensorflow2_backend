@@ -137,7 +137,8 @@ def load_data(train_data,
 
     # Check if the number of classes is consistent
     assert train_iterator.num_classes == val_iterator.num_classes == num_classes, \
-        "Number of classes in train and val don't match."
+        f"The number of classes in the training set ({train_iterator.num_classes})" + \
+        f"or validation set ({val_iterator.num_classes}) doesn't match num_classes ({num_classes})."
     return train_iterator, val_iterator
 
 
