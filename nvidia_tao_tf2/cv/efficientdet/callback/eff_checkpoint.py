@@ -65,8 +65,8 @@ class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
                 eff_filename = f'{self.model.name}_{eff_epoch:03d}.tlt'
             # WORKAROUND to save QAT graph
             if self.is_qat:
-                shutil.copy(os.path.join(os.path.dirname(self.eff_dir), 'train_graph.json'), checkpoint_dir)
-                shutil.copy(os.path.join(os.path.dirname(self.eff_dir), 'eval_graph.json'), checkpoint_dir)
+                shutil.copy(os.path.join(self.eff_dir, 'train_graph.json'), checkpoint_dir)
+                shutil.copy(os.path.join(self.eff_dir, 'eval_graph.json'), checkpoint_dir)
             else:
                 # save train/eval graph json to checkpoint_dir
                 dump_json(self.model, os.path.join(checkpoint_dir, 'train_graph.json'))

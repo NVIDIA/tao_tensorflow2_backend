@@ -360,8 +360,6 @@ def load_model(model_path, passphrase=None):
         Keras model: Loaded model
     """
     assert os.path.exists(model_path), f"Pretrained model not found at {model_path}"
-    assert os.path.splitext(model_path)[-1] in ['.hdf5', '.tlt', '.tltb'], \
-        "Only .hdf5, .tlt, .tltb are supported."
     if model_path.endswith('.tlt'):
         model_path = decode_eff(model_path, passphrase)
         return tf.keras.models.load_model(model_path)

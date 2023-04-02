@@ -70,6 +70,7 @@ evaluate:
   label_map: ''
   max_nms_inputs: 5000
   checkpoint: ''
+  trt_engine: ''
   sigma: 0.5
   start_eval_epoch: 1
   results_dir: ''
@@ -82,6 +83,7 @@ export:
   results_dir: ''
 inference:
   checkpoint: ""
+  trt_engine: ""
   image_dir: ""
   output_dir: ""
   dump_label: False
@@ -100,6 +102,21 @@ prune:
   min_num_filters: 16
   excluded_layers: []
   results_dir: ''
+gen_trt_engine:
+  results_dir: ''
+  onnx_file: ''
+  trt_engine: ''
+  tensorrt:
+    data_type: "fp32"
+    max_workspace_size: 2  # in Gb
+    min_batch_size: 1
+    opt_batch_size: 1
+    max_batch_size: 1
+    calibration:
+      cal_image_dir: ""
+      cal_cache_file: ""
+      cal_batch_size: 1
+      cal_batches: 1
 encryption_key: 'nvidia_tlt'
 data_format: 'channels_last'
 results_dir: '/tmp/'

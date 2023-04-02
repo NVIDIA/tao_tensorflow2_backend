@@ -30,7 +30,7 @@ class ClassifierModule(TAOModule):
         self.model = self._build_models(cfg)
 
         self.initial_epoch, ckpt_path = self._get_latest_checkpoint(
-            os.path.join(cfg.results_dir, 'weights'), self.model.name)
+            cfg.results_dir, self.model.name)
 
         self._load_pretrained_weights(ckpt_path, cfg)
 

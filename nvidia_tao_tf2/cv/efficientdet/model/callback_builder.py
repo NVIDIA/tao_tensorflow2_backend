@@ -26,7 +26,7 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
             profile_batch=0, histogram_freq=1)
         callbacks.append(tb_callback)
         # set up checkpointing callbacks
-        ckpt_dir = os.path.join(hparams['results_dir'], 'weights')
+        ckpt_dir = hparams['results_dir']  # no longer in `weights` dir
         if not os.path.exists(ckpt_dir):
             os.makedirs(ckpt_dir, exist_ok=True)
         if hparams['moving_average_decay'] > 0:

@@ -133,6 +133,7 @@ class EvalConfig:
 
     dataset_path: str = MISSING
     checkpoint: str = MISSING
+    trt_engine: Optional[str] = None
     batch_size: int = 64
     n_workers: int = 64
     top_k: int = 3
@@ -157,6 +158,7 @@ class CalibrationConfig:
     cal_cache_file: str = ""
     cal_batch_size: int = 1
     cal_batches: int = 1
+    cal_data_file: str = ""
 
 
 @dataclass
@@ -186,6 +188,7 @@ class InferConfig:
     """Inference config."""
 
     checkpoint: str = MISSING
+    trt_engine: Optional[str] = None
     image_dir: str = MISSING
     classmap: str = MISSING
     results_dir: Optional[str] = None
@@ -217,6 +220,7 @@ class ExperimentConfig:
     export: ExportConfig = ExportConfig()
     inference: InferConfig = InferConfig()
     prune: PruneConfig = PruneConfig()
+    gen_trt_engine: GenTrtEngineConfig = GenTrtEngineConfig()
     results_dir: str = MISSING
     encryption_key: Optional[str] = None
     data_format: str = 'channels_first'
