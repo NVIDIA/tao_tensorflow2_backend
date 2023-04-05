@@ -215,7 +215,7 @@ class DatasetConvertConfig:
 
     image_dir: str = MISSING
     annotations_file: str = MISSING
-    results_dir: str = MISSING
+    results_dir: Optional[str] = None
     tag: str = ''
     num_shards: int = 256
     include_masks: bool = False

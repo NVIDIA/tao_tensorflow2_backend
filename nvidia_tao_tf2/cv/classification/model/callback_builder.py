@@ -8,7 +8,7 @@ from wandb.keras import WandbCallback
 from tensorflow.keras.callbacks import TensorBoard
 
 from nvidia_tao_tf2.common.mlops.wandb import is_wandb_initialized
-from nvidia_tao_tf2.cv.classification.callback.cvs_callback import CSVLoggerWithStatus
+from nvidia_tao_tf2.cv.classification.callback.csv_callback import CSVLoggerWithStatus
 from nvidia_tao_tf2.cv.classification.callback.eff_checkpoint import EffCheckpoint
 from nvidia_tao_tf2.cv.classification.utils.helper import build_lr_scheduler
 

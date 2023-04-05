@@ -19,8 +19,9 @@ from nvidia_tao_tf2.common.dataset import label_map_util
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 import nvidia_tao_tf2.common.logging.logging as status_logging
+from nvidia_tao_tf2.common.utils import update_results_dir
 
-from nvidia_tao_tf2.cv.efficientdet.config.default_config import DatasetConvertConfig
+from nvidia_tao_tf2.cv.efficientdet.config.default_config import ExperimentConfig
 
 
 def create_tf_example(image,
@@ -296,21 +297,20 @@ def _create_tf_record_from_coco_annotations(object_annotations_file,
 def run_conversion(cfg):
     """Run data conversion."""
     # config output files
-    results_dir = cfg.results_dir
-    if not os.path.exists(results_dir):
-        os.makedirs(results_dir, exist_ok=True)
-    tag = cfg.tag or os.path.splitext(os.path.basename(cfg.annotations_file))[0]
-    output_path = os.path.join(results_dir, tag)
+    if not os.path.exists(cfg.results_dir):
+        os.makedirs(cfg.results_dir, exist_ok=True)
+    tag = cfg.dataset_convert.tag or os.path.splitext(os.path.basename(cfg.dataset_convert.annotations_file))[0]
+    output_path = os.path.join(cfg.results_dir, tag)
 
     log_total, cat_total = _create_tf_record_from_coco_annotations(
-        cfg.annotations_file,
-        cfg.image_dir,
+        cfg.dataset_convert.annotations_file,
+        cfg.dataset_convert.image_dir,
         output_path,
-        cfg.include_masks,
-        num_shards=cfg.num_shards)
+        cfg.dataset_convert.include_masks,
+        num_shards=cfg.dataset_convert.num_shards)
 
     if log_total:
-        with open(os.path.join(results_dir, f'{tag}_warnings.json'), "w", encoding='utf-8') as f:
+        with open(os.path.join(cfg.results_dir, f'{tag}_warnings.json'), "w", encoding='utf-8') as f:
             json.dump(log_total, f)
 
     status_logging.get_status_logger().categorical = {'num_objects': cat_total}
@@ -321,10 +321,11 @@ spec_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 @hydra_runner(
     config_path=os.path.join(spec_root, "experiment_specs"),
-    config_name="dataset_convert", schema=DatasetConvertConfig
+    config_name="dataset_convert", schema=ExperimentConfig
 )
-def main(cfg: DatasetConvertConfig) -> None:
+def main(cfg: ExperimentConfig) -> None:
     """Convert COCO format json and images into TFRecords."""
+    cfg = update_results_dir(cfg, 'dataset_convert')
     run_conversion(cfg)
 
 
