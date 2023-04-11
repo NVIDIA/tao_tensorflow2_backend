@@ -18,7 +18,8 @@ class KerasInferencer(Inferencer):
                  key=None,
                  preprocess_mode='torch',
                  interpolation='bilinear',
-                 img_depth=8):
+                 img_depth=8,
+                 data_format='channels_first'):
         """Init."""
         self.model_path = model_path
         self.img_mean = img_mean
@@ -27,6 +28,7 @@ class KerasInferencer(Inferencer):
         self.preprocess_mode = preprocess_mode
         self.interpolation = interpolation
         self.img_depth = img_depth
+        self._data_format = data_format
         self._load_model(model_path)
 
     def _load_model(self, model_path) -> None:
@@ -35,7 +37,6 @@ class KerasInferencer(Inferencer):
         self.model.summary()
 
         self._input_shape = tuple(self.model.layers[0].input_shape[0])
-        self._data_format = self.model.layers[1].data_format
         if self._data_format == "channels_first":
             self._img_height, self._img_width = self._input_shape[2:4]
             self._nchannels = self._input_shape[1]
