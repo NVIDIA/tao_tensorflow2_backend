@@ -50,7 +50,8 @@ def run_inference(cfg):
         img_mean=list(cfg.dataset.image_mean),
         preprocess_mode=cfg.dataset.preprocess_mode,
         interpolation=interpolation,
-        img_depth=image_depth)
+        img_depth=image_depth,
+        data_format=cfg.data_format)
     predictions = []
 
     imgpath_list = [os.path.join(root, filename)
