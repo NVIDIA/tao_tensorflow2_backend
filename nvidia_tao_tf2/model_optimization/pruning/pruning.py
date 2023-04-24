@@ -4,10 +4,6 @@
 This module includes APIs to prune a tf.keras model.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import logging
 
 import numpy as np
@@ -987,6 +983,18 @@ class PruneMinWeight(Prune):
             ]:
                 # These layers are just pass-throughs.
                 pass
+                # TODO: type(layer) == keras.layers.SeparableConv2D:
+                # _, pw_k, _ = layer.get_weights()
+                # # Identify filters to prune.
+                # if layer.name in self._excluded_layers:
+                #     explored_stat = None
+                #     retained_idx = range(pw_k.shape[-1])
+                # else:
+                #     explored_stat = self._get_filter_stats(pw_k, layer)
+                #     retained_idx = self._get_retained_idx(explored_stat)
+                # initial_neuron_count = pw_k.shape[-1]
+                # retained_neuron_count = len(retained_idx)
+                # is_pruned = retained_neuron_count < initial_neuron_count
             elif type(layer) in [keras.layers.Reshape, keras.layers.Permute]:
                 # Make sure that the previous layer was unpruned.
                 if self._is_layer_pruned(layer):
@@ -1214,7 +1222,6 @@ class PruneMinWeight(Prune):
                     keras.layers.Maximum,
                     keras.layers.UpSampling2D,
                     keras.layers.Cropping2D,
-                    keras.layers.SeparableConv2D,
                     ImageResizeLayer,
                     WeightedFusion
                 ]:
@@ -1222,6 +1229,17 @@ class PruneMinWeight(Prune):
                     # but, propogate retained indices from the previous layer.
                     retained_idx = self._get_previous_retained_idx(layer)
                     self._explored_layers[layer.name].retained_idx = retained_idx
+                elif type(layer) == keras.layers.SeparableConv2D:
+                    prev_retained_idx = self._get_previous_retained_idx(layer)
+                    self._explored_layers[layer.name].retained_idx = prev_retained_idx
+                    layer.filters = len(prev_retained_idx)
+                    # TODO: address the issue from pruning the inner pw
+                    # retained_idx = self._explored_layers[layer.name].retained_idx
+                    # layer.filters = len(retained_idx)
+                    # dw_k, pw_k, b = layer.get_weights()
+                    # weights = [dw_k[:, :, prev_retained_idx, :],
+                    #            pw_k[:, :, prev_retained_idx, :][..., retained_idx],
+                    #            b[retained_idx]]
                 elif 'helper' in str(type(layer)) or type(layer) == keras.layers.Lambda:
                     # @scha: BYOM custom layers are in format of <class 'helper.CustomLayer'>
                     retained_idx = self._get_previous_retained_idx(layer)
