@@ -134,11 +134,10 @@ def spec_checker(cfg):
     assert cfg.model.max_level == 7, "max_level must be 7"
 
     # eval config
-    assert cfg.evaluate.batch_size > 0, "batch size for evaluation must be positive"
+    assert cfg.evaluate.num_samples >= cfg.evaluate.batch_size > 0, \
+        "batch size for evaluation must be (0, num_samples]"
     assert cfg.train.num_epochs >= cfg.evaluate.start_eval_epoch >= 0, \
         "start_eval_epoch must be within [0, num_epochs]."
-    assert 0 < cfg.evaluate.num_samples, \
-        "Number of evaluation samples must be positive."
 
     # dataset config
     assert cfg.dataset.train_tfrecords, \
