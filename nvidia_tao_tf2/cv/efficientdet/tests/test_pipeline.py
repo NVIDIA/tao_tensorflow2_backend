@@ -138,8 +138,7 @@ def test_prune(amp, qat, batch_size, num_epochs, cfg):
         TMP_MODEL_DIR,
         f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
         f'efficientdet-d0_00{num_epochs}.tlt')
-    cfg.prune.output_path = os.path.join(
+    cfg.prune.results_dir = os.path.join(
         TMP_MODEL_DIR,
-        f"effdet_b{batch_size}_ep{num_epochs}_{time_str}",
-        f'efficientdet-d0_00{num_epochs}_pruned.tlt')
+        f"effdet_b{batch_size}_ep{num_epochs}_{time_str}")
     run_pruning(cfg)

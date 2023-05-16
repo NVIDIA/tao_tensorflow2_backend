@@ -85,7 +85,6 @@ inference:
   checkpoint: ""
   trt_engine: ""
   image_dir: ""
-  output_dir: ""
   dump_label: False
   batch_size: 1
   label_map: ''
@@ -95,7 +94,6 @@ inference:
 prune:
   checkpoint: ""
   normalizer: 'max'
-  output_path: ""
   equalization_criterion: 'union'
   granularity: 8
   threshold: 0.5
