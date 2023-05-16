@@ -43,7 +43,7 @@ class ClassifierModule(TAOModule):
 
     def _quantize_models(self, cfg):
         """Quantize models."""
-        if cfg.train.qat:
+        if cfg.train.qat and self.initial_epoch == 0:
             logger.info("QAT enabled.")
             qdq_cases = [EfficientNetQDQCase()] \
                 if 'efficientnet' in cfg.model.backbone else [ResNetV1QDQCase()]
@@ -140,12 +140,16 @@ class ClassifierModule(TAOModule):
                     l_return.set_weights(layer.get_weights())
                 except ValueError:
                     if strict_mode:
-                        # This is a pruned model
-                        self.model = setup_config(
-                            self.pretrained_model,
-                            cfg.train.reg_config,
-                            bn_config=cfg.train.bn_config
-                        )
+                        if cfg.train.qat and self.initial_epoch > 0:
+                            # resume QAT
+                            self.model = self.pretrained_model
+                        else:
+                            # This is a pruned model
+                            self.model = setup_config(
+                                self.pretrained_model,
+                                cfg.train.reg_config,
+                                bn_config=cfg.train.bn_config
+                            )
 
     def _get_latest_checkpoint(self, model_dir, model_name='efficientnet-b'):
         """Get the last tlt checkpoint."""

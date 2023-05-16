@@ -23,4 +23,5 @@ class EfficientDetPruner(Pruner):
         self.model = load_model(self.model_path, self.cfg)
         self.excluded_layers = self.model.output_names
         self.excluded_layers.extend(
-            ['box-0', 'box-1', 'box-2', 'class-0', 'class-1', 'class-2'])
+            ['box-0', 'box-1', 'box-2', 'class-0', 'class-1', 'class-2',
+             'fpn_cell_2_fnode7_op_after_combine_4_conv'])
