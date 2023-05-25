@@ -128,9 +128,13 @@ def test_infer(amp, qat, batch_size, num_epochs, cfg):
     infer_tlt(cfg)
 
 
-@pytest.mark.parametrize("amp, qat, batch_size, num_epochs",
-                         [(True, False, 2, 2)])
-def test_prune(amp, qat, batch_size, num_epochs, cfg):
+@pytest.mark.parametrize("amp, qat, batch_size, num_epochs, threshold",
+                         [(True, False, 2, 2, 0.5),
+                          (True, False, 2, 2, 0.7),
+                          (True, False, 2, 2, 0.9),
+                          (True, False, 2, 2, 2.5),])
+def test_prune(amp, qat, batch_size, num_epochs, threshold, cfg):
+    cfg.prune.threshold = threshold
     cfg.train.num_epochs = num_epochs
     cfg.train.amp = amp
     cfg.train.qat = qat

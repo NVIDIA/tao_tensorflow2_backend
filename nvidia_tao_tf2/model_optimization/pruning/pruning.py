@@ -369,7 +369,7 @@ class PruneMinWeight(Prune):
             output_depth = dw_layers[0].layer.filters
         else:
             output_depth = dw_layers[0].filters
-        if any(layer.name in self._excluded_layers for layer in dw_layers):
+        if any((layer.name in self._excluded_layers or 'fpn_cell' in layer.name) for layer in dw_layers):
             logger.debug("Skipping equalization of depth-wise conv layers: {}".format(dw_layers))  # noqa pylint: disable=C0209
             output_idx = range(output_depth)
         else:
@@ -409,8 +409,8 @@ class PruneMinWeight(Prune):
         kernels, _, _ = self._unravel_weights(layer)
 
         # Identify filters to prune.
-        if layer.name in self._excluded_layers:
-            explored_stat = None
+        if layer.name in self._excluded_layers or 'fpn_cell' in layer.name:
+            explored_stat = self._get_filter_stats(kernels, layer)
             retained_idx = range(kernels.shape[-1])
         else:
             explored_stat = self._get_filter_stats(kernels, layer)
@@ -431,8 +431,8 @@ class PruneMinWeight(Prune):
             raise ValueError('DepthwiseConv2D for pruning can only have depth_multiplier == 1.')
 
         # Identify filters to prune.
-        if layer.name in self._excluded_layers:
-            explored_stat = None
+        if layer.name in self._excluded_layers or 'fpn_cell' in layer.name:
+            explored_stat = self._get_filter_stats(kernels, layer)
             retained_idx = range(kernels.shape[2])
         else:
             explored_stat = self._get_filter_stats(kernels, layer)
@@ -534,12 +534,15 @@ class PruneMinWeight(Prune):
         # If newly updated eltwise true inputs have more than one branch, then
         # equalize the retained indices.
         if len(eltwise_prunable_inputs) > 1:
-            eltwise_prunable_inputs = self._update_equalization_groups(
-                eltwise_prunable_inputs
-            )
-            fixed_retained_idx = self._equalize_retained_indices(
-                eltwise_prunable_inputs
-            )
+            if type(layer) == WeightedFusion:
+                fixed_retained_idx = range(eltwise_prunable_inputs[0].filters)
+            else:
+                eltwise_prunable_inputs = self._update_equalization_groups(
+                    eltwise_prunable_inputs
+                )
+                fixed_retained_idx = self._equalize_retained_indices(
+                    eltwise_prunable_inputs
+                )
         # Otherwise just prune the one conv layer as it was before.
         elif len(eltwise_prunable_inputs) == 1:
             layer_name = eltwise_prunable_inputs[-1].name
