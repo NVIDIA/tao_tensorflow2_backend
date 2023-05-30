@@ -53,7 +53,7 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         self.update_weights = update_weights
         self.ema_opt = None
         self.eff_dir = eff_dir
-        self.passphrase = encryption_key
+        self.encryption_key = encryption_key
         self.is_qat = is_qat
 
     def set_model(self, model):
@@ -107,5 +107,5 @@ class EffEmaCheckpoint(tf.keras.callbacks.ModelCheckpoint):
             eff_model_path = os.path.join(self.eff_dir, eff_filename)
             self.temp_zip_file = encode_eff(
                 checkpoint_dir,
-                eff_model_path, self.passphrase)
+                eff_model_path, self.encryption_key)
             self._remove_tmp_files()

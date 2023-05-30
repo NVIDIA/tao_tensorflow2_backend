@@ -269,12 +269,12 @@ def setup_config(model, reg_config, bn_config=None, custom_objs=None):
     return updated_model
 
 
-def decode_eff(eff_model_path, passphrase=None):
+def decode_eff(eff_model_path, enc_key=None):
     """Decode EFF to saved_model directory.
 
     Args:
         eff_model_path (str): Path to eff model
-        passphrase (str, optional): Encryption key. Defaults to None.
+        enc_key (str, optional): Encryption key. Defaults to None.
 
     Returns:
         str: Path to the saved_model
@@ -284,7 +284,7 @@ def decode_eff(eff_model_path, passphrase=None):
     eff_art = Archive.restore_artifact(
         restore_path=eff_model_path,
         artifact_name=eff_filename,
-        passphrase=passphrase)
+        passphrase=enc_key)
     zip_path = eff_art.get_handle()
     # Unzip
     saved_model_path = os.path.dirname(zip_path)
@@ -317,19 +317,19 @@ def deserialize_custom_layers(art):
     return final_dict
 
 
-def decode_tltb(eff_path, passphrase=None):
+def decode_tltb(eff_path, enc_key=None):
     """Restore Keras Model from EFF Archive.
 
     Args:
         eff_path (str): Path to the eff file.
-        passphrase (str): Key to load EFF file.
+        enc_key (str): Key to load EFF file.
 
     Returns:
         model (keras.models.Model): Loaded keras model.
         EFF_CUSTOM_OBJS (dict): Dictionary of custom layers from the eff file.
     """
     model_name = os.path.basename(eff_path).split(".")[0]
-    with Archive.restore_from(restore_path=eff_path, passphrase=passphrase) as restored_effa:
+    with Archive.restore_from(restore_path=eff_path, passphrase=enc_key) as restored_effa:
         EFF_CUSTOM_OBJS = deserialize_custom_layers(restored_effa.artifacts['custom_layers.py'])
         model_name = restored_effa.metadata['model_name']
 
@@ -349,22 +349,22 @@ def decode_tltb(eff_path, passphrase=None):
     return result
 
 
-def load_model(model_path, passphrase=None):
+def load_model(model_path, enc_key=None):
     """Load hdf5 or EFF model.
 
     Args:
         model_path (str): Path to hdf5 model or eff model
-        passphrase (str, optional): Encryption key. Defaults to None.
+        enc_key (str, optional): Encryption key. Defaults to None.
 
     Returns:
         Keras model: Loaded model
     """
     assert os.path.exists(model_path), f"Pretrained model not found at {model_path}"
     if model_path.endswith('.tlt'):
-        model_path = decode_eff(model_path, passphrase)
+        model_path = decode_eff(model_path, enc_key)
         return tf.keras.models.load_model(model_path)
     if model_path.endswith('.tltb'):
-        out_dict = decode_tltb(model_path, passphrase)
+        out_dict = decode_tltb(model_path, enc_key)
         model = out_dict['model']
         return model
     return tf.keras.models.load_model(model_path, custom_objects=CUSTOM_OBJS)
@@ -389,13 +389,13 @@ def zipdir(src, zip_path):
                     arcname=os.path.join(root.replace(src, ""), filename))
 
 
-def encode_eff(filepath, eff_model_path, passphrase):
+def encode_eff(filepath, eff_model_path, enc_key):
     """Encode saved_model directory into a .tlt file.
 
     Args:
         filepath (str): Path to saved_model
         eff_model_path (str): Path to the output EFF file
-        passphrase (str): Encrytion key
+        enc_key (str): Encrytion key
     """
     os_handle, temp_zip_file = tempfile.mkstemp()
     os.close(os_handle)
@@ -407,8 +407,8 @@ def encode_eff(filepath, eff_model_path, passphrase):
         name=eff_filename,
         description="Artifact from checkpoint",
         filepath=temp_zip_file,
-        encryption=bool(passphrase),
+        encryption=bool(enc_key),
         content_callback=BinaryContentCallback,
     )
     Archive.save_artifact(
-        save_path=eff_model_path, artifact=zip_art, passphrase=passphrase)
+        save_path=eff_model_path, artifact=zip_art, passphrase=enc_key)
