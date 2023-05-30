@@ -6,6 +6,7 @@ import importlib
 import os
 import pkgutil
 import subprocess
+import shlex
 import sys
 from time import time
 
@@ -238,9 +239,8 @@ def launch(parser, subtasks, multigpu_support=['train'], task="tao_tf2"):
     start = time()
     try:
         subprocess.check_call(
-            run_command,
-            shell=True,
-            env=os.environ,
+            shlex.split(run_command),
+            shell=False,
             stdout=sys.stdout,
             stderr=sys.stderr
         )

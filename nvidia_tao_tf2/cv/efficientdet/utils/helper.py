@@ -38,12 +38,12 @@ def fetch_optimizer(model, opt_type) -> tf.keras.optimizers.Optimizer:
     raise TypeError(f'Failed to find {opt_type} in the nested optimizer object')
 
 
-def decode_eff(eff_model_path, passphrase=None):
+def decode_eff(eff_model_path, enc_key=None):
     """Decode EFF to saved_model directory.
 
     Args:
         eff_model_path (str): Path to eff model
-        passphrase (str, optional): Encryption key. Defaults to None.
+        enc_key (str, optional): Encryption key. Defaults to None.
 
     Returns:
         str: Path to the saved_model
@@ -53,7 +53,7 @@ def decode_eff(eff_model_path, passphrase=None):
     eff_art = Archive.restore_artifact(
         restore_path=eff_model_path,
         artifact_name=eff_filename,
-        passphrase=passphrase)
+        passphrase=enc_key)
     zip_path = eff_art.get_handle()
     # Unzip
     ckpt_path = os.path.dirname(zip_path)
@@ -76,7 +76,7 @@ def load_model(eff_model_path, hparams, mode='train', is_qat=False):
 
     Args:
         model_path (str): Path to EfficientDet checkpoint
-        passphrase (str, optional): Encryption key. Defaults to None.
+        enc_key (str, optional): Encryption key. Defaults to None.
 
     Returns:
         Keras model: Loaded model
@@ -156,13 +156,13 @@ def zipdir(src, zip_path):
                     arcname=os.path.join(root.replace(src, ""), filename))
 
 
-def encode_eff(filepath, eff_model_path, passphrase, is_pruned=False):
+def encode_eff(filepath, eff_model_path, enc_key, is_pruned=False):
     """Encode saved_model directory into a .tlt file.
 
     Args:
         filepath (str): Path to saved_model
         eff_model_path (str): Path to the output EFF file
-        passphrase (str): Encryption key
+        enc_key (str): Encryption key
     """
     # always overwrite
     if os.path.exists(eff_model_path):
@@ -178,9 +178,9 @@ def encode_eff(filepath, eff_model_path, passphrase, is_pruned=False):
         is_pruned=is_pruned,
         description="Artifact from checkpoint",
         filepath=temp_zip_file,
-        encryption=bool(passphrase),
+        encryption=bool(enc_key),
         content_callback=BinaryContentCallback,
     )
     Archive.save_artifact(
-        save_path=eff_model_path, artifact=zip_art, passphrase=passphrase)
+        save_path=eff_model_path, artifact=zip_art, passphrase=enc_key)
     return temp_zip_file

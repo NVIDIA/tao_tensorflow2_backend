@@ -16,6 +16,7 @@ import os
 import sys
 import time
 
+from nvidia_tao_tf2.common.path_utils import expand_path
 from tensorflow import keras
 from pruning import prune
 """Root logger for pruning app."""
@@ -91,7 +92,7 @@ def prune_app(
     logger.info("Saving pruned model into %s" % (output_filename))  # noqa pylint: disable=C0209
 
     # Save pruned model to disk.
-    dirname = os.path.dirname(output_filename)
+    dirname = expand_path(os.path.dirname(output_filename))
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     new_model.save(output_filename)

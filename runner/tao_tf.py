@@ -20,11 +20,11 @@ DOCKER_REPOSITORY = docker_config["repository"]
 DOCKER_DIGEST = docker_config["digest"]
 DOCKER_COMMAND = "docker"
 HOME_PATH = os.path.expanduser("~")
-MOUNTS_PATH = os.path.join(HOME_PATH, ".tlt_mounts.json")
+MOUNTS_PATH = os.path.join(HOME_PATH, ".tao_mounts.json")
 
 
 def get_docker_mounts_from_file(mounts_file=MOUNTS_PATH):
-    """Check for docker mounts in ~/.tlt_mounts.json."""
+    """Check for docker mounts in ~/.tao_mounts.json."""
     if not os.path.exists(mounts_file):
         return []
     with open(mounts_file, 'r') as mfile:
@@ -238,12 +238,12 @@ def parse_cli_args(args=None):
 def main(cl_args=None):
     """Start docker container."""
     index = cl_args.index("--")
-    # Split args to the tlt docker wrapper and the command to be run inside the docker.
-    tlt_pt_args = cl_args[:index]
+    # Split args to the tao docker wrapper and the command to be run inside the docker.
+    tao_tf_args = cl_args[:index]
     command_args = cl_args[index + 1:]
 
     # parse command line args.
-    args = parse_cli_args(tlt_pt_args)
+    args = parse_cli_args(tao_tf_args)
     docker_image = "{}/{}".format(DOCKER_REGISTRY, DOCKER_REPOSITORY)
     if args["tag"] is not None:
         docker_image = "{}:{}".format(docker_image, args["tag"])

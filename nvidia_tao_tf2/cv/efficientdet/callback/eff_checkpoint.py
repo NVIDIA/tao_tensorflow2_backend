@@ -40,7 +40,7 @@ class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
             save_freq=save_freq,
             **kwargs)
         self.eff_dir = eff_dir
-        self.passphrase = encryption_key
+        self.encryption_key = encryption_key
         self.graph_only = graph_only
         self.is_qat = is_qat
 
@@ -75,5 +75,5 @@ class EffCheckpoint(tf.keras.callbacks.ModelCheckpoint):
             # convert content in self.filepath to EFF
             self.temp_zip_file = encode_eff(
                 os.path.dirname(self.filepath),
-                eff_model_path, self.passphrase)
+                eff_model_path, self.encryption_key)
             self._remove_tmp_files()

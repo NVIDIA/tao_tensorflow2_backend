@@ -124,7 +124,7 @@ class ClassifierModule(TAOModule):
             # Decrypt and load pretrained model
             self.pretrained_model = load_model(
                 ckpt_path,
-                passphrase=cfg.encryption_key)
+                enc_key=cfg.encryption_key)
 
             strict_mode = True
             for layer in self.pretrained_model.layers[1:]:
