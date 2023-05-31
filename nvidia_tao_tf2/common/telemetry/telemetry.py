@@ -19,6 +19,7 @@ from nvidia_tao_tf2.common.telemetry.nvml_utils import get_device_details
 # host this.
 TAO_CERTIFICATES_URL = "https://gitlab-master.nvidia.com/vpraveen/python_wheels/-/raw/main/certs/certificates.tar.gz"  # noqa pylint: disable=E501
 TAO_SERVER_IP = "10.111.60.42:9000"
+TELEMETRY_TIMEOUT = int(os.getenv("TELEMETRY_TIMEOUT", "30"))
 
 
 def get_server_url():
@@ -114,7 +115,7 @@ def send_telemetry_data(network, action, gpu_data, num_gpus=1, time_lapsed=None,
             json=data,
             cert=tuple([os.path.join(certificate_dir, item) for item in cert]),  # noqa pylint: disable=R1728
             verify=os.path.join(certificate_dir, verify),
-            timeout=600
+            timeout=TELEMETRY_TIMEOUT
         )
         shutil.rmtree(certificate_dir)
 
