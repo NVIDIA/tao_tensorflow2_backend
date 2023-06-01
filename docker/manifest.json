@@ -1,5 +1,5 @@
 {
     "registry": "gitlab-master.nvidia.com:5005",
     "repository": "tlt/tao-tf2/tao_tf2_base_image",
-    "digest": "sha256:70a81db7a1429073633437737685ac657331bd6bf4258a3c3a019c0b7ea6dc88"
+    "digest": "sha256:e0504fc6420ea59139164cd0e9121df2ec9e41c1880d3c37ed25056fc0ed8735"
 }
