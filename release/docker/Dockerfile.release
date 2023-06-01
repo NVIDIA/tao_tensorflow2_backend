@@ -1,4 +1,4 @@
-FROM gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:70a81db7a1429073633437737685ac657331bd6bf4258a3c3a019c0b7ea6dc88
+FROM gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:e0504fc6420ea59139164cd0e9121df2ec9e41c1880d3c37ed25056fc0ed8735
 
 # Installing the TAO Toolkit source code packages.
 WORKDIR /opt/nvidia
@@ -12,38 +12,25 @@ COPY release/docker/entrypoint.d/* /opt/nvidia/entrypoint.d/
 
 # Changes required from security scan updates.
 # Update apt-get packages.
-RUN apt-get update && apt-get install --only-upgrade libksba8 -y
+RUN apt-get update && apt-get install --only-upgrade libksba8 openssl libssl-dev linux-libc-dev -y
+RUN apt-get -y remove libslurm34
 
 # Update pip package
-RUN python -m pip install --upgrade joblib jupyter-core pillow mpmath
+RUN python -m pip install --upgrade joblib jupyter-core pillow mpmath tornado werkzeug setuptools
 # Removing graphviz since pip show shows no dependencies or requirements for it.
 # Output of `pip show graphviz`
 # Home-page: https://github.com/xflr6/graphviz
 # Location: /usr/local/lib/python3.8/dist-packages
 # Requires:
 # Required-by:
+# Updating container python packages
 RUN python -m pip uninstall graphviz -y
 
-# updating node to 16.18.1 for LTS version and repeating what
-# TF2 base docker does.
+# Resolving container scan vulnerabilities
 ENV NVM_DIR=/usr/local/nvm
-RUN pip install --no-cache-dir git+https://github.com/cliffwoolley/jupyter_tensorboard.git@0.2.0+nv21.03 \
-    && mkdir -p $NVM_DIR \
-    && curl -Lo- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash \
-    && source "$NVM_DIR/nvm.sh" \
-    && nvm install 16.18.1 --reinstall-packages-from=16.15.1 node \
-    && nvm uninstall 16.15.1 \
-    && jupyter labextension install jupyterlab_tensorboard \
-    && jupyter serverextension enable jupyterlab \
-    && pip install --no-cache-dir jupytext \
-    && jupyter labextension install jupyterlab-jupytext@1.2.2 \
-    && ( cd /usr/local/share/jupyter/lab/staging \
-    && npm prune --production ) \
-    && npm cache clean --force \
-    && rm -rf /usr/local/share/.cache \
-    && echo "source $NVM_DIR/nvm.sh" >> /etc/bash.bashrc \
-    && mv /root/.jupyter/jupyter_notebook_config.json /usr/local/etc/jupyter/ \
-    && jupyter lab clean
+RUN source "$NVM_DIR/nvm.sh" \
+    && nvm install 20.2.0 --reinstall-packages-from=16.15.1 node \
+    && nvm uninstall 16.15.1
 
 ENV NVIDIA_PRODUCT_NAME "TAO Toolkit"
 ENV TAO_TOOLKIT_VERSION="4.0.0"
