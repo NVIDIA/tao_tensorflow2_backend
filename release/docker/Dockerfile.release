@@ -11,9 +11,7 @@ RUN rm -rf /opt/nvidia/entrypoint.d/*.txt
 COPY release/docker/entrypoint.d/* /opt/nvidia/entrypoint.d/
 
 # Changes required from security scan updates.
-# Update apt-get packages.
 RUN apt-get update && apt-get install --only-upgrade libksba8 openssl libssl-dev linux-libc-dev -y
-RUN apt-get -y remove libslurm34
 
 # Update pip package
 RUN python -m pip install --upgrade joblib jupyter-core pillow mpmath tornado werkzeug setuptools
