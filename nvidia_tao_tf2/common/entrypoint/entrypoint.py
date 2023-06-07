@@ -238,9 +238,10 @@ def launch(parser, subtasks, multigpu_support=['train'], task="tao_tf2"):
     process_passed = True
     start = time()
     try:
-        subprocess.check_call(
+        subprocess.run(
             shlex.split(run_command),
             shell=False,
+            check=True,
             stdout=sys.stdout,
             stderr=sys.stderr
         )
