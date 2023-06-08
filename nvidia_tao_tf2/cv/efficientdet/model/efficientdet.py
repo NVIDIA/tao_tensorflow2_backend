@@ -173,10 +173,10 @@ class OpAfterCombine:
         self.data_format = data_format
         self.is_training_bn = is_training_bn
         if self.separable_conv:
-            # conv2d_layer = functools.partial(
-            #     tf.keras.layers.SeparableConv2D, depth_multiplier=1)
             conv2d_layer = functools.partial(
-                SeparableConvWAR, depth_multiplier=1)
+                tf.keras.layers.SeparableConv2D, depth_multiplier=1)
+            # conv2d_layer = functools.partial(
+            #     SeparableConvWAR, depth_multiplier=1)
         else:
             conv2d_layer = tf.keras.layers.Conv2D
 
@@ -342,8 +342,8 @@ class ClassNet:
         self.bns = []
         if separable_conv:
             conv2d_layer = functools.partial(
-                # tf.keras.layers.SeparableConv2D,
-                SeparableConvWAR,
+                tf.keras.layers.SeparableConv2D,
+                # SeparableConvWAR,
                 depth_multiplier=1,
                 data_format=data_format,
                 pointwise_initializer=tf.initializers.VarianceScaling(),
@@ -454,7 +454,7 @@ class BoxNet:
             # If using SeparableConv2D
             if self.separable_conv:
                 self.conv_ops.append(
-                    SeparableConvWAR(
+                    tf.keras.layers.SeparableConv2D(  # SeparableConvWAR(
                         filters=self.num_filters,
                         depth_multiplier=1,
                         pointwise_initializer=tf.initializers.VarianceScaling(),
@@ -490,7 +490,7 @@ class BoxNet:
             self.bns.append(bn_per_level)
 
         if self.separable_conv:
-            self.boxes = SeparableConvWAR(
+            self.boxes = tf.keras.layers.SeparableConv2D(  # SeparableConvWAR(
                 filters=4 * self.num_anchors,
                 depth_multiplier=1,
                 pointwise_initializer=tf.initializers.VarianceScaling(),

@@ -1226,13 +1226,14 @@ class PruneMinWeight(Prune):
                     keras.layers.UpSampling2D,
                     keras.layers.Cropping2D,
                     ImageResizeLayer,
-                    WeightedFusion
+                    WeightedFusion,
+                    keras.layers.SeparableConv2D
                 ]:
                     # These layers have no weights associated with them. Hence no transformation
                     # but, propogate retained indices from the previous layer.
                     retained_idx = self._get_previous_retained_idx(layer)
                     self._explored_layers[layer.name].retained_idx = retained_idx
-                elif type(layer) == keras.layers.SeparableConv2D:
+                # elif type(layer) == keras.layers.SeparableConv2D:
                     # EXPERIMENTAL
                     # prev_retained_idx = self._get_previous_retained_idx(layer)
                     # self._explored_layers[layer.name].retained_idx = prev_retained_idx
@@ -1244,7 +1245,7 @@ class PruneMinWeight(Prune):
                     # weights = [dw_k[:, :, prev_retained_idx, :],
                     #            pw_k[:, :, prev_retained_idx, :][..., retained_idx],
                     #            b[retained_idx]]
-                    raise NotImplementedError("Pruning doesn't support SeparableConv2D layer.")
+                    # raise NotImplementedError("Pruning doesn't support SeparableConv2D layer.")
                 elif 'helper' in str(type(layer)) or type(layer) == keras.layers.Lambda:
                     # @scha: BYOM custom layers are in format of <class 'helper.CustomLayer'>
                     retained_idx = self._get_previous_retained_idx(layer)
