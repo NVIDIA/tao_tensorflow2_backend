@@ -74,6 +74,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         skip_checkpoint_variables=cfg['train']['skip_checkpoint_variables'],
         num_epochs=cfg['train']['num_epochs'],
         image_preview=cfg['train']['image_preview'],
+        init_epoch=cfg['train']['init_epoch'],
         # LR config
         lr_decay_method=cfg['train']['lr_schedule']['name'],
         learning_rate=cfg['train']['lr_schedule']['learning_rate'],

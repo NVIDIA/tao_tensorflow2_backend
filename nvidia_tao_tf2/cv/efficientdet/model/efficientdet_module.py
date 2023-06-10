@@ -92,7 +92,7 @@ class EfficientDetModule(TAOModule):
                 steps_per_epoch=steps_per_epoch,
                 expect_partial=True)
             return train_from_epoch
-        return 0
+        return self.hparams.init_epoch
 
     def _load_pretrained_weights(self, hparams):
         """Load pretrained weights."""

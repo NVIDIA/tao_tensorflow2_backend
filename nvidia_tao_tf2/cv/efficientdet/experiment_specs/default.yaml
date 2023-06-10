@@ -23,6 +23,7 @@ dataset:
   train_dirs: []
   val_dirs: []
 train:
+  init_epoch: 0
   optimizer:
     name: 'sgd'
     momentum: 0.9
