@@ -43,6 +43,7 @@ class OptConfig:
 class TrainConfig:
     """Train config."""
 
+    init_epoch: int = 0
     optimizer: OptConfig = OptConfig()
     lr_schedule: LRConfig = LRConfig()
     num_examples_per_epoch: int = 120000
