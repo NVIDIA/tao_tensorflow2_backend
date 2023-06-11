@@ -103,7 +103,7 @@ def get_byom(model_config_path=None,
     """Wrapper to get Bring Your Own Model from json file."""
     # For BYOM, we don't have the code for the model archicture.
     # As a result, we must load from eff file
-    out_dict = decode_tltb(model_config_path, passphrase=passphrase)
+    out_dict = decode_tltb(model_config_path, enc_key=passphrase)
     final_model = out_dict['model']
 
     # Rename the model to be more meaningful

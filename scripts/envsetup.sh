@@ -28,7 +28,7 @@ function _check_shell_is_interactive() {
 function help() {
     if _check_shell_is_interactive ; then
         cat <<EOF
-scr
+
 TAO Toolkit TensorFlow2 build environment set up.
 
 The following environment variables have been set:
