@@ -240,6 +240,7 @@ def launch(parser, subtasks, multigpu_support=['train'], task="tao_tf2"):
     try:
         subprocess.run(
             shlex.split(run_command),
+            env=os.environ,
             shell=False,
             check=True,
             stdout=sys.stdout,
