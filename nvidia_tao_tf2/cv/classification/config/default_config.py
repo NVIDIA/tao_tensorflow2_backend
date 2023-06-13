@@ -59,7 +59,7 @@ class LRConfig:
 class TrainConfig:
     """Train config."""
 
-    qat: bool = True
+    qat: bool = False
     checkpoint: str = ''
     checkpoint_interval: int = 1
     batch_size_per_gpu: int = 64
