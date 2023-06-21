@@ -155,4 +155,4 @@ TAO Toolkit Tensorflow backend is not accepting contributions as part of the TAO
 
 <!-- TODO: @yuw (to be updated once license is approved.) -->
 
-This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
+This project is licensed under the [Apache 2.0](./LICENSE) License.
