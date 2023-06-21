@@ -44,7 +44,7 @@ def url_exists(url):
     try:
         urllib.request.urlopen(url_request)  # noqa pylint: disable=R1732
         return True
-    except urllib.request.HTTPError:
+    except urllib.request.URLError:
         return False
 
 
@@ -56,7 +56,7 @@ def get_certificates():
     """
     certificates_url = os.getenv("TAO_CERTIFICATES_URL", TAO_CERTIFICATES_URL)
     if not url_exists(certificates_url):
-        raise urllib.request.HTTPError("Url for the certificates not found.")
+        raise urllib.request.URLError("Url for the certificates not found.")
     tmp_dir = tempfile.mkdtemp()
     download_command = f"wget {certificates_url} -P {tmp_dir} --quiet"
     try:
@@ -64,7 +64,7 @@ def get_certificates():
             download_command, shell=True, stdout=sys.stdout
         )
     except Exception as exc:
-        raise urllib.request.HTTPError("Download certificates.tar.gz failed.") from exc
+        raise urllib.request.URLError("Download certificates.tar.gz failed.") from exc
     tarfile_path = os.path.join(tmp_dir, "certificates.tar.gz")
     assert tarfile.is_tarfile(tarfile_path), (
         "The downloaded file isn't a tar file."
