@@ -20,10 +20,13 @@ import shutil
 import logging
 import tempfile
 
+import onnx
+import onnx_graphsurgeon as gs
+
 import tensorrt as trt
 import tensorflow as tf
 
-from tf2onnx import tf_loader, utils, convert
+from tf2onnx import tf_loader, convert
 
 from nvidia_tao_tf2.cv.classification.utils.helper import decode_eff
 
@@ -97,8 +100,11 @@ class Exporter:
             output_path=onnx_path,
             optimizers=updated_optimizers
         )
-
-        utils.save_protobuf(onnx_path, model_proto)
+        graph = gs.import_onnx(model_proto)
+        graph.inputs[0].name = "input_1"
+        graph.cleanup().toposort()
+        onnx_model = gs.export_onnx(graph)
+        onnx.save(onnx_model, onnx_path)
         logger.info("ONNX conversion completed.")
 
     def _del(self):
@@ -106,10 +112,10 @@ class Exporter:
         shutil.rmtree(self._saved_model)
 
     def export(self):
-        """Export to EFF and TensorRT engine."""
+        """Export ONNX model."""
         self._set_input_shape()
         self.export_onnx()
-        logger.info("The etlt model is saved at %s", self.config.export.onnx_file)
+        logger.info("The ONNX model is saved at %s", self.config.export.onnx_file)
         self._del()
 
     def _build_profile(self, builder, network, profile_shapes, default_shape_value=1):
