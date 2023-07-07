@@ -18,15 +18,13 @@ from nvidia_tao_tf2.common.telemetry.nvml_utils import get_device_details
 # TODO @vpraveen: This must be removed at the time of release we figure out where to
 # host this.
 TAO_CERTIFICATES_URL = "https://gitlab-master.nvidia.com/vpraveen/python_wheels/-/raw/main/certs/certificates.tar.gz"  # noqa pylint: disable=E501
-TAO_SERVER_IP = "10.111.60.42:9000"
+TAO_SERVER_URL = "https://sqa-telemetry.metropolis.nvidia.com/api/v1/telemetry"
 TELEMETRY_TIMEOUT = int(os.getenv("TELEMETRY_TIMEOUT", "30"))
 
 
-def get_server_url():
+def get_url_from_variable(variable, default=None):
     """Get the Telemetry Server URL."""
-    url = os.getenv("TAO_TELEMETRY_SERVER", None)
-    if url is None:
-        url = 'http://10.111.60.42:9000/api/v1/telemetry'
+    url = os.getenv(variable, default)
     return url
 
 
@@ -54,7 +52,7 @@ def get_certificates():
     Returns:
         path (str): UNIX path to the certificates.
     """
-    certificates_url = os.getenv("TAO_CERTIFICATES_URL", TAO_CERTIFICATES_URL)
+    certificates_url = get_url_from_variable("TAO_CERTIFICATES_URL", TAO_CERTIFICATES_URL)
     if not url_exists(certificates_url):
         raise urllib.request.URLError("Url for the certificates not found.")
     tmp_dir = tempfile.mkdtemp()
@@ -97,7 +95,7 @@ def send_telemetry_data(network, action, gpu_data, num_gpus=1, time_lapsed=None,
     """
     urllib3.disable_warnings(urllib3.exceptions.SubjectAltNameWarning)
     if os.getenv('TELEMETRY_OPT_OUT', "no").lower() in ["no", "false", "0"]:
-        url = get_server_url()
+        url = get_url_from_variable("TAO_TELEMETRY_SERVER", TAO_SERVER_URL)
         data = {
             "version": os.getenv("TAO_TOOLKIT_VERSION", "4.0.0"),
             "action": action,
@@ -109,12 +107,10 @@ def send_telemetry_data(network, action, gpu_data, num_gpus=1, time_lapsed=None,
             data["time_lapsed"] = time_lapsed
         certificate_dir = get_certificates()
         cert = ('client-cert.pem', 'client-key.pem')
-        verify = 'ca-cert.pem'
         requests.post(
             url,
             json=data,
             cert=tuple([os.path.join(certificate_dir, item) for item in cert]),  # noqa pylint: disable=R1728
-            verify=os.path.join(certificate_dir, verify),
             timeout=TELEMETRY_TIMEOUT
         )
         shutil.rmtree(certificate_dir)
