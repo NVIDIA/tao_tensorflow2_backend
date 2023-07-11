@@ -45,6 +45,16 @@ We recommend adding this command to your local `~/.bashrc` file, so that every n
 
 #### <a name='HardwareRequirements'></a>Hardware Requirements
 
+##### Minimum system configuration
+
+* 8 GB system RAM
+* 4 GB of GPU RAM
+* 8 core CPU
+* 1 NVIDIA GPU
+* 100 GB of SSD space
+
+##### Recommended system configuration
+
 * 32 GB system RAM
 * 32 GB of GPU RAM
 * 8 core CPU
