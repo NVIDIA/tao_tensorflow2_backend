@@ -11,10 +11,10 @@ fi
 
 export NV_TAO_TF2_TOP="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
-function tao_tf {
+function tao_tf2 {
    python $NV_TAO_TF2_TOP/runner/tao_tf.py "$@"
 }
-export -f tao_tf
+export -f tao_tf2
 
 # Checks if 'i' is included in $-, if yes -> interactive
 function _check_shell_is_interactive() {
@@ -37,7 +37,7 @@ The following environment variables have been set:
 
 The following functions have been added to your environment:
 
-  tao_tf                 Run command inside the container.
+  tao_tf2                 Run command inside the container.
 EOF
     fi
 }

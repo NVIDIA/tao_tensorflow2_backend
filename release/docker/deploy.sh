@@ -71,7 +71,7 @@ if [ $BUILD_DOCKER = "1" ]; then
     fi
     if [ $BUILD_WHEEL = "1" ]; then
         echo "Building source code wheel ..."
-       tao_tf -- make build
+       tao_tf2 -- make build
     else
         echo "Skipping wheel builds ..."
     fi
@@ -87,7 +87,7 @@ if [ $BUILD_DOCKER = "1" ]; then
 
     if [ $BUILD_WHEEL = "1" ]; then
         echo "Cleaning wheels ..."
-        tao_tf -- make clean
+        tao_tf2 -- make clean
     else
         echo "Skipping wheel cleaning ..."
     fi

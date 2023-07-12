@@ -77,10 +77,10 @@ We recommend adding this command to your local `~/.bashrc` file, so that every n
 
 ### <a name='Instantiatingthedevelopmentcontainer'></a>Instantiating the development container
 
-In order to maintain a uniform development environment across all users, TAO Toolkit provides a base environment docker that has been built and uploaded to NGC for the developers. For instantiating the docker, simply run the `tao_tf` CLI. The usage for the command line launcher is mentioned below.
+In order to maintain a uniform development environment across all users, TAO Toolkit provides a base environment docker that has been built and uploaded to NGC for the developers. For instantiating the docker, simply run the `tao_tf2` CLI. The usage for the command line launcher is mentioned below.
 
 ```sh
-usage: tao_tf [-h] [--gpus GPUS] [--volume VOLUME] [--env ENV] [--mounts_file MOUNTS_FILE] [--shm_size SHM_SIZE] [--run_as_user] [--tag TAG] [--ulimit ULIMIT] [--port PORT]
+usage: tao_tf2 [-h] [--gpus GPUS] [--volume VOLUME] [--env ENV] [--mounts_file MOUNTS_FILE] [--shm_size SHM_SIZE] [--run_as_user] [--tag TAG] [--ulimit ULIMIT] [--port PORT]
 
 Tool to run the TAO Toolkit Tensorflow2 container.
 
@@ -102,7 +102,7 @@ optional arguments:
 A sample command to instantiate an interactive session in the base development docker is mentioned below.
 
 ```sh
-tao_tf --gpus all --volume /path/to/data/on/host:/path/to/data/on/container --volume /path/to/results/on/host:/path/to/results/in/container
+tao_tf2 --gpus all --volume /path/to/data/on/host:/path/to/data/on/container --volume /path/to/results/on/host:/path/to/results/in/container
 ```
 
 ### <a name='Updatingthebasedocker'></a>Updating the base docker
@@ -115,15 +115,15 @@ The base dev docker is defined in `$NV_TAO_TF2_TOP/docker/Dockerfile`. The pytho
 
 ```sh
 cd $NV_TAO_TF2_TOP/docker
-./build.sh --build
+./build_and_run.sh --build
 ```
 
 #### <a name='Testthenewlybuiltbasedocker'></a>Test the newly built base docker
 
-The build script tags the newly built base docker with the username of the account in the user's local machine. Therefore, the developers may tests their new docker by using the `tao_tf` command with the `--tag` option.
+The build script tags the newly built base docker with the username of the account in the user's local machine. Therefore, the developers may tests their new docker by using the `tao_tf2` command with the `--tag` option.
 
 ```sh
-tao_tf --tag $USER -- script args
+tao_tf2 --tag $USER -- script args
 ```
 
 #### <a name='Updatethenewdocker'></a>Update the new docker
@@ -133,7 +133,7 @@ Once you are sufficiently confident about the newly built base docker, please do
 1. Push the newly built base docker to the registry
 
     ```sh
-    bash $NV_TAO_TF2_TOP/docker/build.sh --build --push
+    bash $NV_TAO_TF2_TOP/docker/build_and_run.sh --build --push
     ```
 
 2. The above step produces a digest file associated with the docker. This is a unique identifier for the docker. So please note this, and update all references of the old digest in the repository with the new digest. You may find the old digest in the `$NV_TAO_TF2_TOP/docker/manifest.json`.
@@ -143,7 +143,7 @@ Push you final updated changes to the repository so that other developers can le
 Please note that if for some reason you would like to force build the docker without using a cache from the previous docker, you may do so by using the `--force` option.
 
 ```sh
-bash $NV_TAO_TF2_TOP/docker/build.sh --build --push --force
+bash $NV_TAO_TF2_TOP/docker/build_and_run.sh --build --push --force
 ```
 
 ## <a name='Buildingareleasecontainer'></a>Building a release container
