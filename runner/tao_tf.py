@@ -237,10 +237,14 @@ def parse_cli_args(args=None):
 
 def main(cl_args=None):
     """Start docker container."""
-    index = cl_args.index("--")
-    # Split args to the tao docker wrapper and the command to be run inside the docker.
-    tao_tf_args = cl_args[:index]
-    command_args = cl_args[index + 1:]
+    if "--" in cl_args:
+        index = cl_args.index("--")
+        # Split args to the tao docker wrapper and the command to be run inside the docker.
+        tao_tf_args = cl_args[:index]
+        command_args = cl_args[index + 1:]
+    else:
+        tao_tf_args = cl_args
+        command_args = ""
 
     # parse command line args.
     args = parse_cli_args(tao_tf_args)
