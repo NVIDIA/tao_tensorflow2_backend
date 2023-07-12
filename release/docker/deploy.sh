@@ -12,7 +12,7 @@ tag="v${tao_version}-tf${tensorflow_version}-py3-${build_id}"
 
 # Build parameters.
 BUILD_DOCKER="0"
-BUILD_WHEELS="0"
+BUILD_WHEEL="0"
 PUSH_DOCKER="0"
 FORCE="0"
 
@@ -91,12 +91,13 @@ if [ $BUILD_DOCKER = "1" ]; then
     else
         echo "Skipping wheel cleaning ..."
     fi
-elif [ $RUN_DOCKER ="1" ]; then
+elif [ $RUN_DOCKER = "1" ]; then
     echo "Running docker interactively..."
-    docker run --gpus all -v /home/yuw/workspace/tao-tf2:/workspace \
-                          -v /media/scratch.p3:/home/scratch.p3 \
-                          -v /media/projects.metropolis2:/home/projects2_metropolis \
-                          --net=host --shm-size=30g --ulimit memlock=-1 --ulimit stack=67108864 \
+    docker run --gpus all -v /home/$USER/tlt-experiments:/workspace/tlt-experiments \
+                          --net=host \
+                          --shm-size=30g \
+                          --ulimit memlock=-1 \
+                          --ulimit stack=67108864 \
                           --rm -it $registry/$repository:$tag /bin/bash
 else
     echo "Usage: ./deploy.sh [--build] [--wheel] [--run] [--default]"

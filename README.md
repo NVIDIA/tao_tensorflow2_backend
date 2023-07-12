@@ -115,7 +115,7 @@ The base dev docker is defined in `$NV_TAO_TF2_TOP/docker/Dockerfile`. The pytho
 
 ```sh
 cd $NV_TAO_TF2_TOP/docker
-./build_and_run.sh --build
+./build.sh --build
 ```
 
 #### <a name='Testthenewlybuiltbasedocker'></a>Test the newly built base docker
@@ -133,7 +133,7 @@ Once you are sufficiently confident about the newly built base docker, please do
 1. Push the newly built base docker to the registry
 
     ```sh
-    bash $NV_TAO_TF2_TOP/docker/build_and_run.sh --build --push
+    bash $NV_TAO_TF2_TOP/docker/build.sh --build --push
     ```
 
 2. The above step produces a digest file associated with the docker. This is a unique identifier for the docker. So please note this, and update all references of the old digest in the repository with the new digest. You may find the old digest in the `$NV_TAO_TF2_TOP/docker/manifest.json`.
@@ -143,7 +143,7 @@ Push you final updated changes to the repository so that other developers can le
 Please note that if for some reason you would like to force build the docker without using a cache from the previous docker, you may do so by using the `--force` option.
 
 ```sh
-bash $NV_TAO_TF2_TOP/docker/build_and_run.sh --build --push --force
+bash $NV_TAO_TF2_TOP/docker/build.sh --build --push --force
 ```
 
 ## <a name='Buildingareleasecontainer'></a>Building a release container

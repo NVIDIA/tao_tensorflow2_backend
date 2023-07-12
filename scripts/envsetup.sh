@@ -61,9 +61,6 @@ function _check_tao_tf2_requirements(){
         if ! grep -q "nvcr.io" $HOME/.docker/config.json; then
             warnings+=("You should login to container registry by running \"docker login nvcr.io\"")
         fi
-        if ! grep -q "gitlab-master.nvidia.com:5005" $HOME/.docker/config.json; then
-            warnings+=("You should login to container registry by running \"docker login -u $USER gitlab-master.nvidia.com:5005\"")
-        fi
     fi
 
     help
