@@ -1,4 +1,4 @@
-FROM gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:e0504fc6420ea59139164cd0e9121df2ec9e41c1880d3c37ed25056fc0ed8735
+FROM nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:fcd6e1618c37ad8bbe19c33e500b9bc7b28d4387a3458691b320e61e0b506bdf
 
 # Installing the TAO Toolkit source code packages.
 WORKDIR /opt/nvidia
@@ -14,7 +14,7 @@ COPY release/docker/entrypoint.d/* /opt/nvidia/entrypoint.d/
 RUN apt-get update && apt-get install --only-upgrade libksba8 openssl libssl-dev linux-libc-dev -y
 
 # Update pip package
-RUN python -m pip install --upgrade joblib jupyter-core pillow mpmath tornado werkzeug setuptools
+RUN python -m pip install --upgrade joblib jupyter-core pillow mpmath tornado werkzeug setuptools grpcio
 # Removing graphviz since pip show shows no dependencies or requirements for it.
 # Output of `pip show graphviz`
 # Home-page: https://github.com/xflr6/graphviz

@@ -16,7 +16,7 @@ spec:
         - name: DOCKER_TLS_CERTDIR
           value: ""
     - name: cuda
-      image: gitlab-master.nvidia.com:5005/tlt/tao-tf2/tao_tf2_base_image@sha256:e0504fc6420ea59139164cd0e9121df2ec9e41c1880d3c37ed25056fc0ed8735
+      image: nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:fcd6e1618c37ad8bbe19c33e500b9bc7b28d4387a3458691b320e61e0b506bdf
       securityContext:
         privileged: true
       command:
@@ -121,14 +121,14 @@ spec:
         //     }
             stage ('wheeltamer_tests') {
                 gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
-                docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
-                    // Pull wheeltamer container and run wheeltamer test
-                    sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer"
-                    sh "docker run --rm -v ${WORKSPACE}/dist:/workspace \
-                        -e 'EXPECTED_PKG_LICENSE=Apache 2.0' \
-                        -e 'ALLOWED_NOSEC_COUNT=0' \
-                        gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer /bin/bash -c 'wheeltamer'"
-                }
+                    docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
+                        // Pull wheeltamer container and run wheeltamer test
+                        sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer"
+                        sh "docker run --rm -v ${WORKSPACE}/dist:/workspace \
+                            -e 'EXPECTED_PKG_LICENSE=Apache 2.0' \
+                            -e 'ALLOWED_NOSEC_COUNT=0' \
+                            gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer /bin/bash -c 'wheeltamer'"
+                    }
                 }
             }
         }
