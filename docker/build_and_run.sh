@@ -65,9 +65,7 @@ if [ $BUILD_DOCKER = "1" ]; then
 
     if [ $PUSH_DOCKER = "1" ]; then
         docker build --pull -f $NV_TAO_TF2_TOP/docker/Dockerfile -t $registry/$repository:$local_tag $NO_CACHE \
-            --network=host $NV_TAO_TF2_TOP/. \
-            --build-arg EFF_TOKEN_NAME="$EFF_TOKEN_NAME" \
-            --build-arg EFF_TOKEN_PASSWORD="$EFF_TOKEN_PASSWORD"
+            --network=host $NV_TAO_TF2_TOP/.
         echo "Pusing docker ..."
         docker tag $registry/$repository:$local_tag $registry/$repository:$tag
         docker push $registry/$repository:$tag
@@ -76,9 +74,7 @@ if [ $BUILD_DOCKER = "1" ]; then
         echo $digest
     else
         docker build --pull -f $NV_TAO_TF2_TOP/docker/Dockerfile.local -t $registry/$repository:$local_tag $NO_CACHE \
-            --network=host $NV_TAO_TF2_TOP/. \
-            --build-arg EFF_TOKEN_NAME="$EFF_TOKEN_NAME" \
-            --build-arg EFF_TOKEN_PASSWORD="$EFF_TOKEN_PASSWORD"
+            --network=host $NV_TAO_TF2_TOP/.
         echo "Skip pushing docker ..."
     fi
 
