@@ -16,7 +16,7 @@ spec:
         - name: DOCKER_TLS_CERTDIR
           value: ""
     - name: cuda
-      image: nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:fcd6e1618c37ad8bbe19c33e500b9bc7b28d4387a3458691b320e61e0b506bdf
+      image: nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:d36b1dc35de930f18f334a9d74985063604192dc737f4872996853b7c510f279
       securityContext:
         privileged: true
       command:
@@ -88,7 +88,7 @@ spec:
                 gitlabCommitStatus(name: "build_wheel", connection: gitLabConnection('git-lab-master')) {
                     // Building the wheels for the tao source code.
                     def BUILD_TYPE="dev"
-                    def TAO_WHEEL_VERSION="4.0.0"
+                    def TAO_WHEEL_VERSION="5.0.0"
                     def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}${BUILD_TYPE}0"
                     def PYTHON_VER="cp38-cp38"
                     def ARCH="linux_x86_64"
