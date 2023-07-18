@@ -1,0 +1,31 @@
+dataset:
+  loader:
+    prefetch_size: 4
+    shuffle_file: False
+  max_instances_per_image: 100
+  train_tfrecords:
+    - '/home/scratch.p3/yuw/datasets/coco/train-*'
+  val_tfrecords:
+    - '/home/scratch.p3/yuw/datasets/coco/val-*'
+  val_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'
+train:
+  lr_schedule:
+    learning_rate: 0.2
+  amp: True
+  # checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/nvimagenet/tf2_effnet_b0/weights/efficientnet_b0_300"
+  checkpoint: "/home/scratch.p3/yuw/tlt3_experiments/imagenet/tf2_effnet_b0/weights/efficientnet-b0_500.tlt"
+  num_examples_per_epoch: 120000
+  batch_size: 20
+  checkpoint_interval: 5
+  l2_weight_decay: 0.00004
+  wandb:
+    entity: "metropolis"
+    project: "TAO wandb trainings"
+    tags:
+      - "training"
+      - "efficientdet"
+evaluate:
+  batch_size: 20
+  num_samples: 5000
+encryption_key: 'nvidia_tlt'
+results_dir: '/home/scratch.p3/vpraveen/tao-tf2/efficientdet_b0_wandb'

@@ -1,0 +1,4 @@
+export:
+  checkpoint: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.tlt'
+  onnx_file: '/home/binz/tao-tf2/results_enb0_16bit/weights/efficientnet-b0_010.onnx'
+encryption_key: 'nvidia_tlt'

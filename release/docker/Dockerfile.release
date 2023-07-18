@@ -1,0 +1,37 @@
+FROM nvcr.io/nvidia/tao/tao-toolkit:5.0.0-tf2.9.1-base
+
+# Installing the TAO Toolkit source code packages.
+WORKDIR /opt/nvidia
+COPY dist/*.whl /opt/nvidia/wheels/
+RUN python -m pip install pip --upgrade \
+    && cd wheels && ls ./*.whl|xargs -I'{}' python -m pip install '{}' \
+    && rm *.whl
+
+RUN rm -rf /opt/nvidia/entrypoint.d/*.txt
+COPY release/docker/entrypoint.d/* /opt/nvidia/entrypoint.d/
+
+# Changes required from security scan updates.
+RUN apt-get update && apt-get install --only-upgrade libksba8 openssl libssl-dev linux-libc-dev -y
+
+# Update pip package
+RUN python -m pip install --upgrade joblib jupyter-core pillow mpmath tornado werkzeug setuptools grpcio
+# Removing graphviz since pip show shows no dependencies or requirements for it.
+# Output of `pip show graphviz`
+# Home-page: https://github.com/xflr6/graphviz
+# Location: /usr/local/lib/python3.8/dist-packages
+# Requires:
+# Required-by:
+# Updating container python packages
+RUN python -m pip uninstall graphviz -y
+
+# Resolving container scan vulnerabilities
+ENV NVM_DIR=/usr/local/nvm
+RUN source "$NVM_DIR/nvm.sh" \
+    && nvm install 20.2.0 --reinstall-packages-from=16.15.1 node \
+    && nvm uninstall 16.15.1
+
+ENV NVIDIA_PRODUCT_NAME "TAO Toolkit"
+ENV TAO_TOOLKIT_VERSION="5.0.0"
+ENV NVIDIA_TAO_TOOLKIT_VERSION="${TAO_TOOLKIT_VERSION}-TF2"
+
+CMD [ "/bin/bash" ]
