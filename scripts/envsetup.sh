@@ -53,6 +53,8 @@ function _check_tao_tf2_requirements(){
 
     if ! command -v jq >/dev/null; then
         echo -e "\033[1;31mERROR:\033[0m jq not found"
+        echo -e "\033[1;31mERROR:\033[0m Please install jq by running the following command"
+        echo -e "sudo apt-get install jq -y"
         return 1
     fi
 
