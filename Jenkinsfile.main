@@ -106,8 +106,8 @@ spec:
                         docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
                             sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
                             sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
-                            sh "docker image tag ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} ${IMAGE_NAME}:v${TAO_VERSION}-nightly-latest"
-                            sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-nightly-latest"
+                            sh "docker image tag ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} ${IMAGE_NAME}_v${TAO_VERSION}-nightly-latest"
+                            sh "docker push ${IMAGE_NAME}_v${TAO_VERSION}-nightly-latest"
                         }
                     }
                 }
