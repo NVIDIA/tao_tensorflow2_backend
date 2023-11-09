@@ -26,7 +26,7 @@ onnx-graphsurgeon==0.3.26
 git+https://github.com/onnx/tensorflow-onnx
 pytest==7.2.1
 graphviz==0.20.1
-pyarrow==8.0.0
+pyarrow==14.0.1
 simplejson==3.18.3
 tabulate==0.9.0
 wandb<=0.13.4
