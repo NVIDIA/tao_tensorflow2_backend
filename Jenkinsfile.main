@@ -6,10 +6,10 @@ metadata:
         some-label: tao-tf2-dev-build
 spec:
     imagePullSecrets:
-      - name: tltimagepullsecret
+      - name: svc-tlt-ci-ngcimagepullsecret
     containers:
     - name: docker
-      image: docker:19.03.1-dind
+      image: docker:24.0.5-dind
       securityContext:
         privileged: true
       env:
@@ -27,7 +27,7 @@ spec:
           memory: "16Gi"
         limits:
           nvidia.com/gpu: 1
-          memory: "32Gi"
+          memory: "40Gi"
       tty: true
     restartPolicy: Never
     backoffLimit: 4
