@@ -124,24 +124,20 @@ spec:
             //         }
             //     }
             // }
-            // stage ('wheeltamer_tests') {
-            //     gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
-            //         docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
-            //             // Pull wheeltamer container and run wheeltamer test
-            //             sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer"
-            //             // sh "docker run --rm -v ${WORKSPACE}/dist:/workspace \
-            //             //     -e 'EXPECTED_PKG_LICENSE=Apache 2.0' \
-            //             //     -e 'ALLOWED_NOSEC_COUNT=0' \
-            //             //     gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer /bin/bash -c 'wheeltamer'"
-            //         }
-            //     }
-            // }
-        }
-        container("ubuntu") {
-          echo "hey inside ubuntu docker . . . "
-          stage ('ubuntu stage') {
-            echo "hey inside stage of ubuntu docker . . . "
-          }
+            stage ('wheeltamer_tests') {
+                gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
+                    docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
+                        // Pull wheeltamer container and run wheeltamer test
+                        sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer"
+                        // sh "docker run --rm -v ${WORKSPACE}/dist:/workspace \
+                        //     -e 'EXPECTED_PKG_LICENSE=Apache 2.0' \
+                        //     -e 'ALLOWED_NOSEC_COUNT=0' \
+                        //     gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer /bin/bash -c 'wheeltamer'"
+                    }
+                }
+            }
+
+            
         }
     }
 }
