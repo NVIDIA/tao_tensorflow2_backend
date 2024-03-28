@@ -107,35 +107,27 @@ spec:
             // }
         }
         container("docker"){
-        //     stage ('build_publish_docker') {
-        //         gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
-        //             withEnv(["TAO_VERSION=3.22.11", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.6"]){
-        //                 docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
-        //                     sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
-        //                 }
-        //                 docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
-        //                     sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
-        //                 }
-        //             }
-        //         }
-        //     }
-            // stage ('wheeltamer_tests') {
-            //     gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
-            //         docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
-            //             // Pull wheeltamer container and run wheeltamer test
-            //             sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer"
-            //             sh "docker run --rm -v ${WORKSPACE}/dist:/workspace \
-            //                 -e 'EXPECTED_PKG_LICENSE=Apache 2.0' \
-            //                 -e 'ALLOWED_NOSEC_COUNT=0' \
-            //                 gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer /bin/bash -c 'wheeltamer'"
+            // stage ('build_publish_docker') {
+            //     gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
+            //         withEnv(["TAO_VERSION=3.22.11", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.6"]){
+            //             docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
+            //                 sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
+            //             }
+            //             docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
+            //                 sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
+            //             }
             //         }
             //     }
             // }
-
-            stage ('checkmarx_scan') {
-                gitlabCommitStatus(name: "checkmarx_scan_test", connection: gitLabConnection('git-lab-master')) {
+            stage ('wheeltamer_tests') {
+                gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
                     docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
+                        // Pull wheeltamer container and run wheeltamer test
                         sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer"
+                        // sh "docker run --rm -v ${WORKSPACE}/dist:/workspace \
+                        //     -e 'EXPECTED_PKG_LICENSE=Apache 2.0' \
+                        //     -e 'ALLOWED_NOSEC_COUNT=0' \
+                        //     gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer /bin/bash -c 'wheeltamer'"
                     }
                 }
             }
