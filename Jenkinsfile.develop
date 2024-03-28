@@ -29,7 +29,7 @@ spec:
           nvidia.com/gpu: 1
           memory: "40Gi"
       tty: true
-    restartPolicy: Always
+    restartPolicy: Never
     backoffLimit: 4
     nodeSelector:
       kubernetes.io/os: linux
