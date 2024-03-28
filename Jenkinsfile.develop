@@ -139,6 +139,9 @@ spec:
         }
         container("ubuntu") {
           sh "hey inside ubuntu docker . . . "
+          stage ('ubuntu stage') {
+            sh "hey inside stage of ubuntu docker . . . "
+          }
         }
     }
 }
