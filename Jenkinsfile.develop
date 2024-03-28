@@ -2,11 +2,11 @@ podTemplate (cloud:'sc-ipp-blossom-prod', yaml : """
 apiVersion: v1
 kind: Pod
 metadata:
-    labels:
-        some-label: tao-tf2-dev-build
+  labels:
+    some-label: tao-tf2-dev-build
 spec:
     imagePullSecrets:
-      - name: svc-tlt-ci-ngcimagepullsecret
+    - name: svc-tlt-ci-ngcimagepullsecret
     containers:
     - name: docker
       image: docker:24.0.5-dind
