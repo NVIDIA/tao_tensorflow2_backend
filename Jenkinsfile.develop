@@ -128,6 +128,7 @@ spec:
                 gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
                     docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
                         // Pull wheeltamer container and run wheeltamer test
+                        sh "docker ps"
                         sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer"
                         // sh "docker run --rm -v ${WORKSPACE}/dist:/workspace \
                         //     -e 'EXPECTED_PKG_LICENSE=Apache 2.0' \
