@@ -131,6 +131,13 @@ spec:
                     }
                 }
             }
+
+            stage ('checkmarx-scans') {
+                gitlabCommitStatus(name: "checkmarx-scan-test", connection: gitLabConnection('git-lab-master')) {
+                    sh "inside checkmarx.. . "
+                }
+            }
+
         }
     }
 }
