@@ -138,45 +138,25 @@ spec:
             //     }
             // }
 
-            stage('checkmarx-csv') {
-                environment {
+            stage ('checkmarx-csv') {
+                gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
                     CHECKMARX_APP_ACCT_CREDS = credentials('checkmarx-ac-account')
-                    CHECKMARX_USERNAME = "${CHECKMARX_APP_ACCT_CREDS_USR}"
-                    CHECKMARX_PASSWORD = "${CHECKMARX_APP_ACCT_CREDS_PSW}"
-                    CX_TEAM = 'CxServer/SP/Company/TLT'
-                    CX_PROJECT = 'TAO-TF2' // project name here
-                    CHECKMARX_BASE_URL = 'https://checkmarx.nvidia.com'
-
-                    CHECKMARX_VERSION = '9.0'
-                    CHECKMARX_SETTINGS_OVERRIDE = 'false'
-                    CHECKMARX_CONFIGURATION = 'Default Configuration'
-                    CHECKMARX_SCAN_PRESET = 'Checkmarx Default'
-                    CX_FLOW_BREAK_BUILD = 'true' // fail build if vulnerabilities are present
-                    CX_FLOW_ZIP_EXCLUDE='' // exclude files from being zipped to send to scan (ex = "\.git/.*, .*\.png")
-                    CX_PARAMS = '' // optional params to set
-                }
-                script {
-                    echo "Starting checkmarx process ..."
-                    docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
-                        def img = 'pstooling/images/base-images/debian:cxflow-latest-prodsec-stable'
-                        sh "docker ps"
-                        def cxFlow = docker.image(img).inside("--entrypoint=''") {
-                        sh '/app/check_variables.sh jenkins'
-                        sh """
-                            java -jar /app/cx-flow.jar \
-                            --scan \
-                            --bug-tracker="Csv" \
-                            --csv.file-name-format="[TEAM]-[PROJECT]-[TIME].csv" \
-                            --csv.include-headers="true" \
-                            --csv.data-folder="checkmarx" \
-                            --app="${CX_PROJECT}" \
-                            --cx-team="${CX_TEAM}" \
-                            --cx-project="${CX_PROJECT}" \
-                            --spring.profiles.active="sast" \
-                            --f=. \
-                            ${CX_PARAMS}
-                        """
-                        sh '/app/check_timeout.sh'
+                    withEnv([
+                        "CHECKMARX_USERNAME=${CHECKMARX_APP_ACCT_CREDS_USR}",
+                        "CHECKMARX_PASSWORD=${CHECKMARX_APP_ACCT_CREDS_PSW}",
+                        "CX_TEAM=CxServer/SP/Company/TLT",
+                        "CX_PROJECT=TAO-TF2",
+                        "CHECKMARX_BASE_URL=https://checkmarx.nvidia.com",
+                        "CHECKMARX_VERSION=9.0",
+                        "CHECKMARX_SETTINGS_OVERRIDE=false",
+                        "CHECKMARX_CONFIGURATION=Default Configuration",
+                        "CHECKMARX_SCAN_PRESET=Checkmarx Default",
+                        "CX_FLOW_BREAK_BUILD=true",
+                        "CX_FLOW_ZIP_EXCLUDE=",
+                        "CX_PARAMS="
+                    ]) {
+                        docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
+                            sh "docker ps"
                         }
                     }
                 }
