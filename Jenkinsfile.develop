@@ -140,10 +140,7 @@ spec:
 
             stage ('checkmarx-csv') {
                 gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
-                    def CHECKMARX_APP_ACCT_CREDS = credentials('checkmarx-ac-account')
                     withEnv([
-                        "CHECKMARX_USERNAME=${CHECKMARX_APP_ACCT_CREDS_USR}",
-                        "CHECKMARX_PASSWORD=${CHECKMARX_APP_ACCT_CREDS_PSW}",
                         "CX_TEAM=CxServer/SP/Company/TLT",
                         "CX_PROJECT=TAO-TF2",
                         "CHECKMARX_BASE_URL=https://checkmarx.nvidia.com",
