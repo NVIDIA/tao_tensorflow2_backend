@@ -155,6 +155,21 @@ spec:
                             docker.image(img).inside("--entrypoint=''") {
                                 echo "inside docker in docker . . ."
                                 sh '/app/check_variables.sh jenkins'
+                                sh """
+                                    java -jar /app/cx-flow.jar \
+                                    --scan \
+                                    --bug-tracker="Csv" \
+                                    --csv.file-name-format="[TEAM]-[PROJECT]-[TIME].csv" \
+                                    --csv.include-headers="true" \
+                                    --csv.data-folder="checkmarx" \
+                                    --app="${CX_PROJECT}" \
+                                    --cx-team="${CX_TEAM}" \
+                                    --cx-project="${CX_PROJECT}" \
+                                    --spring.profiles.active="sast" \
+                                    --f=. \
+                                    ${CX_PARAMS}
+                                """
+                                sh '/app/check_timeout.sh'
                             }
                         }
                     }
