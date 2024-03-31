@@ -156,7 +156,6 @@ spec:
                     CX_PARAMS = '' // optional params to set
                 }
                 script {
-                    sh 'apt-get update'
                     echo "Starting checkmarx process ..."
                     docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
                         def img = 'pstooling/images/base-images/debian:cxflow-latest-prodsec-stable'
