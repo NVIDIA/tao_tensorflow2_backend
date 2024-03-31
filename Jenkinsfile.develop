@@ -134,10 +134,25 @@ spec:
 
             stage ('checkmarx-scans') {
                 gitlabCommitStatus(name: "checkmarx-scan-test", connection: gitLabConnection('git-lab-master')) {
-                    docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
-                        echo "inside checkmarx . . ."
-                        sh "docker ps"
-                        sh "docker pull gitlab-master.nvidia.com:5005/pstooling/images/base-images/debian:cxflow-latest-prodsec-stable"
+                    withEnv([
+                        "CHECKMARX_USERNAME=achafale",
+                        "CHECKMARX_PASSWORD=Checkmarx@123",
+                        "CX_TEAM=CxServer/SP/Company/TLT",
+                        "CX_PROJECT=TAO-TF2",
+                        "CHECKMARX_BASE_URL=https://checkmarx.nvidia.com",
+                        "CHECKMARX_VERSION=9.0",
+                        "CHECKMARX_SETTINGS_OVERRIDE=false",
+                        "CHECKMARX_CONFIGURATION=Default Configuration",
+                        "CHECKMARX_SCAN_PRESET=Checkmarx Default",
+                        "CX_FLOW_BREAK_BUILD=true",
+                        "CX_FLOW_ZIP_EXCLUDE=",
+                        "CX_PARAMS="
+                    ]){
+                        docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
+                            echo "inside checkmarx . . ."
+                            sh "docker ps"
+                            sh "docker pull gitlab-master.nvidia.com:5005/pstooling/images/base-images/debian:cxflow-latest-prodsec-stable"
+                        }
                     }
                 }
             }
