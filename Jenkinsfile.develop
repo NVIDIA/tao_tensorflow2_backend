@@ -2,11 +2,11 @@ podTemplate (cloud:'sc-ipp-blossom-prod', yaml : """
 apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    some-label: tao-tf2-dev-build
+    labels:
+        some-label: tao-tf2-dev-build
 spec:
     imagePullSecrets:
-    - name: svc-tlt-ci-ngcimagepullsecret
+      - name: svc-tlt-ci-ngcimagepullsecret
     containers:
     - name: docker
       image: docker:24.0.5-dind
@@ -28,11 +28,6 @@ spec:
         limits:
           nvidia.com/gpu: 1
           memory: "40Gi"
-      tty: true
-    - name: ubuntu
-      image: ubuntu:20.04
-      command:
-      - cat
       tty: true
     restartPolicy: Never
     backoffLimit: 4
@@ -57,111 +52,85 @@ spec:
                     sh 'nvidia-smi'
                 }
             }
-            // stage ('setup') {
-            //     gitlabCommitStatus(name: "setup", connection: gitLabConnection('git-lab-master')) {
-            //         sh "source scripts/envsetup.sh"
-            //         def workspace_path = pwd()
-            //         def pythonpath_env = 'PYTHONPATH=' + workspace_path
-            //         def ci_path_env = 'CI_PROJECT_DIR=' + workspace_path
-            //         command_env = pythonpath_env + ' ' + ci_path_env
-            //     }
-            // }
-            // stage ('setup_scratch_space') {
-            //     sh 'apt-get update'
-            //     sh 'apt-get install cifs-utils -y'
-            //     sh 'env | sort'
-            //     sh 'mkdir -p /home/scratch.metropolis2'
-            //     sh 'ls -l /home/scratch.metropolis2'
-            //     withCredentials([usernamePassword(credentialsId: 'svc-tlt-ci-mount', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
-            //         sh 'mount -t cifs -o "vers=2.0,username=${USERNAME},password=${PASSWORD},dom=nvidia.com,dir_mode=0444,file_mode=0444" //dc2-cdot49-sw-svm02/scratch.metropolis2 /home/scratch.metropolis2'
-            //     }
-            //     sh 'ls -l /home/scratch.metropolis2'
-            // }
-            // stage ('static_tests') {
-            //     gitlabCommitStatus(name: "static_tests", connection: gitLabConnection('git-lab-master')) {
-            //         println "started static_tests .."
-            //         sh "${command_env} python ci/run_static_tests.py"
-            //     }
-            // }
-            // stage("functional_tests"){
-            //     gitlabCommitStatus(name: "functional_tests", connection: gitLabConnection('git-lab-master')) {
-            //         println "started functional_tests .."
-            //         sh "${command_env} python ci/run_functional_tests.py"
-            //     }
-            // }
-            // stage ('build_wheel') {
-            //     gitlabCommitStatus(name: "build_wheel", connection: gitLabConnection('git-lab-master')) {
-            //         // Building the wheels for the tao source code.
-            //         def BUILD_TYPE="dev"
-            //         def TAO_WHEEL_VERSION="5.0.0"
-            //         def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}${BUILD_TYPE}0"
-            //         def PYTHON_VER="cp38-cp38"
-            //         def ARCH="linux_x86_64"
-            //         sh "echo '${BUILD_NUMBER}-${BUILD_TYPE}' > build.info"
-            //         sh "pwd"
-            //         sh "${command_env} make build"
-            //         sh "${command_env} rm -rf *.egg-info"
-            //         sh "make install"
-            //         sh "efficientdet_tf2 --help"
-            //         sh "classification_tf2 --help"
-            //     }
-            // }
-            // stage ('cleanup_scratch_space') {
-            //     sh 'umount /home/scratch.metropolis2'
-            //     sh 'ls -l /home/scratch.metropolis2'
-            // }
+            stage ('setup') {
+                gitlabCommitStatus(name: "setup", connection: gitLabConnection('git-lab-master')) {
+                    sh "source scripts/envsetup.sh"
+                    def workspace_path = pwd()
+                    def pythonpath_env = 'PYTHONPATH=' + workspace_path
+                    def ci_path_env = 'CI_PROJECT_DIR=' + workspace_path
+                    command_env = pythonpath_env + ' ' + ci_path_env
+                }
+            }
+            stage ('setup_scratch_space') {
+                sh 'apt-get update'
+                sh 'apt-get install cifs-utils -y'
+                sh 'env | sort'
+                sh 'mkdir -p /home/scratch.metropolis2'
+                sh 'ls -l /home/scratch.metropolis2'
+                withCredentials([usernamePassword(credentialsId: 'svc-tlt-ci-mount', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
+                    sh 'mount -t cifs -o "vers=2.0,username=${USERNAME},password=${PASSWORD},dom=nvidia.com,dir_mode=0444,file_mode=0444" //dc2-cdot49-sw-svm02/scratch.metropolis2 /home/scratch.metropolis2'
+                }
+                sh 'ls -l /home/scratch.metropolis2'
+            }
+            stage ('static_tests') {
+                gitlabCommitStatus(name: "static_tests", connection: gitLabConnection('git-lab-master')) {
+                    println "started static_tests .."
+                    sh "${command_env} python ci/run_static_tests.py"
+                }
+            }
+            stage("functional_tests"){
+                gitlabCommitStatus(name: "functional_tests", connection: gitLabConnection('git-lab-master')) {
+                    println "started functional_tests .."
+                    sh "${command_env} python ci/run_functional_tests.py"
+                }
+            }
+            stage ('build_wheel') {
+                gitlabCommitStatus(name: "build_wheel", connection: gitLabConnection('git-lab-master')) {
+                    // Building the wheels for the tao source code.
+                    def BUILD_TYPE="dev"
+                    def TAO_WHEEL_VERSION="5.0.0"
+                    def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}${BUILD_TYPE}0"
+                    def PYTHON_VER="cp38-cp38"
+                    def ARCH="linux_x86_64"
+                    sh "echo '${BUILD_NUMBER}-${BUILD_TYPE}' > build.info"
+                    sh "pwd"
+                    sh "${command_env} make build"
+                    sh "${command_env} rm -rf *.egg-info"
+                    sh "make install"
+                    sh "efficientdet_tf2 --help"
+                    sh "classification_tf2 --help"
+                }
+            }
+            stage ('cleanup_scratch_space') {
+                sh 'umount /home/scratch.metropolis2'
+                sh 'ls -l /home/scratch.metropolis2'
+            }
         }
         container("docker"){
-            // stage ('build_publish_docker') {
-            //     gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
-            //         withEnv(["TAO_VERSION=3.22.11", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.6"]){
-            //             docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
-            //                 sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
-            //             }
-            //             docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
-            //                 sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
-            //             }
-            //         }
-            //     }
-            // }
-            // stage ('wheeltamer_tests') {
-            //     gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
-            //         docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
-            //             // Pull wheeltamer container and run wheeltamer test
-            //             sh "docker ps"
-            //             sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer"
-            //             // sh "docker run --rm -v ${WORKSPACE}/dist:/workspace \
-            //             //     -e 'EXPECTED_PKG_LICENSE=Apache 2.0' \
-            //             //     -e 'ALLOWED_NOSEC_COUNT=0' \
-            //             //     gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer /bin/bash -c 'wheeltamer'"
-            //         }
-            //     }
-            // }
-
-            stage ('checkmarx-csv') {
-                gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
-                    withEnv([
-                        "CX_TEAM=CxServer/SP/Company/TLT",
-                        "CX_PROJECT=TAO-TF2",
-                        "CHECKMARX_BASE_URL=https://checkmarx.nvidia.com",
-                        "CHECKMARX_VERSION=9.0",
-                        "CHECKMARX_SETTINGS_OVERRIDE=false",
-                        "CHECKMARX_CONFIGURATION=Default Configuration",
-                        "CHECKMARX_SCAN_PRESET=Checkmarx Default",
-                        "CX_FLOW_BREAK_BUILD=true",
-                        "CX_FLOW_ZIP_EXCLUDE=",
-                        "CX_PARAMS="
-                    ]) {
-
-                        docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
-                            sh "docker ps"
-                        }
+        //     stage ('build_publish_docker') {
+        //         gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
+        //             withEnv(["TAO_VERSION=3.22.11", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.6"]){
+        //                 docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
+        //                     sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
+        //                 }
+        //                 docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
+        //                     sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
+        //                 }
+        //             }
+        //         }
+        //     }
+            stage ('wheeltamer_tests') {
+                gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
+                    docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
+                        // Pull wheeltamer container and run wheeltamer test
+                        sh "docker pull gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer"
+                        sh "docker run --rm -v ${WORKSPACE}/dist:/workspace \
+                            -e 'EXPECTED_PKG_LICENSE=Apache 2.0' \
+                            -e 'ALLOWED_NOSEC_COUNT=0' \
+                            gitlab-master.nvidia.com:5005/dl/pypi/wheel-ci-cd:wheeltamer /bin/bash -c 'wheeltamer'"
                     }
                 }
             }
-
-            
         }
     }
 }
-
