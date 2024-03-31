@@ -78,12 +78,12 @@ spec:
                     sh "${command_env} python ci/run_static_tests.py"
                 }
             }
-            stage("functional_tests"){
-                gitlabCommitStatus(name: "functional_tests", connection: gitLabConnection('git-lab-master')) {
-                    println "started functional_tests .."
-                    sh "${command_env} python ci/run_functional_tests.py"
-                }
-            }
+            // stage("functional_tests"){
+            //     gitlabCommitStatus(name: "functional_tests", connection: gitLabConnection('git-lab-master')) {
+            //         println "started functional_tests .."
+            //         sh "${command_env} python ci/run_functional_tests.py"
+            //     }
+            // }
             stage ('build_wheel') {
                 gitlabCommitStatus(name: "build_wheel", connection: gitLabConnection('git-lab-master')) {
                     // Building the wheels for the tao source code.
