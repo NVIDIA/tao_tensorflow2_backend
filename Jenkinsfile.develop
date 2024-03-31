@@ -137,7 +137,7 @@ spec:
                     docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
                         echo "inside checkmarx . . ."
                         sh "docker ps"
-                        sh "docker pull hello-world"
+                        sh "docker pull gitlab-master.nvidia.com:5005/pstooling/images/base-images/debian:cxflow-latest-prodsec-stable"
                     }
                 }
             }
