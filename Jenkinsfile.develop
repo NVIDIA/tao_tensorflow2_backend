@@ -154,9 +154,6 @@ spec:
                     ]) {
 
                         docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg'){
-                            CHECKMARX_APP_ACCT_CREDS = credentials('checkmarx-ac-account')
-                            CHECKMARX_USERNAME = "${CHECKMARX_APP_ACCT_CREDS_USR}"
-                            CHECKMARX_PASSWORD = "${CHECKMARX_APP_ACCT_CREDS_PSW}"
                             sh "docker ps"
                         }
                     }
