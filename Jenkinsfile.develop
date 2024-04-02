@@ -150,11 +150,9 @@ spec:
                         "CX_PARAMS=''"
                         ]){
                             docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
-                                echo "inside docker . . ."
                                 def img = 'pstooling/images/base-images/debian:cxflow-latest-prodsec-stable'
                                 sh "docker ps"
                                 docker.image(img).inside("--entrypoint=''") {
-                                    echo "inside docker in docker . . ."
                                     sh '/app/check_variables.sh jenkins'
                                     sh """
                                     java -jar /app/cx-flow.jar \
