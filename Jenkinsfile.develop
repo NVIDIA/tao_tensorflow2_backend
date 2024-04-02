@@ -151,7 +151,6 @@ spec:
                         ]){
                             docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
                                 def img = 'pstooling/images/base-images/debian:cxflow-latest-prodsec-stable'
-                                sh "docker ps"
                                 docker.image(img).inside("--entrypoint=''") {
                                     sh '/app/check_variables.sh jenkins'
                                     sh """
