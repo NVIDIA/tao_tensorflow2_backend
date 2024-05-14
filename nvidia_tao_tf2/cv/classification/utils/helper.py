@@ -247,7 +247,7 @@ def setup_config(model, reg_config, bn_config=None, custom_objs=None):
 
     for layer, layer_config in zip(model.layers, mconfig['layers']):
         # BN settings
-        if type(layer) == keras.layers.BatchNormalization:
+        if isinstance(layer, keras.layers.BatchNormalization):
             layer_config['config']['momentum'] = bn_momentum
             layer_config['config']['epsilon'] = bn_epsilon
 

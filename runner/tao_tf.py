@@ -104,7 +104,8 @@ def instantiate_dev_docker(gpus, mount_file,
                            env_var_list,
                            tag, command, ulimit=None,
                            shm_size="16G", run_as_user=False,
-                           port_mapping=None):
+                           port_mapping=None,
+                           tty=True):
     """Instiate the docker container."""
     docker_image = "{}/{}@{}".format(DOCKER_REGISTRY, DOCKER_REPOSITORY, DOCKER_DIGEST)
     if tag is not None:
@@ -113,7 +114,10 @@ def instantiate_dev_docker(gpus, mount_file,
     gpu_string = get_docker_gpus_prefix(gpus)
 
     # Prefix for the run command.
-    run_command = "{} run -it --rm".format(DOCKER_COMMAND)
+    if tty:
+        run_command = "{} run -it --rm".format(DOCKER_COMMAND)
+    else:
+        run_command = "{} run --rm".format(DOCKER_COMMAND)
 
     # get default mount points.
     formatted_mounts = get_formatted_mounts(MOUNTS_PATH)
@@ -231,6 +235,11 @@ def parse_cli_args(args=None):
         default=None,
         help="Port mapping (e.g. 8889:8889)."
     )
+    parser.add_argument("--no-tty",
+                        dest="tty",
+                        action="store_false")
+    parser.set_defaults(tty=True)
+
     args = vars(parser.parse_args(args))
     return args
 
@@ -260,7 +269,8 @@ def main(cl_args=None):
             args["tag"], command_args,
             args["ulimit"], args["shm_size"],
             args["run_as_user"],
-            args['port']
+            args['port'],
+            args['tty']
         )
     except subprocess.CalledProcessError:
         # Do nothing - the errors are printed in entrypoint launch.

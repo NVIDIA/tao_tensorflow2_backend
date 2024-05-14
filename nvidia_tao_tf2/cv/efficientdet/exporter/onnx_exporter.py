@@ -45,19 +45,19 @@ def get_tf_tensor_data(tensor):
 def tf_to_onnx_tensor(tensor, name=""):
     """Convert tensorflow tensor to onnx tensor."""
     np_data = get_tf_tensor_data(tensor)
-    if np_data.dtype == np.object:
+    if np_data.dtype == object:
         # assume np_data is string, numpy_helper.from_array accepts ndarray,
         # in which each item is of str while the whole dtype is of object.
         try:
             # Faster but fails on Unicode
-            # np_data = np_data.astype(np.str).astype(np.object)
+            # np_data = np_data.astype(np.str).astype(object)
             if len(np_data.shape) > 0:
-                np_data = np_data.astype(np.str).astype(np.object)
+                np_data = np_data.astype(np.str).astype(object)
             else:
-                np_data = np.array(str(np_data)).astype(np.object)
+                np_data = np.array(str(np_data)).astype(object)
         except UnicodeDecodeError:
             decode = np.vectorize(lambda x: x.decode('UTF-8'))
-            np_data = decode(np_data).astype(np.object)
+            np_data = decode(np_data).astype(object)
         except Exception as e:  # noqa pylint: disable=W0611
             raise RuntimeError(f"Not support type: {type(np_data.flat[0])}") from e
     return numpy_helper.from_array(np_data, name=name)
@@ -258,7 +258,7 @@ class EfficientDetGraphSurgeon:
             shape_in = node.inputs[0].shape
             if shape_in is None or len(shape_in) not in [4, 5]:  # TFOD graphs have 5-dim inputs on this Reshape
                 continue
-            if type(node.inputs[1]) != gs.Constant:
+            if not isinstance(node.inputs[1], gs.Constant):
                 continue
             shape_out = node.inputs[1].values
             if len(shape_out) != 3 or shape_out[0] != 1 or shape_out[1] != -1:
@@ -272,7 +272,7 @@ class EfficientDetGraphSurgeon:
 
         # Other Reshapes only need to change the first dim to -1, as long as there are no -1's already
         for node in [node for node in self.graph.nodes if node.op == "Reshape"]:
-            if type(node.inputs[1]) != gs.Constant or node.inputs[1].values[0] != 1 or -1 in node.inputs[1].values:
+            if not isinstance(node.inputs[1], gs.Constant) or node.inputs[1].values[0] != 1 or -1 in node.inputs[1].values:
                 continue
             node.inputs[1].values[0] = -1
             print(f"Updating Reshape node {node.name} to {node.inputs[1].values}")
@@ -283,18 +283,18 @@ class EfficientDetGraphSurgeon:
             if len(node.inputs) < 4 or node.inputs[0].shape is None:
                 continue
             scale_h, scale_w = None, None
-            if type(node.inputs[3]) == gs.Constant:
+            if isinstance(node.inputs[3], gs.Constant):
                 # The sizes input is already folded
                 if len(node.inputs[3].values) != 4:
                     continue
                 scale_h = node.inputs[3].values[2] / node.inputs[0].shape[2]
                 scale_w = node.inputs[3].values[3] / node.inputs[0].shape[3]
-            if type(node.inputs[3]) == gs.Variable:
+            if isinstance(node.inputs[3], gs.Variable):
                 # The sizes input comes from Shape+Slice+Concat
                 concat = node.i(3)
                 if concat.op != "Concat":
                     continue
-                if type(concat.inputs[1]) != gs.Constant or len(concat.inputs[1].values) != 2:
+                if not isinstance(concat.inputs[1], gs.Constant) or len(concat.inputs[1].values) != 2:
                     continue
                 scale_h = concat.inputs[1].values[0] / node.inputs[0].shape[2]
                 scale_w = concat.inputs[1].values[1] / node.inputs[0].shape[3]

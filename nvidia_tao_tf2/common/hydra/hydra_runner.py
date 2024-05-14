@@ -1,5 +1,7 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
 #
+# Original source taken from https://github.com/NVIDIA/NeMo
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,7 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Decorator to read in hydra config and validate against a dataclass structured config."""
+
+"""Utility class to work with hydra config files."""
 
 import functools
 import os
@@ -25,7 +28,7 @@ from omegaconf import DictConfig
 
 
 def hydra_runner(
-    config_path: Optional[str] = None, config_name: Optional[str] = None, schema: Optional[Any] = None
+    config_path: Optional[str] = ".", config_name: Optional[str] = None, schema: Optional[Any] = None
 ) -> Callable[[TaskFunction], Any]:
     """Decorator used for passing the Config paths to main function.
 
@@ -33,6 +36,9 @@ def hydra_runner(
 
     Args:
         config_path: Optional path that will be added to config search directory.
+            NOTE: The default value of `config_path` has changed between Hydra 1.0 and Hydra 1.1+.
+            Please refer to https://hydra.cc/docs/next/upgrades/1.0_to_1.1/changes_to_hydra_main_config_path/
+            for details.
         config_name: Pathname of the config file.
         schema: Structured config  type representing the schema used for validation/providing default values.
     """
@@ -46,7 +52,6 @@ def hydra_runner(
             args = get_args_parser()
 
             # Parse arguments in order to retrieve overrides
-            # Returns argparse.Namespace
             parsed_args = args.parse_args()
 
             # Get overriding args in dot string format
@@ -86,18 +91,21 @@ def hydra_runner(
 
             # Wrap a callable object with name `parse_args`
             # This is to mimic the ArgParser.parse_args() API.
-            class _argparse_wrapper:
-                def __init__(self, arg_parser):
-                    self.arg_parser = arg_parser
-                    self._actions = arg_parser._actions
+            def parse_args(self, args=None, namespace=None):
+                return parsed_args
 
-                def parse_args(self, args=None, namespace=None):
-                    return parsed_args
+            # Overwriting the default definition of parse_args
+            # function in argparse.Namespace.
+            parsed_args.parse_args = parse_args
 
             # no return value from run_hydra() as it may sometime actually run the task_function
             # multiple times (--multirun)
+            # argparse_wrapper = _argparse_wrapper(args)
+            argparse_wrapper = parsed_args
+
             _run_hydra(
-                args_parser=_argparse_wrapper(args),
+                args=argparse_wrapper,
+                args_parser=args,
                 task_function=task_function,
                 config_path=config_path,
                 config_name=config_name,

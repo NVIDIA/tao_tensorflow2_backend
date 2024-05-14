@@ -14,7 +14,7 @@
 """MLOps utils."""
 import logging
 
-from nvidia_tao_tf2.common.mlops.clearml import get_clearml_task
+from nvidia_tao_tf2.common.mlops.clearml import check_clearml_init, get_clearml_task
 from nvidia_tao_tf2.common.mlops.wandb import check_wandb_logged_in, initialize_wandb
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def init_mlops(cfg, name):
             config=cfg,
             results_dir=cfg.results_dir
         )
-    if cfg.train.get("clearml", None):
+    if cfg.train.get("clearml", None) and check_clearml_init():
         logger.info("Setting up communication with ClearML server.")
         get_clearml_task(
             cfg.train.clearml,
