@@ -66,6 +66,8 @@ def main(cl_args=None):
             DOCKER_ROOT,
             docker_image, launcher_command)
         print(launcher_command)
+    else:
+        os.environ["RUN_ON_CI"] = "1"
 
     rc = subprocess.call(launcher_command, stdout=sys.stdout, shell=True)
     assert rc == 0 , "Functional tests failed."

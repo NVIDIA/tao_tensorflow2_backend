@@ -71,7 +71,8 @@ if [ $BUILD_DOCKER = "1" ]; then
     fi
     if [ $BUILD_WHEEL = "1" ]; then
         echo "Building source code wheel ..."
-       tao_tf2 -- make build
+    #    tao_tf2 -- make build
+       tao_tf2 -- python3 setup.py bdist_wheel
     else
         echo "Skipping wheel builds ..."
     fi

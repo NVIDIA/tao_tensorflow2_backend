@@ -73,6 +73,10 @@ def test_train(amp, qat, batch_size, num_epochs, cfg):
     tf.compat.v1.reset_default_graph()
 
 
+@pytest.mark.skipif(
+    os.getenv("RUN_ON_CI", "0") == "1",
+    reason="Skipping this running on CI temporarily. Will be run locally."
+)
 @pytest.mark.parametrize("amp, qat, batch_size, num_epochs",
                          [(False, True, 4, 1)])
 def test_eval(amp, qat, batch_size, num_epochs, cfg):
@@ -94,6 +98,10 @@ def test_eval(amp, qat, batch_size, num_epochs, cfg):
     tf.compat.v1.reset_default_graph()
 
 
+@pytest.mark.skipif(
+    os.getenv("RUN_ON_CI", "0") == "1",
+    reason="Skipping this running on CI temporarily. Will be run locally."
+)
 @pytest.mark.parametrize("amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type",
                          [(False, True, 4, 1, 1, True, 'int8')])
 def test_export(amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type, cfg):

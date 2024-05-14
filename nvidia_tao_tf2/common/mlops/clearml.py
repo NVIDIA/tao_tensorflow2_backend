@@ -23,6 +23,21 @@ from clearml import Task
 logger = logging.getLogger(__name__)
 
 
+def check_clearml_init():
+    """Check if ClearML has been properly initialized."""
+    clearml_web_host = os.getenv("CLEARML_WEB_HOST", None)
+    clearml_api_host = os.getenv("CLEARML_API_HOST", None)
+    clearml_files_host = os.getenv("CLEARML_FILES_HOST", None)
+    clearml_api_access_key = os.getenv("CLEARML_API_ACCESS_KEY", None)
+    clearml_api_secret_key = os.getenv("CLEARML_API_SECRET_KEY", None)
+
+    if not all([clearml_web_host, clearml_api_host, clearml_files_host, clearml_api_access_key, clearml_api_secret_key]):
+        logger.warning("ClearML has not been initialized due to missing environment variables.")
+        return False
+
+    return True
+
+
 def get_clearml_task(clearml_config, network_name: str, action: str = "train"):
     """Get clearml task.
 
@@ -51,10 +66,7 @@ def get_clearml_task(clearml_config, network_name: str, action: str = "train"):
             task.set_base_docker(tao_base_container)
         return task
     except Exception as e:
-        logger.error(
-            "ClearML task init failed with error %s", e
-        )
         logger.warning(
-            "Training will still continue."
+            "ClearML task init failed with error %s, but training will still continue.", e
         )
         return task
