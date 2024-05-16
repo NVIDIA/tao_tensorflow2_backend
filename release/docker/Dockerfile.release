@@ -35,4 +35,19 @@ ENV TAO_TOOLKIT_VERSION="4.0.0"
 ENV NVIDIA_TAO_TOOLKIT_VERSION="${TAO_TOOLKIT_VERSION}-TF2"
 ENV TAO_TELEMETRY_SERVER="https://sqa-telemetry.metropolis.nvidia.com:443/api/v1/telemetry"
 
+# ================================================================================================
+# Code Coverage
+WORKDIR /workspace/tao-experiments
+RUN python -m pip install coverage
+
+# enable coverage hook on python startup
+ARG hook_file=/usr/local/lib/python3.10/dist-packages/coverage.pth
+RUN echo "import coverage; coverage.process_startup()" > ${hook_file}
+
+# Enable code coverage run
+RUN mkdir -p /workspace/code_coverage
+COPY coveragerc /workspace/code_coverage/
+ENV COVERAGE_PROCESS_START="/workspace/code_coverage/coveragerc"
+# ================================================================================================
+
 CMD [ "/bin/bash" ]
