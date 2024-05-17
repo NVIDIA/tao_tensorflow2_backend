@@ -28,6 +28,11 @@ spec:
       image: docker:24.0.5-dind
       securityContext:
         privileged: true
+      resources:
+        requests:
+          memory: "32Gi"
+        limits:
+          memory: "48Gi"
       env:
         - name: DOCKER_TLS_CERTDIR
           value: ""
