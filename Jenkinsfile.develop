@@ -130,7 +130,7 @@ spec:
         container("docker"){
             stage ('build_publish_docker') {
                 gitlabCommitStatus(name: "build_publish_docker", connection: gitLabConnection('git-lab-master')) {
-                    withEnv(["TAO_VERSION=5.0.0", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
+                    withEnv(["TAO_VERSION=5.2.0", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
                         docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
                             sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION} --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
                             sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
@@ -197,40 +197,42 @@ spec:
 
             stage ('pulse_oss_scan') {
                 gitlabCommitStatus(name: "pulse_oss_scan", connection: gitLabConnection('git-lab-master')) {
-                    withEnv(["TAO_VERSION=5.0.0", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
-                        docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
-                            docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
-                                def NSPECT_ID="NSPECT-76DN-OP7I"
-                                def SSA_TOKEN=getPulseToken()
-                                def CONTAINER_TAG="${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
-                                def CONTAINER_ARCHIVE="container_image.tar"
-                                def CONTAINER_SCAN_POLICY="policy.json"
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                        withEnv(["TAO_VERSION=5.2.0", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
+                            docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
+                                docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
+                                    def NSPECT_ID="NSPECT-76DN-OP7I"
+                                    def SSA_TOKEN=getPulseToken()
+                                    def CONTAINER_TAG="${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
+                                    def CONTAINER_ARCHIVE="container_image.tar"
+                                    def CONTAINER_SCAN_POLICY="policy.json"
 
-                                try {
-                                    sh """
-                                    docker save ${CONTAINER_TAG} > ${CONTAINER_ARCHIVE}
-                                    wget https://raw.githubusercontent.com/achafale/Jenkins-CI/main/policy.json
-                                    ls -al
-                                    docker run -v .:/dist -w /dist gitlab-master.nvidia.com:5005/pstooling/pulse-group/pulse-container-scanner/pulse-cli:stable /bin/sh -c "pulse-cli -n $NSPECT_ID --ssa $SSA_TOKEN scan -i $CONTAINER_ARCHIVE -p $CONTAINER_SCAN_POLICY -o || true"
-                                    """
-                                } catch (Exception e) {
-                                    echo "Continuing with the pipeline..."
-                                    echo "An error occurred: ${e.getMessage()}"
+                                    try {
+                                        sh """
+                                        docker save ${CONTAINER_TAG} > ${CONTAINER_ARCHIVE}
+                                        wget https://raw.githubusercontent.com/achafale/Jenkins-CI/main/policy.json
+                                        ls -al
+                                        docker run -v .:/dist -w /dist gitlab-master.nvidia.com:5005/pstooling/pulse-group/pulse-container-scanner/pulse-cli:stable /bin/sh -c "pulse-cli -n $NSPECT_ID --ssa $SSA_TOKEN scan -i $CONTAINER_ARCHIVE -p $CONTAINER_SCAN_POLICY -o || true"
+                                        """
+                                    } catch (Exception e) {
+                                        echo "Continuing with the pipeline..."
+                                        echo "An error occurred: ${e.getMessage()}"
+                                    }
+
+                                    execution_script = '''
+                                        wget https://raw.githubusercontent.com/achafale/Jenkins-CI/main/vulnerabilities_validation.py
+                                        ls -al
+                                        python3 -m pip install pandas
+                                        python3 vulnerabilities_validation.py
+                                    '''
+                                    def shellOutput = sh(script: execution_script, returnStdout: true).toString()
+                                    echo shellOutput
+                                    if (shellOutput.contains("Scan result : FAIL")) {
+                                        error("Unsuccessful Execution . . .")
+                                    }
+
+                                    sh "rm -rf ${CONTAINER_ARCHIVE}"
                                 }
-
-                                execution_script = '''
-                                    wget https://raw.githubusercontent.com/achafale/Jenkins-CI/main/vulnerabilities_validation.py
-                                    ls -al
-                                    python3 -m pip install pandas
-                                    python3 vulnerabilities_validation.py
-                                '''
-                                def shellOutput = sh(script: execution_script, returnStdout: true).toString()
-                                echo shellOutput
-                                if (shellOutput.contains("Scan result : FAIL")) {
-                                    error("Unsuccessful Execution . . .")
-                                }
-
-                                sh "rm -rf ${CONTAINER_ARCHIVE}"
                             }
                         }
                     }
