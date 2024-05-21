@@ -108,7 +108,7 @@ spec:
                 gitlabCommitStatus(name: "build_wheel", connection: gitLabConnection('git-lab-master')) {
                     // Building the wheels for the tao source code.
                     def BUILD_TYPE="dev"
-                    def TAO_WHEEL_VERSION="5.2.0"
+                    def TAO_WHEEL_VERSION="5.0.0"
                     def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
                     def PYTHON_VER="cp38-cp38"
                     def ARCH="linux_x86_64"
