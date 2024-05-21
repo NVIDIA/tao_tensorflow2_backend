@@ -108,7 +108,7 @@ spec:
                 gitlabCommitStatus(name: "build_wheel", connection: gitLabConnection('git-lab-master')) {
                     // Building the wheels for the tao source code.
                     def BUILD_TYPE="dev"
-                    def TAO_WHEEL_VERSION="5.0.0"
+                    def TAO_WHEEL_VERSION="4.0.0"
                     def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
                     def PYTHON_VER="cp38-cp38"
                     def ARCH="linux_x86_64"
@@ -127,7 +127,7 @@ spec:
                     // install jfrog first
                     sh "bash ${WORKSPACE}/docker/install_jfrog.sh"
                     sh "ls -al dist/"
-                    def TAO_WHEEL_VERSION="5.0.0"
+                    def TAO_WHEEL_VERSION="4.0.0"
                     def BUILD_TYPE="dev"
                     def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
                     def PYTHON_VER="py3-none"
