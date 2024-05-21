@@ -109,7 +109,7 @@ spec:
                     // Building the wheels for the tao source code.
                     def BUILD_TYPE="dev"
                     def TAO_WHEEL_VERSION="4.0.0"
-                    def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}0000.${BUILD_TYPE}0"
+                    def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
                     def PYTHON_VER="cp38-cp38"
                     def ARCH="linux_x86_64"
                     sh "echo '${BUILD_NUMBER}-${BUILD_TYPE}' > build.info"
@@ -129,11 +129,11 @@ spec:
                     sh "ls -al dist/"
                     def TAO_WHEEL_VERSION="4.0.0"
                     def BUILD_TYPE="dev"
-                    def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}0000.${BUILD_TYPE}0"
+                    def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
                     def PYTHON_VER="py3-none"
                     def ARCH="any"
                     def SRC="dist/nvidia_tao_tf2-${VER}-${PYTHON_VER}-${ARCH}.whl"
-                    def TARGET="sw-tao-pypi-local/nvidia-tao-tf2/${VER}/"
+                    def TARGET="sw-tao-pypi-local/nvidia-tao-tf2-release/${VER}/"
                     def PROP="component_name=nvidia-tao-tf2;arch=x86_64;os=linux;build_source=None;version=${VER};branch=main;release_approver=vpraveen"
                     withCredentials([usernamePassword(credentialsId: 'tao-artifactory-tkn', passwordVariable: 'JFROG_PASSWORD', usernameVariable: 'JFROG_USERNAME')]) {
                         sh "jfrog rt u --url=https://urm.nvidia.com/artifactory/ --user=${JFROG_USERNAME} --apikey=${JFROG_PASSWORD} --target-props '${PROP}' ${SRC} ${TARGET}"
