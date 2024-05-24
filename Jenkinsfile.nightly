@@ -266,6 +266,8 @@ spec:
                                         wget https://raw.githubusercontent.com/achafale/Jenkins-CI/main/policy.json
                                         ls -al
                                         docker run -v .:/dist -w /dist gitlab-master.nvidia.com:5005/pstooling/pulse-group/pulse-container-scanner/pulse-cli:stable /bin/sh -c "pulse-cli -n $NSPECT_ID --ssa $SSA_TOKEN scan -i $CONTAINER_ARCHIVE -p $CONTAINER_SCAN_POLICY -o || true"
+                                        ls -al
+                                        cat pulse-cli.log
                                         """
                                     } catch (Exception e) {
                                         echo "Continuing with the pipeline..."
