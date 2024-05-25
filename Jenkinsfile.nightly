@@ -5,7 +5,7 @@ def getPulseToken() {
     sh "apk add curl jq wget python3 py3-pip"
     token = sh(script: """
         curl --location --request POST 'https://x9thwm-cootr2q1jdv5p7b8iw4fs4ob3x6nqqsoznyk.ssa.nvidia.com/token' \
-            --user 'nvssa-prd-4tRcjNpunCJVFgVq7o1iYtC9pWIX-RxopTGdLecMinQ:ssap-inxnVdixO0dyR3Ednxd' \
+            --user 'nvssa-prd-4tRcjNpunCJVFgVq7o1iYtC9pWIX-RxopTGdLecMinQ:ssap-q829TuK8H09ehhjV7Yx' \
             --header 'Content-Type: application/x-www-form-urlencoded' \
             --data-urlencode 'grant_type=client_credentials' \
             --data-urlencode 'scope=nspect.verify scan.anchore' | jq -r '.access_token'
@@ -205,42 +205,40 @@ spec:
             
             stage ('checkmarx-scans') {
                 gitlabCommitStatus(name: "checkmarx-scan-test", connection: gitLabConnection('git-lab-master')) {
-                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        withCredentials([usernamePassword(credentialsId: 'checkmarx-ac-account', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
-                            withEnv([
-                            "CHECKMARX_USERNAME=${USERNAME}",
-                            "CHECKMARX_PASSWORD=${PASSWORD}",
-                            "CX_TEAM=CxServer/SP/Company/TLT",
-                            "CX_PROJECT=TAO-TF2",
-                            "CHECKMARX_BASE_URL=https://checkmarx.nvidia.com",
-                            "CHECKMARX_VERSION=9.0",
-                            "CHECKMARX_SETTINGS_OVERRIDE=false",
-                            "CHECKMARX_CONFIGURATION=Default Configuration",
-                            "CHECKMARX_SCAN_PRESET=Checkmarx Default",
-                            "CX_FLOW_BREAK_BUILD=true",
-                            "CX_FLOW_ZIP_EXCLUDE=''",
-                            "CX_PARAMS=''"
-                            ]){
-                                docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
-                                    def img = 'pstooling/images/base-images/debian:cxflow-latest-prodsec-stable'
-                                    docker.image(img).inside("--entrypoint=''") {
-                                        sh '/app/check_variables.sh jenkins'
-                                        sh """
-                                        java -jar /app/cx-flow.jar \
-                                        --scan \
-                                        --bug-tracker="Csv" \
-                                        --csv.file-name-format="[TEAM]-[PROJECT]-[TIME].csv" \
-                                        --csv.include-headers="true" \
-                                        --csv.data-folder="checkmarx" \
-                                        --app="${CX_PROJECT}" \
-                                        --cx-team="${CX_TEAM}" \
-                                        --cx-project="${CX_PROJECT}" \
-                                        --spring.profiles.active="sast" \
-                                        --f=. \
-                                        ${CX_PARAMS}
-                                        """
-                                        sh '/app/check_timeout.sh'
-                                    }
+                    withCredentials([usernamePassword(credentialsId: 'checkmarx-ac-account', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
+                        withEnv([
+                        "CHECKMARX_USERNAME=${USERNAME}",
+                        "CHECKMARX_PASSWORD=${PASSWORD}",
+                        "CX_TEAM=CxServer/SP/Company/TLT",
+                        "CX_PROJECT=TAO-TF2",
+                        "CHECKMARX_BASE_URL=https://checkmarx.nvidia.com",
+                        "CHECKMARX_VERSION=9.0",
+                        "CHECKMARX_SETTINGS_OVERRIDE=false",
+                        "CHECKMARX_CONFIGURATION=Default Configuration",
+                        "CHECKMARX_SCAN_PRESET=Checkmarx Default",
+                        "CX_FLOW_BREAK_BUILD=true",
+                        "CX_FLOW_ZIP_EXCLUDE=''",
+                        "CX_PARAMS=''"
+                        ]){
+                            docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
+                                def img = 'pstooling/images/base-images/debian:cxflow-latest-prodsec-stable'
+                                docker.image(img).inside("--entrypoint=''") {
+                                    sh '/app/check_variables.sh jenkins'
+                                    sh """
+                                    java -jar /app/cx-flow.jar \
+                                    --scan \
+                                    --bug-tracker="Csv" \
+                                    --csv.file-name-format="[TEAM]-[PROJECT]-[TIME].csv" \
+                                    --csv.include-headers="true" \
+                                    --csv.data-folder="checkmarx" \
+                                    --app="${CX_PROJECT}" \
+                                    --cx-team="${CX_TEAM}" \
+                                    --cx-project="${CX_PROJECT}" \
+                                    --spring.profiles.active="sast" \
+                                    --f=. \
+                                    ${CX_PARAMS}
+                                    """
+                                    sh '/app/check_timeout.sh'
                                 }
                             }
                         }
