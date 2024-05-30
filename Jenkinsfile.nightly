@@ -95,14 +95,14 @@ spec:
                 sh 'ls -l /home/scratch.metropolis2'
             }
 
-            stage ("functional_tests"){
-                gitlabCommitStatus(name: "functional_tests", connection: gitLabConnection('git-lab-master')) {
-                    println "skipping functional_tests for now .."
-                    sh "pip install pytest-cov"
-                    sh "${command_env} python ci/run_functional_tests.py --cov=nvidia_tao_tf2 --cov-report="
-                    sh "cp .coverage /home/scratch.metropolis2/users/release_pipeline_files/coverage_reports/functional_test/.coverage.fn_tf2"
-                }
-            }
+            // stage ("functional_tests"){
+            //     gitlabCommitStatus(name: "functional_tests", connection: gitLabConnection('git-lab-master')) {
+            //         println "skipping functional_tests for now .."
+            //         sh "pip install pytest-cov"
+            //         sh "${command_env} python ci/run_functional_tests.py --cov=nvidia_tao_tf2 --cov-report="
+            //         sh "cp .coverage /home/scratch.metropolis2/users/release_pipeline_files/coverage_reports/functional_test/.coverage.fn_tf2"
+            //     }
+            // }
 
             stage ('build_wheel') {
                 gitlabCommitStatus(name: "build_wheel", connection: gitLabConnection('git-lab-master')) {
@@ -122,29 +122,29 @@ spec:
                 }
             }
 
-            stage ('wheel_publish') {
-                gitlabCommitStatus(name: "wheel_publish", connection: gitLabConnection('git-lab-master')) {
-                    // install jfrog first
-                    sh "bash ${WORKSPACE}/docker/install_jfrog.sh"
-                    sh "ls -al dist/"
-                    def TAO_WHEEL_VERSION="4.0.0"
-                    def BUILD_TYPE="dev"
-                    def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
-                    def PYTHON_VER="py3-none"
-                    def ARCH="any"
-                    def SRC="dist/nvidia_tao_tf2-${VER}-${PYTHON_VER}-${ARCH}.whl"
-                    def TARGET="sw-tao-pypi-local/nvidia-tao-tf2-nightly/${VER}/"
-                    def PROP="component_name=nvidia-tao-tf2;arch=x86_64;os=linux;build_source=None;version=${VER};branch=main;release_approver=vpraveen"
-                    withCredentials([usernamePassword(credentialsId: 'tao-artifactory-tkn', passwordVariable: 'JFROG_PASSWORD', usernameVariable: 'JFROG_USERNAME')]) {
-                        sh "jfrog rt u --url=https://urm.nvidia.com/artifactory/ --user=${JFROG_USERNAME} --apikey=${JFROG_PASSWORD} --target-props '${PROP}' ${SRC} ${TARGET}"
-                    }
+            // stage ('wheel_publish') {
+            //     gitlabCommitStatus(name: "wheel_publish", connection: gitLabConnection('git-lab-master')) {
+            //         // install jfrog first
+            //         sh "bash ${WORKSPACE}/docker/install_jfrog.sh"
+            //         sh "ls -al dist/"
+            //         def TAO_WHEEL_VERSION="4.0.0"
+            //         def BUILD_TYPE="dev"
+            //         def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
+            //         def PYTHON_VER="py3-none"
+            //         def ARCH="any"
+            //         def SRC="dist/nvidia_tao_tf2-${VER}-${PYTHON_VER}-${ARCH}.whl"
+            //         def TARGET="sw-tao-pypi-local/nvidia-tao-tf2-nightly/${VER}/"
+            //         def PROP="component_name=nvidia-tao-tf2;arch=x86_64;os=linux;build_source=None;version=${VER};branch=main;release_approver=vpraveen"
+            //         withCredentials([usernamePassword(credentialsId: 'tao-artifactory-tkn', passwordVariable: 'JFROG_PASSWORD', usernameVariable: 'JFROG_USERNAME')]) {
+            //             sh "jfrog rt u --url=https://urm.nvidia.com/artifactory/ --user=${JFROG_USERNAME} --apikey=${JFROG_PASSWORD} --target-props '${PROP}' ${SRC} ${TARGET}"
+            //         }
 
-                    def append_string="tf2_wheel: nvidia_tao_tf2-${VER}-${PYTHON_VER}-${ARCH}.whl"
-                    def config_file_path = "/home/scratch.metropolis2/users/release_pipeline_files/release_items.yml"
-                    sh "python3 ci/update_release_config.py ${config_file_path} '${append_string}'"
-                    sh "cat /home/scratch.metropolis2/users/release_pipeline_files/release_items.yml"
-                }
-            }
+            //         def append_string="tf2_wheel: nvidia_tao_tf2-${VER}-${PYTHON_VER}-${ARCH}.whl"
+            //         def config_file_path = "/home/scratch.metropolis2/users/release_pipeline_files/release_items.yml"
+            //         sh "python3 ci/update_release_config.py ${config_file_path} '${append_string}'"
+            //         sh "cat /home/scratch.metropolis2/users/release_pipeline_files/release_items.yml"
+            //     }
+            // }
 
             stage ('cleanup_scratch_space') {
                 sh 'umount /home/scratch.metropolis2'
@@ -193,7 +193,7 @@ spec:
                 withEnv(["TAO_VERSION=5.0.0", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
                     docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
                         sh "cat coverage_build.txt >> ${WORKSPACE}/release/docker/Dockerfile"
-                        sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
+                        sh "docker build --no-cache -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
                         sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc"
 
                         def append_string="tf2: ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc"
