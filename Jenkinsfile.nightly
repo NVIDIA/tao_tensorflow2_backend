@@ -193,6 +193,7 @@ spec:
                 withEnv(["TAO_VERSION=5.0.0", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
                     docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
                         sh "cat coverage_build.txt >> ${WORKSPACE}/release/docker/Dockerfile"
+                        sh "cat ${WORKSPACE}/release/docker/Dockerfile"
                         sh "docker build --no-cache -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
                         sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc"
 
