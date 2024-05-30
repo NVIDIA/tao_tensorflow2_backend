@@ -102,7 +102,7 @@ spec:
             stage ("functional_tests") {
                 gitlabCommitStatus(name: "functional_tests", connection: gitLabConnection('git-lab-master')) {
                     println "started functional_tests .."
-                    // sh "${command_env} python ci/run_functional_tests.py"
+                    sh "${command_env} python ci/run_functional_tests.py"
                 }
             }
             stage ('build_wheel') {
