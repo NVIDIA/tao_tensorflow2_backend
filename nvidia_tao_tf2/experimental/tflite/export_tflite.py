@@ -13,15 +13,22 @@
 # limitations under the License.
 
 import argparse
+from functools import partial
 import logging
 import os
 
 import tensorflow as tf
 
-from nvidia_tao_tf2.cv.classification.utils.helper import decode_eff
+from nvidia_tao_tf2.cv.classification.utils.helper import decode_eff as decode_classification_eff
 from nvidia_tao_tf2.experimental.decorators.experimental import experimental
+from nvidia_tao_tf2.cv.efficientdet.utils.helper import (
+    decode_eff as decode_efficientdet_eff,
+    load_json_model
+)
+from nvidia_tao_tf2.cv.efficientdet.utils.keras_utils import restore_ckpt
 
 MB = 1<<20
+SUPPORTED_MODELS = ["efficientdet", "classification"]
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +57,64 @@ def parse_command_line(cl_args="None"):
         default="",
         help="Path to the output model file."
     )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        required=True,
+        choices=SUPPORTED_MODELS,
+        help="Architecture of the model to be exported.",
+        default=None
+    )
+    parser.add_argument(
+        "--ema_decay",
+        type=float,
+        help="Exponential moving average decay rate if set during training.",
+        default=None
+    )
     args = vars(parser.parse_args(cl_args))
     return args
+
+
+def load_efficientdet_model(model_path, key=None, ema_decay=0.998):
+    """Load a saved model."""
+    if model_path.endswith(".tlt"):
+        assert key, "Key should be provided."
+        output_model_path, output_model_name = decode_efficientdet_eff(model_path, enc_key=key)
+        mode = "eval"
+        model = load_json_model(
+            os.path.join(output_model_path,
+                         f'{mode}_graph.json'))
+        restore_ckpt(
+            model,
+            os.path.join(output_model_path, output_model_name),
+            ema_decay=ema_decay,
+            steps_per_epoch=0,
+            expect_partial=True
+        )
+        return model
+    
+
+def load_classification_model(model_path, key=None):
+    """Load a trained classification model."""
+    if model_path.endswith(".tlt") and os.path.isfile(model_path):
+        assert key, "Key should be provided."
+        saved_model = decode_classification_eff(model_path, enc_key=key)
+    else:
+        assert os.path.isdir(model_path), "Model should be a tf saved model."
+        saved_model = model_path
+    return saved_model
+
+
+LOADERS = {
+    "classification": load_classification_model,
+    "efficientdet": load_efficientdet_model
+}
+
+CONVERTERS = {
+    "classification": partial(tf.lite.TFLiteConverter.from_saved_model, signature_keys=["serving_default"]),
+    "efficientdet": tf.lite.TFLiteConverter.from_keras_model
+}
+            
 
 
 @experimental
@@ -67,26 +130,19 @@ def main(cl_args=None):
     input_model_file = args["model_file"]
     output_model_file = args["output_file"]
     key = args["key"]
+    mode = args["mode"]
+    ema_decay = args["ema_decay"]
     if not output_model_file:
         output_model_file = f"{os.path.splitext(input_model_file)[0]}.tflite"
-
-    if os.path.isdir(input_model_file):
-        logger.info(
-            "Model provided is a saved model directory at {}".format(
-                input_model_file
-            )
-        )
-        saved_model = input_model_file
-    else:
-        saved_model = decode_eff(
-            input_model_file,
-            enc_key=key
-        )
+    # Load a keras or saved model.
+    loader_kwargs = {
+        "key": key
+    }
+    if mode == "efficientdet" and not (ema_decay is None):
+        loader_kwargs["ema_decay"] = ema_decay
+    model = LOADERS[mode](input_model_file, **loader_kwargs)
     logger.info("Converting the saved model to tflite model.")
-    converter = tf.lite.TFLiteConverter.from_saved_model(
-        saved_model,
-        signature_keys=["serving_default"],
-    )
+    converter = CONVERTERS[mode](model)
     converter.target_spec.supported_ops = [
         tf.lite.OpsSet.TFLITE_BUILTINS, # enable TensorFlow Lite ops.
         tf.lite.OpsSet.SELECT_TF_OPS # enable TensorFlow ops.
