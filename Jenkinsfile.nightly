@@ -189,6 +189,21 @@ spec:
                 }
             }
             
+            stage ('docker_coverage_build') {
+                withEnv(["TAO_VERSION=5.0.0", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
+                    docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
+                        sh "cat coverage_build.txt >> ${WORKSPACE}/release/docker/Dockerfile"
+                        sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
+                        sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc"
+
+                        def append_string="tf2: ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc"
+                        def config_file_path = "/home/scratch.metropolis2/users/release_pipeline_files/coverage_tags.yml"
+                        sh "python3 ci/update_release_config.py ${config_file_path} '${append_string}'"
+                        sh "cat /home/scratch.metropolis2/users/release_pipeline_files/coverage_tags.yml"
+                    }
+                }
+            }
+
             stage ('wheeltamer_tests') {
               gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
                     echo "skipping whell-tamer test for now . . ."
