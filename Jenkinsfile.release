@@ -95,12 +95,10 @@ spec:
                 sh 'ls -l /home/scratch.metropolis2'
             }
 
-            stage ("functional_tests"){
+            stage ("functional_tests") {
                 gitlabCommitStatus(name: "functional_tests", connection: gitLabConnection('git-lab-master')) {
-                    println "skipping functional_tests for now .."
-                    sh "pip install pytest-cov"
-                    sh "${command_env} python ci/run_functional_tests.py --cov=nvidia_tao_tf2 --cov-report="
-                    sh "cp .coverage /home/scratch.metropolis2/users/release_pipeline_files/coverage_reports/functional_test/.coverage.fn_tf2"
+                    println "started functional_tests .."
+                    sh "${command_env} python ci/run_functional_tests.py"
                 }
             }
 
