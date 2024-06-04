@@ -289,8 +289,29 @@ spec:
             }
 
             stage ('generate_change_logs') {
-                def last_release_build = "29/03/2024"
-                sh "python3 ci/generate_changelog/generate_changelog.py -d ${last_release_build} -o /media/scratch.metropolis2/users/release_pipeline_files/change_logs/"
+                // Get the current build
+                def currentBuild = currentBuild
+                
+                // Find the last successful build
+                def lastSuccessfulBuild = currentBuild.previousSuccessfulBuild
+                
+                def formattedDate
+                
+                if (lastSuccessfulBuild != null) {
+                    // Get the timestamp of the last successful build
+                    def lastSuccessfulBuildDate = new Date(lastSuccessfulBuild.getTimeInMillis())
+                    
+                    // Format the date to MM/dd/yyyy
+                    formattedDate = lastSuccessfulBuildDate.format("MM/dd/yyyy")
+                } else {
+                    // Default date if no previous successful build is found
+                    formattedDate = "03/29/2024"
+                }
+                
+                // Print the previous successful build date
+                echo "Previous Successful Build Date: ${formattedDate}"
+
+                sh "python3 ci/generate_changelog/generate_changelog.py -d ${formattedDate} -o /home/scratch.metropolis2/users/release_pipeline_files/change_logs/"
             }
 
             stage ('cleanup_scratch_space_in_dind') {
