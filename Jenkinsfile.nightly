@@ -5,7 +5,7 @@ def getPulseToken() {
     sh "apk add curl jq wget python3 py3-pip"
     token = sh(script: """
         curl --location --request POST 'https://x9thwm-cootr2q1jdv5p7b8iw4fs4ob3x6nqqsoznyk.ssa.nvidia.com/token' \
-            --user 'nvssa-prd-4tRcjNpunCJVFgVq7o1iYtC9pWIX-RxopTGdLecMinQ:ssap-w4udzdtNbtPYD6D87dj' \
+            --user 'nvssa-prd-4tRcjNpunCJVFgVq7o1iYtC9pWIX-RxopTGdLecMinQ:ssap-q829TuK8H09ehhjV7Yx' \
             --header 'Content-Type: application/x-www-form-urlencoded' \
             --data-urlencode 'grant_type=client_credentials' \
             --data-urlencode 'scope=nspect.verify scan.anchore' | jq -r '.access_token'
@@ -37,7 +37,7 @@ spec:
         - name: DOCKER_TLS_CERTDIR
           value: ""
     - name: cuda
-      image: nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:d36b1dc35de930f18f334a9d74985063604192dc737f4872996853b7c510f279
+      image: nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:1117b9f676cfa6d0a0be0ab573a44e2891b9acaa12c3768c40ca29a628d1a70d
       securityContext:
         privileged: true
       command:
@@ -83,6 +83,7 @@ spec:
                     command_env = pythonpath_env + ' ' + ci_path_env
                 }
             }
+
             stage ('setup_scratch_space') {
                 sh 'apt-get update'
                 sh 'apt-get install cifs-utils -y'
@@ -98,9 +99,9 @@ spec:
             stage ("functional_tests"){
                 gitlabCommitStatus(name: "functional_tests", connection: gitLabConnection('git-lab-master')) {
                     println "skipping functional_tests for now .."
-                    // sh "pip install pytest-cov"
-                    // sh "${command_env} python ci/run_functional_tests.py --cov=nvidia_tao_tf2 --cov-report="
-                    // sh "cp .coverage /home/scratch.metropolis2/users/release_pipeline_files/coverage_reports/functional_test/.coverage.fn_tf2"
+                    sh "pip install pytest-cov"
+                    sh "${command_env} python ci/run_functional_tests.py --cov=nvidia_tao_tf2 --cov-report="
+                    sh "cp .coverage /home/scratch.metropolis2/users/release_pipeline_files/coverage_reports/functional_test/.coverage.fn_tf2"
                 }
             }
 
@@ -108,7 +109,7 @@ spec:
                 gitlabCommitStatus(name: "build_wheel", connection: gitLabConnection('git-lab-master')) {
                     // Building the wheels for the tao source code.
                     def BUILD_TYPE="dev"
-                    def TAO_WHEEL_VERSION="5.0.0"
+                    def TAO_WHEEL_VERSION="4.0.0"
                     def VER="${TAO_WHEEL_VERSION}.${BUILD_NUMBER}.${BUILD_TYPE}0"
                     def PYTHON_VER="cp38-cp38"
                     def ARCH="linux_x86_64"
@@ -189,6 +190,22 @@ spec:
                 }
             }
             
+            stage ('docker_coverage_build') {
+                withEnv(["TAO_VERSION=5.0.0", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
+                    docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
+                        sh "cat coverage_build.txt >> ${WORKSPACE}/release/docker/Dockerfile.release"
+                        sh "cat ${WORKSPACE}/release/docker/Dockerfile.release"
+                        sh "docker build --no-cache -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
+                        sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc"
+
+                        def append_string="tf2: ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc"
+                        def config_file_path = "/home/scratch.metropolis2/users/release_pipeline_files/coverage_tags.yml"
+                        sh "python3 ci/update_release_config.py ${config_file_path} '${append_string}'"
+                        sh "cat /home/scratch.metropolis2/users/release_pipeline_files/coverage_tags.yml"
+                    }
+                }
+            }
+
             stage ('wheeltamer_tests') {
               gitlabCommitStatus(name: "wheeltamer_tests", connection: gitLabConnection('git-lab-master')) {
                     echo "skipping whell-tamer test for now . . ."
@@ -205,92 +222,91 @@ spec:
             
             stage ('checkmarx-scans') {
                 gitlabCommitStatus(name: "checkmarx-scan-test", connection: gitLabConnection('git-lab-master')) {
-                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        withCredentials([usernamePassword(credentialsId: 'checkmarx-ac-account', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
-                            withEnv([
-                            "CHECKMARX_USERNAME=${USERNAME}",
-                            "CHECKMARX_PASSWORD=${PASSWORD}",
-                            "CX_TEAM=CxServer/SP/Company/TLT",
-                            "CX_PROJECT=TAO-TF2",
-                            "CHECKMARX_BASE_URL=https://checkmarx.nvidia.com",
-                            "CHECKMARX_VERSION=9.0",
-                            "CHECKMARX_SETTINGS_OVERRIDE=false",
-                            "CHECKMARX_CONFIGURATION=Default Configuration",
-                            "CHECKMARX_SCAN_PRESET=Checkmarx Default",
-                            "CX_FLOW_BREAK_BUILD=true",
-                            "CX_FLOW_ZIP_EXCLUDE=''",
-                            "CX_PARAMS=''"
-                            ]){
-                                docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
-                                    def img = 'pstooling/images/base-images/debian:cxflow-latest-prodsec-stable'
-                                    docker.image(img).inside("--entrypoint=''") {
-                                        sh '/app/check_variables.sh jenkins'
-                                        sh """
-                                        java -jar /app/cx-flow.jar \
-                                        --scan \
-                                        --bug-tracker="Csv" \
-                                        --csv.file-name-format="[TEAM]-[PROJECT]-[TIME].csv" \
-                                        --csv.include-headers="true" \
-                                        --csv.data-folder="checkmarx" \
-                                        --app="${CX_PROJECT}" \
-                                        --cx-team="${CX_TEAM}" \
-                                        --cx-project="${CX_PROJECT}" \
-                                        --spring.profiles.active="sast" \
-                                        --f=. \
-                                        ${CX_PARAMS}
-                                        """
-                                        sh '/app/check_timeout.sh'
-                                    }
+                    withCredentials([usernamePassword(credentialsId: 'checkmarx-ac-account', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
+                        withEnv([
+                        "CHECKMARX_USERNAME=${USERNAME}",
+                        "CHECKMARX_PASSWORD=${PASSWORD}",
+                        "CX_TEAM=CxServer/SP/Company/TLT",
+                        "CX_PROJECT=TAO-TF2",
+                        "CHECKMARX_BASE_URL=https://checkmarx.nvidia.com",
+                        "CHECKMARX_VERSION=9.0",
+                        "CHECKMARX_SETTINGS_OVERRIDE=false",
+                        "CHECKMARX_CONFIGURATION=Default Configuration",
+                        "CHECKMARX_SCAN_PRESET=Checkmarx Default",
+                        "CX_FLOW_BREAK_BUILD=true",
+                        "CX_FLOW_ZIP_EXCLUDE=''",
+                        "CX_PARAMS=''"
+                        ]){
+                            docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
+                                def img = 'pstooling/images/base-images/debian:cxflow-latest-prodsec-stable'
+                                docker.image(img).inside("--entrypoint=''") {
+                                    sh '/app/check_variables.sh jenkins'
+                                    sh """
+                                    java -jar /app/cx-flow.jar \
+                                    --scan \
+                                    --bug-tracker="Csv" \
+                                    --csv.file-name-format="[TEAM]-[PROJECT]-[TIME].csv" \
+                                    --csv.include-headers="true" \
+                                    --csv.data-folder="checkmarx" \
+                                    --app="${CX_PROJECT}" \
+                                    --cx-team="${CX_TEAM}" \
+                                    --cx-project="${CX_PROJECT}" \
+                                    --spring.profiles.active="sast" \
+                                    --f=. \
+                                    ${CX_PARAMS}
+                                    """
+                                    sh '/app/check_timeout.sh'
                                 }
                             }
                         }
                     }
                 }
             }
+            
+            // Todo: @schafale to uncomment after issue in the prod-sec code-base has been resolved
+            // stage ('pulse_oss_scan') {
+            //     gitlabCommitStatus(name: "pulse_oss_scan", connection: gitLabConnection('git-lab-master')) {
+            //         withEnv(["TAO_VERSION=5.0.0", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
+            //             docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
+            //                 docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
+            //                     def NSPECT_ID="NSPECT-76DN-OP7I"
+            //                     def SSA_TOKEN=getPulseToken()
+            //                     def CONTAINER_TAG="${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
+            //                     def CONTAINER_ARCHIVE="container_image.tar"
+            //                     def CONTAINER_SCAN_POLICY="policy.json"
 
-            stage ('pulse_oss_scan') {
-                gitlabCommitStatus(name: "pulse_oss_scan", connection: gitLabConnection('git-lab-master')) {
-                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        withEnv(["TAO_VERSION=5.0.0", "IMAGE_NAME=nvcr.io/nvstaging/tao/tao-toolkit-tf2", "TF_VERSION=2.9.1", "CUDA_VERSION=11.8"]){
-                            docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
-                                docker.withRegistry('https://gitlab-master.nvidia.com:5005', 'jenkins-TLT-pkg') {
-                                    def NSPECT_ID="NSPECT-76DN-OP7I"
-                                    def SSA_TOKEN=getPulseToken()
-                                    def CONTAINER_TAG="${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}"
-                                    def CONTAINER_ARCHIVE="container_image.tar"
-                                    def CONTAINER_SCAN_POLICY="policy.json"
+            //                     try {
+            //                         sh """
+            //                         docker save ${CONTAINER_TAG} > ${CONTAINER_ARCHIVE}
+            //                         wget https://raw.githubusercontent.com/achafale/Jenkins-CI/main/policy.json
+            //                         ls -al
+            //                         docker run -v .:/dist -w /dist gitlab-master.nvidia.com:5005/pstooling/pulse-group/pulse-container-scanner/pulse-cli:stable /bin/sh -c "pulse-cli -n $NSPECT_ID --ssa $SSA_TOKEN scan -i $CONTAINER_ARCHIVE -p $CONTAINER_SCAN_POLICY -o || true"
+            //                         ls -al
+            //                         cat pulse-cli.log
+            //                         """
+            //                     } catch (Exception e) {
+            //                         echo "Continuing with the pipeline..."
+            //                         echo "An error occurred: ${e.getMessage()}"
+            //                     }
 
-                                    try {
-                                        sh """
-                                        docker save ${CONTAINER_TAG} > ${CONTAINER_ARCHIVE}
-                                        wget https://raw.githubusercontent.com/achafale/Jenkins-CI/main/policy.json
-                                        ls -al
-                                        docker run -v .:/dist -w /dist gitlab-master.nvidia.com:5005/pstooling/pulse-group/pulse-container-scanner/pulse-cli:stable /bin/sh -c "pulse-cli -n $NSPECT_ID --ssa $SSA_TOKEN scan -i $CONTAINER_ARCHIVE -p $CONTAINER_SCAN_POLICY -o || true"
-                                        """
-                                    } catch (Exception e) {
-                                        echo "Continuing with the pipeline..."
-                                        echo "An error occurred: ${e.getMessage()}"
-                                    }
+            //                     execution_script = '''
+            //                         wget https://raw.githubusercontent.com/achafale/Jenkins-CI/main/vulnerabilities_validation.py
+            //                         ls -al
+            //                         python3 -m pip install pandas
+            //                         python3 vulnerabilities_validation.py
+            //                     '''
+            //                     def shellOutput = sh(script: execution_script, returnStdout: true).toString()
+            //                     echo shellOutput
+            //                     if (shellOutput.contains("Scan result : FAIL")) {
+            //                         error("Unsuccessful Execution . . .")
+            //                     }
 
-                                    execution_script = '''
-                                        wget https://raw.githubusercontent.com/achafale/Jenkins-CI/main/vulnerabilities_validation.py
-                                        ls -al
-                                        python3 -m pip install pandas
-                                        python3 vulnerabilities_validation.py
-                                    '''
-                                    def shellOutput = sh(script: execution_script, returnStdout: true).toString()
-                                    echo shellOutput
-                                    if (shellOutput.contains("Scan result : FAIL")) {
-                                        error("Unsuccessful Execution . . .")
-                                    }
-
-                                    sh "rm -rf ${CONTAINER_ARCHIVE}"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            //                     sh "rm -rf ${CONTAINER_ARCHIVE}"
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
 
             stage ('cleanup_scratch_space_in_dind') {
                 sh 'umount /home/scratch.metropolis2'
