@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Data Source Class."""
+import os
 
 
 class DataSource:
@@ -25,6 +26,9 @@ class DataSource:
                 "not match the number of TFRecords paths."
         else:
             image_dirs = ['/'] * len(tfrecord_patterns)
+        for i in range(len(tfrecord_patterns)):
+            if os.path.isdir(tfrecord_patterns[i]):
+                tfrecord_patterns[i] = os.path.join(tfrecord_patterns[i], "*")
         self.tfrecord_patterns = list(tfrecord_patterns)
         self.image_dirs = list(image_dirs)
 
