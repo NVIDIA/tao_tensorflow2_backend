@@ -22,7 +22,14 @@ pyarmor==7.7.4
 pyarrow==14.0.1
 pycocotools==2.0.7
 pycuda==2024.1
+opencv-python==4.8.0.74
+pillow==9.5.0
+pyarmor==7.7.4
+pyarrow==14.0.1
+pycocotools==2.0.7
+pycuda==2024.1
 pydocstyle==6.3.0
+pyflakes==3.2.0
 pyflakes==3.2.0
 pylint==2.16.2
 pynvml==11.4.1
@@ -40,3 +47,9 @@ tensorflow-addons==0.22.0
 tensorflow-model-optimization==0.7.3
 tensorflow_datasets==4.9.4
 wandb==0.16.3
+apispec==6.6.1
+apispec_webframeworks==1.1.0
+flask==3.0.3
+flask_limiter==3.6.0
+marshmallow==3.21.2
+marshmallow_enum==1.5.1

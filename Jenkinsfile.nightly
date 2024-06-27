@@ -37,7 +37,7 @@ spec:
         - name: DOCKER_TLS_CERTDIR
           value: ""
     - name: cuda
-      image: nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:1117b9f676cfa6d0a0be0ab573a44e2891b9acaa12c3768c40ca29a628d1a70d
+      image: nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:b6d83c82da5f45ded9080c57bc6781f73bea6be19c6b011a208fc9ede70de51a
       securityContext:
         privileged: true
       command:
@@ -195,7 +195,7 @@ spec:
                     docker.withRegistry('https://nvcr.io', 'NGC_API_KEY'){
                         sh "cat coverage_build.txt >> ${WORKSPACE}/release/docker/Dockerfile.release"
                         sh "cat ${WORKSPACE}/release/docker/Dockerfile.release"
-                        sh "docker build --no-cache -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
+                        sh "docker build -t ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc --network=host -f ${WORKSPACE}/release/docker/Dockerfile.release ${WORKSPACE}"
                         sh "docker push ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc"
 
                         def append_string="tf2: ${IMAGE_NAME}:v${TAO_VERSION}-tf${TF_VERSION}-${BUILD_NUMBER}-dev-cuda${CUDA_VERSION}-cc"
