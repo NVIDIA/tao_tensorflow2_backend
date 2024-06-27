@@ -34,7 +34,7 @@ from marshmallow_enum import EnumField, Enum
 from threading import Thread
 from werkzeug.exceptions import HTTPException
 from nvidia_tao_tf2.api.api_utils import microservice_utils, module_utils, ngc_utils, process_queue, json_schema_validation, dataclass2json_converter
-
+from nvidia_tao_tf2.api.api_utils.common_utils import remove_none_empty_fields
 
 
 flask_plugin = FlaskPlugin()
@@ -603,6 +603,10 @@ def post_action(neural_network_name, action_name):
     # Obtaining the JSON schema
     data = request.get_json(force=True)
     request_json_schema = data["specs"]
+
+    # Removing None and empty string values from the JSON schema
+    request_json_schema = remove_none_empty_fields(request_json_schema)
+    
     if request_json_schema is None:
         metadata = {"error_desc": "No JSON data provided", "error_code": 3}
         schema = ErrorRspSchema()
