@@ -74,8 +74,6 @@ def process_queue():
                     "experiment_spec": f'{specs["results_dir"]}/spec.yaml',
                     "results_dir": specs["results_dir"],
                 }
-                if "gpus" in specs:
-                    args["gpus"] = specs["gpus"]
                 _, actions = module_utils.get_neural_network_actions(job["neural_network_name"])
                 is_completed = launch(args, "", actions, job["neural_network_name"])
 
