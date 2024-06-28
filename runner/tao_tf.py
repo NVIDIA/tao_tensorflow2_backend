@@ -104,7 +104,7 @@ def instantiate_dev_docker(gpus, mount_file,
                            env_var_list,
                            tag, command, ulimit=None,
                            shm_size="16G", run_as_user=False,
-                           port_mapping=None,
+                           port_mapping=None, port=None,
                            tty=True):
     """Instiate the docker container."""
     docker_image = "{}/{}@{}".format(DOCKER_REGISTRY, DOCKER_REPOSITORY, DOCKER_DIGEST)
@@ -161,15 +161,18 @@ def instantiate_dev_docker(gpus, mount_file,
 
     port_option = "--net=host"
     if port_mapping:
-        port_option += f" -p {port_mapping}"
+        port_option += f" -p {port_mapping}:{port}"
+
+    command = '/bin/bash -c "' + " ".join(command) + '"' if command else ""
 
     final_command = "{} {} {} {} {} {} {} {} {} {} {}".format(
         run_command, gpu_string,
         mount_string, env_variables,
         shm_option, ulimit_options, user_option, working_dir_option,
         port_option,
-        docker_image, " ".join(command)
+        docker_image, command
     )
+    
     print(final_command)
     return subprocess.check_call(final_command, stdout=sys.stderr, shell=True)
 
@@ -230,11 +233,29 @@ def parse_cli_args(args=None):
         help="Docker ulimits for the host machine."
     )
     parser.add_argument(
+        "--run_as_service",
+        help="Flag to run as a microservice",
+        action="store_true",
+        default=False
+    )
+    parser.add_argument(
+        "--ip",
+        type=str,
+        default="0.0.0.0",
+        help="Microservice ip address (e.g. 0.0.0.0)."
+    )
+    parser.add_argument(
         "--port",
         type=str,
-        default=None,
-        help="Port mapping (e.g. 8889:8889)."
+        default=8000,
+        help="Microservice port (e.g. 8000)."
     )
+    parser.add_argument(
+    "--port_mapping",
+    type=str, 
+    default="8000", 
+    help="Port mapping for the micorservices port (e.g. 8000).")
+
     parser.add_argument("--no-tty",
                         dest="tty",
                         action="store_false")
@@ -257,6 +278,13 @@ def main(cl_args=None):
 
     # parse command line args.
     args = parse_cli_args(tao_tf_args)
+
+    if args["run_as_service"]:
+        command_args = list(f'python setup.py bdist_wheel && \
+                            export PYTHONPATH=$PYTHONPATH:/workspace/tao-tf2/nvidia_tao_tf2/api && \
+                            export FLASK_APP=/workspace/tao-tf2/nvidia_tao_tf2/api/app.py && \
+                            flask run --host {args["ip"]} --port {args["port"]}'.split(" "))
+
     docker_image = "{}/{}".format(DOCKER_REGISTRY, DOCKER_REPOSITORY)
     if args["tag"] is not None:
         docker_image = "{}:{}".format(docker_image, args["tag"])
@@ -269,7 +297,7 @@ def main(cl_args=None):
             args["tag"], command_args,
             args["ulimit"], args["shm_size"],
             args["run_as_user"],
-            args['port'],
+            args['port_mapping'], args["port"],
             args['tty']
         )
     except subprocess.CalledProcessError:
