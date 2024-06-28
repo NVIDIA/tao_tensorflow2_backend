@@ -92,10 +92,6 @@ def check_valid_gpus(num_gpus, gpu_ids):
     assert min(gpu_ids) >= 0, (
         "GPU ids cannot be negative."
     )
-    assert len(gpu_ids) == num_gpus, (
-        f"The number of GPUs ({gpu_ids}) must be the same as the number of GPU indices"
-        f" ({num_gpus}) provided."
-    )
     assert max_id < num_gpus_available and num_gpus <= num_gpus_available, (
         "Checking for valid GPU ids and num_gpus."
     )
@@ -215,7 +211,7 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
                 np = int(unknown_args_as_str.split('num_processes=')[1].split()[0])
         # If no cmdline override, look at specfile
         else:
-            with open(args["experiment_spec_file"], 'r') as spec:  # pylint: disable=W1514
+            with open(args["experiment_spec"], 'r') as spec:  # pylint: disable=W1514
                 exp_config = yaml.safe_load(spec)
                 if 'num_gpus' in exp_config:
                     num_gpus = exp_config['num_gpus']
@@ -231,6 +227,13 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
                 if "multi_node" in unknown_args_as_str:
                     multi_node = exp_config['multi_node']
 
+    if num_gpus != len(gpu_ids):
+        logging.info(f"The number of GPUs ({num_gpus}) must be the same as the number of GPU indices ({gpu_ids}) provided.")
+        num_gpus = max(num_gpus, len(gpu_ids))
+        gpu_ids = list(range(num_gpus)) if len(gpu_ids) != num_gpus else gpu_ids
+        logging.info(f"Using GPUs {gpu_ids} (total {num_gpus})")
+
+    print("2. got GPUs")
     mpi_command = ""
     # np defaults to num_gpus if < 0
     if np < 0:

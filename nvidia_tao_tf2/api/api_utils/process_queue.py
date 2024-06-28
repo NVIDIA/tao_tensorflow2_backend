@@ -75,7 +75,7 @@ def process_queue():
                     "results_dir": specs["results_dir"],
                 }
                 _, actions = module_utils.get_neural_network_actions(job["neural_network_name"])
-                is_completed = launch(args, "", actions, job["neural_network_name"])
+                is_completed = launch(args, "", actions, task=job["neural_network_name"])
 
             except Exception:
                 print(traceback.format_exc())
