@@ -456,7 +456,7 @@ def list_ptms(neural_network_name):
       requestBody:
         content:
           application/json:
-            schema: LoginReqSchema
+            schema: PtmReqSchema
         description: Login request with ngc_api_key
         required: true
       responses:
