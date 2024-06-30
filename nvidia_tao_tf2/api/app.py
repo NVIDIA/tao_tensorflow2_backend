@@ -217,7 +217,7 @@ class GetNetworksRspSchema(Schema):
         """Class enabling sorting field values by the order in which they are declared"""
 
         ordered = True
-    networks = fields.List(fields.Str, allow_none=False, validate=validate.Length(max=sys.maxsize))
+    networks = fields.List(fields.Str(format="uuid", validate=validate.Length(max=36)), allow_none=False, validate=fields.validate.Length(max=sys.maxsize))
 
 
 class GetActionsRspSchema(Schema):
@@ -227,7 +227,7 @@ class GetActionsRspSchema(Schema):
         """Class enabling sorting field values by the order in which they are declared"""
 
         ordered = True
-    actions = fields.List(EnumField(ActionsEnum), allow_none=False, validate=validate.Length(max=sys.maxsize))
+    actions = fields.List(EnumField(ActionsEnum), allow_none=False, validate=fields.validate.Length(max=sys.maxsize))
 
 
 class GetPtmsRspSchema(Schema):
@@ -237,7 +237,7 @@ class GetPtmsRspSchema(Schema):
         """Class enabling sorting field values by the order in which they are declared"""
 
         ordered = True
-    ptms = fields.List(fields.Str, allow_none=False, validate=validate.Length(max=sys.maxsize))
+    ptms = fields.List(fields.Str(format="regex", regex=r'.*', validate=fields.validate.Length(max=2048)), allow_none=False, validate=validate.Length(max=sys.maxsize))
 
 
 class GetJobsRspSchema(Schema):
@@ -247,7 +247,7 @@ class GetJobsRspSchema(Schema):
         """Class enabling sorting field values by the order in which they are declared"""
 
         ordered = True
-    jobs = fields.List(fields.Str(format="uuid", validate=fields.validate.Length(max=36), allow_none=True))
+    jobs = fields.List(fields.Str(format="regex", regex=r'.*', validate=fields.validate.Length(max=2048)))
 
 
 class GetJobStatusRspSchema(Schema):

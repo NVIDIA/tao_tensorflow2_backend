@@ -89,6 +89,7 @@
               "nullable": true,
               "type": "string"
             },
+            "maxItems": 36,
             "type": "array"
           }
         },
@@ -98,6 +99,8 @@
         "properties": {
           "networks": {
             "items": {
+              "format": "regex",
+              "maxLength": 2048,
               "type": "string"
             },
             "maxItems": 9223372036854775807,
@@ -110,6 +113,8 @@
         "properties": {
           "ptms": {
             "items": {
+              "format": "regex",
+              "maxLength": 2048,
               "type": "string"
             },
             "maxItems": 9223372036854775807,
@@ -361,6 +366,11 @@
         "summary": "Run an action",
         "tags": [
           "NEURAL NETWORKS"
+        ],
+        "security": [
+          {
+            "api-key": []
+          }
         ]
       }
     },
