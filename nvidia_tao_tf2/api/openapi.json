@@ -394,7 +394,7 @@
           {
             "description": "Action Name",
             "in": "path",
-            "name": "action",
+            "name": "action_name",
             "required": true,
             "schema": {
               "enum": [

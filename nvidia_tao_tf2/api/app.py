@@ -706,7 +706,7 @@ def get_job_status(neural_network_name, action_name, job_id):
         schema:
           type: string
           enum: ["classification_tf2", "efficientdet_tf2"]
-      - name: action
+      - name: action_name
         in: path
         description: Action Name
         schema:
