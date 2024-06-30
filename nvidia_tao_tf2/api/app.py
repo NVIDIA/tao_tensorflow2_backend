@@ -100,7 +100,8 @@ spec = APISpec(
     info={"description": 'NVIDIA TAO DNN API document'},
     tags=[
         {"name": 'NEURAL NETWORKS', "description": 'Endpoints related to Neural Network Architectures'},
-        {"name": 'NVCF', "description": 'Endpoints related to NVIDIA Cloud Functions'}
+        {"name": 'NVCF', "description": 'Endpoints related to NVIDIA Cloud Functions'},
+        {"name": "nSpectId", "description": "NSPECT-76DN-OP7I", "externalDocs": {"url": "https://nspect.nvidia.com/review?id=NSPECT-76DN-OP7I"}}
     ],
     plugins=[flask_plugin, marshmallow_plugin],
 )
