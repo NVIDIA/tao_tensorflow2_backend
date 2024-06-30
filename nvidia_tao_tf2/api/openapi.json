@@ -648,6 +648,13 @@
     {
       "description": "Endpoints related to NVIDIA Cloud Functions",
       "name": "NVCF"
+    },
+    {
+      "description": "NSPECT-76DN-OP7I",
+      "externalDocs": {
+          "url": "https://nspect.nvidia.com/review?id=NSPECT-76DN-OP7I"
+      },
+      "name": "nSpectId"
     }
   ]
 }
