@@ -247,7 +247,7 @@ class GetJobsRspSchema(Schema):
         """Class enabling sorting field values by the order in which they are declared"""
 
         ordered = True
-    jobs = fields.List(fields.Str(format="regex", regex=r'.*', validate=fields.validate.Length(max=2048)))
+    jobs = fields.List(fields.Str(format="uuid", validate=fields.validate.Length(max=36), allow_none=True))
 
 
 class GetJobStatusRspSchema(Schema):
