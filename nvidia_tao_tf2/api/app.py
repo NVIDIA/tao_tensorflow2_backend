@@ -34,7 +34,7 @@ from marshmallow_enum import EnumField, Enum
 from threading import Thread
 from werkzeug.exceptions import HTTPException
 from nvidia_tao_tf2.api.api_utils import microservice_utils, module_utils, ngc_utils, process_queue, json_schema_validation, dataclass2json_converter
-
+from nvidia_tao_tf2.api.api_utils.common_utils import remove_none_empty_fields
 
 
 flask_plugin = FlaskPlugin()
@@ -100,7 +100,8 @@ spec = APISpec(
     info={"description": 'NVIDIA TAO DNN API document'},
     tags=[
         {"name": 'NEURAL NETWORKS', "description": 'Endpoints related to Neural Network Architectures'},
-        {"name": 'NVCF', "description": 'Endpoints related to NVIDIA Cloud Functions'}
+        {"name": 'NVCF', "description": 'Endpoints related to NVIDIA Cloud Functions'},
+        {"name": "nSpectId", "description": "NSPECT-76DN-OP7I", "externalDocs": {"url": "https://nspect.nvidia.com/review?id=NSPECT-76DN-OP7I"}}
     ],
     plugins=[flask_plugin, marshmallow_plugin],
 )
@@ -216,7 +217,7 @@ class GetNetworksRspSchema(Schema):
         """Class enabling sorting field values by the order in which they are declared"""
 
         ordered = True
-    networks = fields.List(fields.Str, allow_none=False, validate=validate.Length(max=sys.maxsize))
+    networks = fields.List(fields.Str(format="uuid", validate=validate.Length(max=36)), allow_none=False, validate=fields.validate.Length(max=sys.maxsize))
 
 
 class GetActionsRspSchema(Schema):
@@ -226,7 +227,7 @@ class GetActionsRspSchema(Schema):
         """Class enabling sorting field values by the order in which they are declared"""
 
         ordered = True
-    actions = fields.List(EnumField(ActionsEnum), allow_none=False, validate=validate.Length(max=sys.maxsize))
+    actions = fields.List(EnumField(ActionsEnum), allow_none=False, validate=fields.validate.Length(max=sys.maxsize))
 
 
 class GetPtmsRspSchema(Schema):
@@ -236,7 +237,7 @@ class GetPtmsRspSchema(Schema):
         """Class enabling sorting field values by the order in which they are declared"""
 
         ordered = True
-    ptms = fields.List(fields.Str, allow_none=False, validate=validate.Length(max=sys.maxsize))
+    ptms = fields.List(fields.Str(format="regex", regex=r'.*', validate=fields.validate.Length(max=2048)), allow_none=False, validate=validate.Length(max=sys.maxsize))
 
 
 class GetJobsRspSchema(Schema):
@@ -456,7 +457,7 @@ def list_ptms(neural_network_name):
       requestBody:
         content:
           application/json:
-            schema: LoginReqSchema
+            schema: PtmReqSchema
         description: Login request with ngc_api_key
         required: true
       responses:
@@ -603,6 +604,10 @@ def post_action(neural_network_name, action_name):
     # Obtaining the JSON schema
     data = request.get_json(force=True)
     request_json_schema = data["specs"]
+
+    # Removing None and empty string values from the JSON schema
+    request_json_schema = remove_none_empty_fields(request_json_schema)
+    
     if request_json_schema is None:
         metadata = {"error_desc": "No JSON data provided", "error_code": 3}
         schema = ErrorRspSchema()
@@ -701,7 +706,7 @@ def get_job_status(neural_network_name, action_name, job_id):
         schema:
           type: string
           enum: ["classification_tf2", "efficientdet_tf2"]
-      - name: action
+      - name: action_name
         in: path
         description: Action Name
         schema:
