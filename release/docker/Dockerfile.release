@@ -27,7 +27,7 @@ RUN python -m pip uninstall graphviz -y
 # Resolving container scan vulnerabilities
 ENV NVM_DIR=/usr/local/nvm
 RUN source "$NVM_DIR/nvm.sh" \
-    && nvm install 20.9.0 --reinstall-packages-from=16.20.2 node \
+    && nvm install 20.15.0 --reinstall-packages-from=16.20.2 node \
     && nvm uninstall 16.20.2
 
 ENV NVIDIA_PRODUCT_NAME "TAO Toolkit"
