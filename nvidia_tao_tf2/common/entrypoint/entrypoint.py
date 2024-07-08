@@ -14,6 +14,7 @@
 
 """TAO Toolkit Entrypoint Helper Modules."""
 
+import re
 import ast
 import importlib
 import os
@@ -261,28 +262,57 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
         task_command = f"CUDA_LAUNCH_BLOCKING=1 {task_command}"
     run_command = f"{mpi_command} bash -c \'{env_variables} {task_command}\'"
 
-    process_passed = True
+    process_passed = False
     start = time()
+    progress_bar_pattern = re.compile(r"Epoch \d+: \s*\d+%|\[.*\]")
+
     try:
         # Run the script.
         with dual_output(log_file) as (stdout_target, log_target):
-            proc = subprocess.Popen(  # pylint: disable=R1732
+            proc = subprocess.Popen(
                 shlex.split(run_command),
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT,
+                bufsize=1,  # Line-buffered
+                universal_newlines=True  # Text mode
             )
-            for line in iter(proc.stdout.readline, b''):
-                stdout_target.buffer.write(line)
-                if log_target:
-                    log_target.write(line.decode('utf-8'))
-            proc.wait()  # Wait for the process to complete
+            last_progress_bar_line = None
 
-    except (KeyboardInterrupt, SystemExit):
-        logging.info("Command was interrupted.")
+            for line in proc.stdout:
+                # Check if the line contains \r or matches the progress bar pattern
+                if '\r' in line or progress_bar_pattern.search(line):
+                    last_progress_bar_line = line.strip()
+                    # Print the progress bar line to the terminal
+                    stdout_target.write('\r' + last_progress_bar_line)
+                    stdout_target.flush()
+                else:
+                    # Write the final progress bar line to the log file before a new log line
+                    if last_progress_bar_line:
+                        if log_target:
+                            log_target.write(last_progress_bar_line + '\n')
+                            log_target.flush()
+                        last_progress_bar_line = None
+                    stdout_target.write(line)
+                    stdout_target.flush()
+                    if log_target:
+                        log_target.write(line)
+                        log_target.flush()
+
+            proc.wait()  # Wait for the process to complete
+            # Write the final progress bar line after process completion
+            if last_progress_bar_line and log_target:
+                log_target.write(last_progress_bar_line + '\n')
+                log_target.flush()
+            if proc.returncode == 0:
+                process_passed = True
+    except (KeyboardInterrupt, SystemExit) as e:
+        logging.info("Command was interrupted due to ", e)
+        process_passed = True
     except subprocess.CalledProcessError as e:
         process_passed = False
         if e.output is not None:
-            logging.info(f"TAO Toolkit task: {args['subtask']} failed with error:\n{e.output}")
+            logging.info(e.output)
+
     end = time()
     time_lapsed = end - start
 
