@@ -29,9 +29,10 @@ class CSVLoggerWithStatus(CSVLogger):
             training). False: overwrite existing file.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, max_epoch, *args, **kwargs) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
+        self.num_epochs = max_epoch
         self.s_logger = status_logging.get_status_logger()
 
     def on_epoch_begin(self, epoch, logs=None):
@@ -48,6 +49,7 @@ class CSVLoggerWithStatus(CSVLogger):
         monitored_data = {
             "epoch": epoch,
             "time_per_epoch": str(timedelta(seconds=time_per_epoch)),
+            "eta": str(timedelta(seconds=(self.num_epochs - epoch) * time_per_epoch)),
         }
         self.s_logger.write(
             data=monitored_data,
