@@ -269,42 +269,42 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
     try:
         # Run the script.
         with dual_output(log_file) as (stdout_target, log_target):
-            proc = subprocess.Popen(
+            with subprocess.Popen(
                 shlex.split(run_command),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 bufsize=1,  # Line-buffered
                 universal_newlines=True  # Text mode
-            )
-            last_progress_bar_line = None
+            ) as proc:
+                last_progress_bar_line = None
 
-            for line in proc.stdout:
-                # Check if the line contains \r or matches the progress bar pattern
-                if '\r' in line or progress_bar_pattern.search(line):
-                    last_progress_bar_line = line.strip()
-                    # Print the progress bar line to the terminal
-                    stdout_target.write('\r' + last_progress_bar_line)
-                    stdout_target.flush()
-                else:
-                    # Write the final progress bar line to the log file before a new log line
-                    if last_progress_bar_line:
+                for line in proc.stdout:
+                    # Check if the line contains \r or matches the progress bar pattern
+                    if '\r' in line or progress_bar_pattern.search(line):
+                        last_progress_bar_line = line.strip()
+                        # Print the progress bar line to the terminal
+                        stdout_target.write('\r' + last_progress_bar_line)
+                        stdout_target.flush()
+                    else:
+                        # Write the final progress bar line to the log file before a new log line
+                        if last_progress_bar_line:
+                            if log_target:
+                                log_target.write(last_progress_bar_line + '\n')
+                                log_target.flush()
+                            last_progress_bar_line = None
+                        stdout_target.write(line)
+                        stdout_target.flush()
                         if log_target:
-                            log_target.write(last_progress_bar_line + '\n')
+                            log_target.write(line)
                             log_target.flush()
-                        last_progress_bar_line = None
-                    stdout_target.write(line)
-                    stdout_target.flush()
-                    if log_target:
-                        log_target.write(line)
-                        log_target.flush()
 
-            proc.wait()  # Wait for the process to complete
-            # Write the final progress bar line after process completion
-            if last_progress_bar_line and log_target:
-                log_target.write(last_progress_bar_line + '\n')
-                log_target.flush()
-            if proc.returncode == 0:
-                process_passed = True
+                proc.wait()  # Wait for the process to complete
+                # Write the final progress bar line after process completion
+                if last_progress_bar_line and log_target:
+                    log_target.write(last_progress_bar_line + '\n')
+                    log_target.flush()
+                if proc.returncode == 0:
+                    process_passed = True
     except (KeyboardInterrupt, SystemExit) as e:
         logging.info("Command was interrupted due to ", e)
         process_passed = True
