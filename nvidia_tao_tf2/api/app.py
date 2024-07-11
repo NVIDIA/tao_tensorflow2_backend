@@ -145,7 +145,7 @@ class ErrorRspSchema(Schema):
         """Class enabling sorting field values by the order in which they are declared"""
 
         ordered = True
-    error_desc = fields.Str(format="regex", regex=r'.*', validate=fields.validate.Length(max=1000))
+    error_desc = fields.Str(format="regex", regex=r'.*', validate=fields.validate.Length(max=2048))
     error_code = fields.Int(validate=fields.validate.Range(min=-sys.maxsize - 1, max=sys.maxsize), format=sys_int_format())
 
 
@@ -166,8 +166,10 @@ class ActionsEnum(Enum):
     inference = 'inference'
     export = 'export'
     evaluate = 'evaluate'
-    distill = 'distill'
-    convert = 'convert'
+    dataset_convert = 'dataset_convert'
+    prune = 'prune'
+    download_specs = 'download_specs'
+    inference_trt = 'inference_trt'
 
 
 class MLOpsEnum(Enum):
@@ -429,7 +431,7 @@ def get_actions(neural_network_name):
         return make_response(jsonify(schema.dump(schema.load(metadata))), 400)
         
     data = { 'actions': list(actions.keys())}
-    print("app.py :: get_actions :: data :: ", data)
+    print(data)
     schema = GetActionsRspSchema()
     schema_dict = schema.dump(schema.load(data))
     return make_response(jsonify(schema_dict), 200)
@@ -514,7 +516,7 @@ def get_schema(neural_network_name, action_name):
         description: Action Name
         schema:
           type: string
-          enum: [ "evaluate", "export", "inference", "train", "inference_trt", "prune", "dataset_convert" ]
+          enum: [ "evaluate", "export", "inference", "train", "inference_trt", "prune", "dataset_convert", "download_specs" ]
       responses:
         200:
           description: Retuned the json-schema object for a given neural network action specs
@@ -529,6 +531,7 @@ def get_schema(neural_network_name, action_name):
     ep_mappings = module_utils.get_entry_point_module_mapping()
     if not neural_network_name or neural_network_name not in ep_mappings.keys():
         metadata = {"error_desc": "Invalid Neural Network Name", "error_code": 1}
+        print(metadata)
         schema = ErrorRspSchema()
         return make_response(jsonify(schema.dump(schema.load(metadata))), 400)
     
