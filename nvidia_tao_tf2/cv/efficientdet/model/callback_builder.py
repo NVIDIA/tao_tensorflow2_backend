@@ -37,7 +37,7 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
                 amp=hparams['mixed_precision'],
                 verbose=0,
                 save_freq='epoch',
-                save_weights_only=True,
+                save_weights_only=False,
                 period=hparams['checkpoint_interval'],
                 is_qat=hparams['qat'])
         else:
@@ -46,20 +46,10 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
                 encryption_key=hparams['encryption_key'],
                 verbose=0,
                 save_freq='epoch',
-                save_weights_only=True,
+                save_weights_only=False,
                 period=hparams['checkpoint_interval'],
                 is_qat=hparams['qat'])
         callbacks.append(ckpt_callback)
-
-        model_callback = EffCheckpoint(
-            eff_dir=hparams['results_dir'],
-            encryption_key=hparams['encryption_key'],
-            graph_only=True,
-            verbose=0,
-            save_freq='epoch',
-            save_weights_only=True,
-            period=hparams['checkpoint_interval'])
-        callbacks.append(model_callback)
 
         # log LR in tensorboard
         callbacks.append(

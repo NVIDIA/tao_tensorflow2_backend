@@ -72,12 +72,13 @@ class TrainConfig:
     """Train config."""
 
     init_epoch: int = INT_FIELD(value=0)
+    resume_training_checkpoint_path: str = STR_FIELD(value="")
     optimizer: OptConfig = DATACLASS_FIELD(OptConfig())
     lr_schedule: LRConfig = DATACLASS_FIELD(LRConfig())
     num_examples_per_epoch: int = INT_FIELD(value=120000, valid_min=1, valid_max="inf")
     batch_size: int = INT_FIELD(value=8, valid_min=1, valid_max="inf")
     num_epochs: int = INT_FIELD(value=300, valid_min=1, valid_max="inf")
-    checkpoint: str = STR_FIELD(value=MISSING, default_value="")
+    checkpoint: str = STR_FIELD(value="", default_value="")
     random_seed: int = INT_FIELD(value=42, valid_min=1, valid_max="inf")
     l1_weight_decay: float = FLOAT_FIELD(value=0.0, valid_min=0, valid_max=1)
     l2_weight_decay: float = FLOAT_FIELD(

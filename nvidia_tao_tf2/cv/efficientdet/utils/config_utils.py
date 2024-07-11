@@ -70,6 +70,7 @@ def generate_params_from_cfg(default_hparams, cfg, mode):
         # train config
         num_examples_per_epoch=cfg['train']['num_examples_per_epoch'],
         checkpoint=cfg['train']['checkpoint'],
+        resume_training_checkpoint_path=cfg['train']['resume_training_checkpoint_path'],
         mode=mode,
         is_training_bn=mode == 'train',
         checkpoint_interval=cfg['train']['checkpoint_interval'],
