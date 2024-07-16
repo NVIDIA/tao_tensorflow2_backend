@@ -84,6 +84,7 @@ class TrainConfig:
     """Train config."""
 
     qat: bool = BOOL_FIELD(value=False)
+    resume_training_checkpoint_path: str = STR_FIELD(value="")
     checkpoint: str = STR_FIELD(value="")
     checkpoint_interval: int = INT_FIELD(
         value=1, default_value=1, valid_min=1, valid_max="inf"
