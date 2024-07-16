@@ -1,24 +1,25 @@
 # Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
-#
+
 # Original source taken from https://github.com/NVIDIA/NeMo
-#
+
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#
+
 #     http://www.apache.org/licenses/LICENSE-2.0
-#
+
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utility tool to generate an RST tables from a dataclass.""" 
+"""Utility tool to generate an RST tables from a dataclass."""
 
 import argparse
 from dataclasses import fields, is_dataclass
 from collections import deque
+from tabulate import tabulate
 from nvidia_tao_tf2.api.api_utils.dataclass2json_converter import import_module_from_path
 
 def format_metadata(metadata):
@@ -44,27 +45,6 @@ def extract_field_data(field):
     }
     return field_data
 
-def create_rst_table_header(field_names):
-    """
-    Creates the header for an RST table.
-
-    :param field_names: List of field names to include in the header.
-    :return: Border line and header line strings for the RST table.
-    """
-    border_line = "+" + "+".join(["-" * (len(name) + 2) for name in field_names]) + "+"
-    header_line = "|" + "|".join([f" {name} " for name in field_names]) + "|"
-    return border_line, header_line
-
-def create_rst_table_row(row_data):
-    """
-    Creates a row for an RST table.
-
-    :param row_data: List of data to include in the row.
-    :return: A string representing the row in the RST table.
-    """
-    row_line = "|" + "|".join([f" {str(item)} " for item in row_data]) + "|"
-    return row_line
-
 def process_dataclass(dataclass, q, all_metadata_keys):
     """
     Processes a dataclass to extract and format its fields into an RST table.
@@ -75,23 +55,20 @@ def process_dataclass(dataclass, q, all_metadata_keys):
     :return: Formatted RST table string.
     """
     field_names = ["Field"] + all_metadata_keys
+    table_data = []
 
-    border_line, header_line = create_rst_table_header(field_names)
-
-    table_rows = [border_line, header_line, border_line.replace("-", "=")]
     for field in fields(dataclass):
         field_data = extract_field_data(field)
-        row_data = [field_data["name"]]
+        row_data = [f":code:`{field_data['name']}`"]
         for key in all_metadata_keys:
             row_data.append(field_data["metadata"].get(key, ""))
-        table_rows.append(create_rst_table_row(row_data))
-        table_rows.append(border_line)
+        table_data.append(row_data)
 
         if is_dataclass(field.type):
             q.append(field.type)
 
-    rst_table = "\n".join(table_rows)
-    return rst_table + "\n\n"
+    table = tabulate(table_data, headers=field_names, tablefmt="grid")
+    return table + "\n\n"
 
 def iterate_dataclass_fields(dataclass, all_metadata_keys):
     """
@@ -138,7 +115,7 @@ def main():
     parser = argparse.ArgumentParser(description='Process a dataclass and export to an RST file.')
     parser.add_argument('module_path', type=str, help='Dotted path to the module (e.g., nvidia_tao_pytorch.cv.re_identification.config.default_config)')
     parser.add_argument('output_file', type=str, help='Output file path (e.g., experiment_config.rst)')
-    parser.add_argument('--metadata', type=str, nargs='*', help='Optional metadata fields to include')
+    parser.add_argument('--metadata', type=str, nargs='*', help='Optional metadata fields to include (e.g., math_cond, required, popular, etc.)')
 
     args = parser.parse_args()
 
@@ -163,4 +140,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
