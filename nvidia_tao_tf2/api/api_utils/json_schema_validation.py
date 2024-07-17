@@ -89,5 +89,7 @@ def validate_jsonschema(json_schema, json_metadata):
                 return status
         return None
     except Exception as err:
-        return f"Invalid schema : {err.with_traceback()}"
+        tb = sys.exception().__traceback__
+        return f"Invalid schema : {err.with_traceback(tb)}"
+
     
