@@ -13,7 +13,7 @@ RUN pip install nvidia-pyindex
 RUN pip install -r requirements.txt && \
     rm -rf requirements.txt
 
-# Installing TAO-Core.
+# Installing TAO-Core
 COPY tao-core tao-core
 RUN cd tao-core && bash release/python/build_wheel.sh && \
     find dist/ -name "nvidia_tao_core*.whl" -type f | xargs -n 1 pip install && \
