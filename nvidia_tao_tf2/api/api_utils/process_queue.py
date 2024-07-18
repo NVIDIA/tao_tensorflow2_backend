@@ -23,6 +23,8 @@ def process_queue():
             job['status'] = 'Processing'
             cloud_storage = None
             is_completed = None
+            exit_event = None
+            upload_thread = None
             
             try:
                 telemetry_opt_out = job["data"].get('telemetry_opt_out', "no")
@@ -83,8 +85,10 @@ def process_queue():
             finally:
                 # Stopping the threads
                 if cloud_storage:
-                    exit_event.set()
-                    upload_thread.join()
+                    if exit_event is not None:
+                        exit_event.set()
+                    if upload_thread is not None:
+                        upload_thread.join()
 
             # Updating the job status
             try:
