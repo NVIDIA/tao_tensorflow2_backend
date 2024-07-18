@@ -1,4 +1,4 @@
-FROM nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:b6d83c82da5f45ded9080c57bc6781f73bea6be19c6b011a208fc9ede70de51a
+FROM nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:38b844bddd09518f3cb62ff813f58d528312efcb530b1be7cc18353fbaf51cd6
 
 # Installing the TAO Toolkit source code packages.
 WORKDIR /opt/nvidia
@@ -27,7 +27,7 @@ RUN python -m pip uninstall graphviz -y
 # Resolving container scan vulnerabilities
 ENV NVM_DIR=/usr/local/nvm
 RUN source "$NVM_DIR/nvm.sh" \
-    && nvm install 20.9.0 --reinstall-packages-from=16.20.2 node \
+    && nvm install 20.15.0 --reinstall-packages-from=16.20.2 node \
     && nvm uninstall 16.20.2
 
 ENV NVIDIA_PRODUCT_NAME "TAO Toolkit"

@@ -15,15 +15,6 @@
 # limitations under the License.
 
 """Utility module to validate json-schema from the api."""
-
-import json
-
-def is_float(value):
-    try:
-        float(value)
-        return True
-    except Exception:
-        return False
     
 def validate_schema(_value, _properties, hierarchy):
     if isinstance(_value, dict):
@@ -33,7 +24,7 @@ def validate_schema(_value, _properties, hierarchy):
 
             if _value_key not in _properties["properties"]:
                 hierarchy_str = ".".join(hierarchy)
-                return f"Invalid schema : \"key = {_value_key}\" not present in the {hierarchy_str} config specs. "
+                return f"Invalid schema : key = {_value_key} not present in the {hierarchy_str} config specs. "
             
             hierarchy.append(_value_key)
             status = validate_schema(_value_obj, _properties["properties"][_value_key], hierarchy)
@@ -89,7 +80,7 @@ def validate_jsonschema(json_schema, json_metadata):
                 continue
             
             if key not in json_metadata.keys():
-                return f"Invalid schema : \"key = {key}\" not present in the config specs. "
+                return f"Invalid schema : key = {key} not present in the config specs."
             
             hierarchy.append(key)
             status = validate_schema(value_obj, json_metadata[key], hierarchy)
@@ -98,13 +89,7 @@ def validate_jsonschema(json_schema, json_metadata):
                 return status
         return None
     except Exception as err:
-        return f"Invalid schema : {err.with_traceback()}"
+        tb = sys.exception().__traceback__
+        return f"Invalid schema : {err.with_traceback(tb)}"
 
-# if __name__ == "__main__":
-#     with open('output1.json', 'r') as f:
-#         json_metadata = json.load(f)
-
-#     with open('output2.json', 'r') as f:
-#         json_schema = json.load(f)
-
-#     print(validate_jsonschema(json_schema, json_metadata))
+    

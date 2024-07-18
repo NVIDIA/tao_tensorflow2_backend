@@ -191,42 +191,41 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
     multi_node = False
     np = -1
 
-    if args["subtask"] in multigpu_support:
-        # Parsing cmdline override
-        if any(arg in unknown_args_as_str for arg in overrides):
-            if "num_gpus" in unknown_args_as_str:
-                num_gpus = int(unknown_args_as_str.split('num_gpus=')[1].split()[0])
-            if "gpu_ids" in unknown_args_as_str:
-                gpu_ids = ast.literal_eval(unknown_args_as_str.split('gpu_ids=')[1].split()[0])
-            if "cuda_blocking" in unknown_args_as_str:
-                launch_cuda_blocking = ast.literal_eval(unknown_args_as_str.split('cuda_blocking=')[1].split()[0])
-            if "mpi_args" in unknown_args_as_str:
+    # Parsing cmdline override
+    if any(arg in unknown_args_as_str for arg in overrides):
+        if "num_gpus" in unknown_args_as_str:
+            num_gpus = int(unknown_args_as_str.split('num_gpus=')[1].split()[0])
+        if "gpu_ids" in unknown_args_as_str:
+            gpu_ids = ast.literal_eval(unknown_args_as_str.split('gpu_ids=')[1].split()[0])
+        if "cuda_blocking" in unknown_args_as_str:
+            launch_cuda_blocking = ast.literal_eval(unknown_args_as_str.split('cuda_blocking=')[1].split()[0])
+        if "mpi_args" in unknown_args_as_str:
+            mpi_args = ""
+            mpi_arg_list = unknown_args_as_str.split('mpi_args.')[1:]
+            for mpi_arg in mpi_arg_list:
+                var, val = mpi_arg.strip().split("=")
+                mpi_args += f"-x {var.upper()}={val} "
+        if "multi_node" in unknown_args_as_str:
+            multi_node = ast.literal_eval(unknown_args_as_str.split('multi_node=')[1].split()[0])
+        if "num_processes" in unknown_args_as_str:
+            np = int(unknown_args_as_str.split('num_processes=')[1].split()[0])
+    # If no cmdline override, look at specfile
+    else:
+        with open(args["experiment_spec"], 'r') as spec:  # pylint: disable=W1514
+            exp_config = yaml.safe_load(spec)
+            if 'num_gpus' in exp_config:
+                num_gpus = exp_config['num_gpus']
+            if 'gpu_ids' in exp_config:
+                gpu_ids = exp_config['gpu_ids']
+            if "cuda_blocking" in exp_config:
+                launch_cuda_blocking = exp_config['cuda_blocking']
+            if "mpi_args" in exp_config:
                 mpi_args = ""
-                mpi_arg_list = unknown_args_as_str.split('mpi_args.')[1:]
-                for mpi_arg in mpi_arg_list:
-                    var, val = mpi_arg.strip().split("=")
+                mpi_arg_dict = exp_config['mpi_args']
+                for var, val in mpi_arg_dict.items():
                     mpi_args += f"-x {var.upper()}={val} "
             if "multi_node" in unknown_args_as_str:
-                multi_node = ast.literal_eval(unknown_args_as_str.split('multi_node=')[1].split()[0])
-            if "num_processes" in unknown_args_as_str:
-                np = int(unknown_args_as_str.split('num_processes=')[1].split()[0])
-        # If no cmdline override, look at specfile
-        else:
-            with open(args["experiment_spec"], 'r') as spec:  # pylint: disable=W1514
-                exp_config = yaml.safe_load(spec)
-                if 'num_gpus' in exp_config:
-                    num_gpus = exp_config['num_gpus']
-                if 'gpu_ids' in exp_config:
-                    gpu_ids = exp_config['gpu_ids']
-                if "cuda_blocking" in exp_config:
-                    launch_cuda_blocking = exp_config['cuda_blocking']
-                if "mpi_args" in exp_config:
-                    mpi_args = ""
-                    mpi_arg_dict = exp_config['mpi_args']
-                    for var, val in mpi_arg_dict.items():
-                        mpi_args += f"-x {var.upper()}={val} "
-                if "multi_node" in unknown_args_as_str:
-                    multi_node = exp_config['multi_node']
+                multi_node = exp_config['multi_node']
 
     if num_gpus != len(gpu_ids):
         logging.info(f"The number of GPUs ({num_gpus}) must be the same as the number of GPU indices ({gpu_ids}) provided.")
@@ -234,7 +233,6 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
         gpu_ids = list(range(num_gpus)) if len(gpu_ids) != num_gpus else gpu_ids
         logging.info(f"Using GPUs {gpu_ids} (total {num_gpus})")
 
-    print("2. got GPUs")
     mpi_command = ""
     # np defaults to num_gpus if < 0
     if np < 0:
