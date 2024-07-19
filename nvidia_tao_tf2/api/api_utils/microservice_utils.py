@@ -2,7 +2,7 @@ import requests
 import json
 
 def invoke_microservices(request_dict):
-    url = f"http://localhost:8000/api/v1"
+    url = f"http://localhost:8011/api/v1"
     api_endpoint = request_dict.get('api_endpoint', None)
     neural_network_name = request_dict.get('neural_network_name', None)
     ngc_api_key = request_dict.get('ngc_api_key', None)
@@ -52,4 +52,4 @@ def invoke_microservices(request_dict):
     if response and response.status_code in (200, 201):
         return response.json()
     else:
-        raise ValueError(f"Failed to get execute ({response.status_code} {response.reason})")
+        raise ValueError(f"Failed to get execute (Status Code: {response.status_code} : {response.json()})")
