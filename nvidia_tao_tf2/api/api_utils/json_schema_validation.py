@@ -15,7 +15,9 @@
 # limitations under the License.
 
 """Utility module to validate json-schema from the api."""
-    
+
+import sys
+
 def validate_schema(_value, _properties, hierarchy):
     if isinstance(_value, dict):
         for _value_key, _value_obj in _value.items():
@@ -91,5 +93,3 @@ def validate_jsonschema(json_schema, json_metadata):
     except Exception as err:
         tb = sys.exception().__traceback__
         return f"Invalid schema : {err.with_traceback(tb)}"
-
-    
