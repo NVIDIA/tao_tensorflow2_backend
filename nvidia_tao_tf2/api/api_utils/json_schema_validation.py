@@ -17,7 +17,7 @@
 """Utility module to validate json-schema from the api."""
 
 import sys
-
+    
 def validate_schema(_value, _properties, hierarchy):
     if isinstance(_value, dict):
         for _value_key, _value_obj in _value.items():

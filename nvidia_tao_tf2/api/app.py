@@ -832,8 +832,7 @@ def post_nvcf_action():
         return make_response(jsonify(resp), 200)
     except Exception as err:
         print(traceback.format_exc())
-        tb = sys.exception().__traceback__
-        metadata = {"error_desc": str(err.with_traceback(tb)), "error_code": 9}
+        metadata = {"error_desc": f"{str(err)}", "error_code": 9}
         schema = ErrorRspSchema()
         return make_response(jsonify(schema.dump(schema.load(metadata))), 400)
 
