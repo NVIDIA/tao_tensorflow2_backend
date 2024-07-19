@@ -52,4 +52,4 @@ def invoke_microservices(request_dict):
     if response and response.status_code in (200, 201):
         return response.json()
     else:
-        raise ValueError(f"Failed to get execute (Status Code: {response.status_code} : {response.json()})")
+        raise ValueError(f"{response.json()['error_desc']}" if response.json().get('error_desc') else f"Failed to get execute (Status Code: {response.status_code} : {response.json()})")
