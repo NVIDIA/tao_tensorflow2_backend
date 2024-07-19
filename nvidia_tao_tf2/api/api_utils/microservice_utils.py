@@ -2,7 +2,7 @@ import requests
 import json
 
 def invoke_microservices(request_dict):
-    url = f"http://localhost:8011/api/v1"
+    url = f"http://localhost:8000/api/v1"
     api_endpoint = request_dict.get('api_endpoint', None)
     neural_network_name = request_dict.get('neural_network_name', None)
     ngc_api_key = request_dict.get('ngc_api_key', None)
