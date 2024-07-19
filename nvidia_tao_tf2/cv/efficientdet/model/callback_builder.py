@@ -37,7 +37,7 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
                 amp=hparams['mixed_precision'],
                 verbose=0,
                 save_freq='epoch',
-                save_weights_only=False,
+                save_weights_only=True,
                 period=hparams['checkpoint_interval'],
                 is_qat=hparams['qat'])
         else:
@@ -46,7 +46,7 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
                 encryption_key=hparams['encryption_key'],
                 verbose=0,
                 save_freq='epoch',
-                save_weights_only=False,
+                save_weights_only=True,
                 period=hparams['checkpoint_interval'],
                 is_qat=hparams['qat'])
         callbacks.append(ckpt_callback)
