@@ -262,7 +262,7 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
 
     process_passed = False
     start = time()
-    progress_bar_pattern = re.compile(r"Epoch \d+: \s*\d+%|\[.*\]")
+    progress_bar_pattern = re.compile(r"^(?!.*(Average Precision|Average Recall)).*\[.*\].*")
 
     try:
         # Run the script.
