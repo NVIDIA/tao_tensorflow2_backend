@@ -100,7 +100,6 @@ class EfficientDetModule(TAOModule):
     def _resume(self, hparams, steps_per_epoch):
         """Resume from checkpoint."""
         if self.resume_ckpt_path:
-            print(self.resume_ckpt_path)
             ckpt_path, _ = decode_eff(self.resume_ckpt_path, hparams.encryption_key)
             train_from_epoch = keras_utils.restore_ckpt(
                 self.model,
