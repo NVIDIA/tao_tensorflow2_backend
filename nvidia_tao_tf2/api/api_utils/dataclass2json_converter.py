@@ -1,3 +1,19 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Original source taken from https://github.com/NVIDIA/NeMo
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import requests
 import sys
 import importlib
@@ -43,8 +59,10 @@ def __basic_type_fix(value_type, value):
         return "" if value == "" else None
     if value in (None, ""):
         return None
-    if value in ("inf", "-inf"):
-        return float(value)
+    if value == "inf":
+        return sys.float_info.max
+    if value == "-inf":
+        return -(sys.float_info.max)
     if value_type in ("integer", "ordered_int"):
         return int(value)
     if value_type == "number":
@@ -262,7 +280,9 @@ def additional_parameters_fix(json_schema, parameter_name, additional_param_list
         """
         if idx == len(param_list) - 1:
             return
-        rectify_schema(schema[param_list[idx]]["properties"], param_list, idx + 1)
+        rectify_schema(
+            schema[param_list[idx]]["properties"], param_list, idx + 1
+        )
         if parameter_name not in schema[param_list[idx]]:
             schema[param_list[idx]][parameter_name] = []
         schema[param_list[idx]][parameter_name].append(param_list[idx + 1])
@@ -359,28 +379,22 @@ def create_json_schema(json_data):
             parent_default[param_name] = default_value
             hierarchy.pop()
             return
-        props[param_name] = {"type": value_type, "properties": {}, "default": {}}
-
-        # print("param_name :: ", param_name)
-        # print("parent_default :: ", parent_default)
-        # print("parameter_value :: ", param_value)
-        
-        # props[param_name]["default"] = default_value
-        # if parent_default:
-        #     parent_default[param_name] = default_value
-
+        props[param_name] = {
+            "type": value_type,
+            "properties": {}, "default": {}
+        }
         if display_name not in (None, ""):
             props[param_name]["title"] = display_name
         if description not in (None, ""):
             props[param_name]["description"] = description
         if examples not in (None, []):
             props[param_name]["examples"] = examples
-        if default_value == "" or default_value is not None:
-             props[param_name]["default"] = default_value
-             parent_default[param_name] = default_value
         # if default_value not in (None, ""):
         #     props[param_name]["default"] = default_value
         #     parent_default[param_name] = default_value
+        if default_value == "" or default_value is not None:
+            props[param_name]["default"] = default_value
+            parent_default[param_name] = default_value
         if valid_min is not None:
             props[param_name]["minimum"] = valid_min
         if valid_max is not None:
@@ -398,7 +412,9 @@ def create_json_schema(json_data):
         if automl_enabled is not None and automl_enabled.lower() == "true":
             if parent_default.get("automl_default_parameters") is None:
                 parent_default["automl_default_parameters"] = []
-            parent_default["automl_default_parameters"].append(".".join(hierarchy))
+            parent_default["automl_default_parameters"].append(
+                ".".join(hierarchy)
+            )
             auto_ml_parameters.append(".".join(hierarchy))
 
         # add object hierarchy
@@ -430,7 +446,9 @@ def create_json_schema(json_data):
     # `popular` field correction in json-schema
     if popular_parameter:
         unique_popular_parameters = list(set(popular_parameter))
-        schema = additional_parameters_fix(schema, "popular", unique_popular_parameters)
+        schema = additional_parameters_fix(
+            schema, "popular", unique_popular_parameters
+        )
 
     # `required` field correction in json-schema
     if required_parameter:
@@ -505,20 +523,34 @@ def import_module_from_path(module_name):
         return None
 
 
-# if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # # Note : provide directory path only
-    # parser.add_argument(
-    #     "config_file_path", help="directory path to dataclass config file"
-    # )
-    # parser.add_argument("output_file", help="output path to save json schema")
-    # args = parser.parse_args()
+def remove_none_empty_fields(json_schema):
+    """
+    Recursively remove all None and empty string values and their corresponding keys from a dictionary.
 
-    # # Example usage
-    # config_file_path = args.config_file_path
-    # imported_module = import_module_from_path("default_config", config_file_path)
-    
-    # expConfig = ExperimentConfig()
-    # json_with_meta_config = dataclass_to_json(expConfig)
-    # json_schema = create_json_schema(json_with_meta_config)
-    # print(write_json_to_file(json_schema, 'output.json'))
+    Parameters:
+    json_schema (dict): The input dictionary from which None and empty string values should be removed.
+
+    Returns:
+    dict: A new dictionary with all None and empty string values removed.
+    """
+    if not isinstance(json_schema, dict):
+        return json_schema
+
+    new_dict = {}
+    for key, value in json_schema.items():
+        if isinstance(value, dict):
+            nested_dict = remove_none_empty_fields(value)
+            if nested_dict:  # only add if nested_dict is not empty
+                new_dict[key] = nested_dict
+        elif isinstance(value, list):
+            new_list = [
+                remove_none_empty_fields(item)
+                for item in value
+                if item is not None and item != ""
+            ]
+            if new_list:  # only add if new_list is not empty
+                new_dict[key] = new_list
+        elif value is not None and value != "":
+            new_dict[key] = value
+
+    return new_dict
