@@ -115,7 +115,7 @@ class TrainConfig:
             tags=["classification", "training", "tao-toolkit"],
         )
     )
-    results_dir: Optional[str] = STR_FIELD(None, default_value="/results")
+    results_dir: Optional[str] = STR_FIELD(value=None)
 
 
 @dataclass
@@ -176,12 +176,12 @@ class EvalConfig:
 
     dataset_path: str = STR_FIELD(value=MISSING)
     checkpoint: str = STR_FIELD(value=MISSING)
-    trt_engine: Optional[str] = STR_FIELD(None, default_value="/export")
+    trt_engine: Optional[str] = STR_FIELD(value=None)
     batch_size: int = INT_FIELD(value=64, default_value=1, valid_min=1, valid_max="inf")
     n_workers: int = INT_FIELD(value=64, default_value=1, valid_min=1, valid_max="inf")
     top_k: int = INT_FIELD(value=3, default_value=1, valid_min=1, valid_max="inf")
     classmap: str = STR_FIELD(value="")
-    results_dir: Optional[str] = STR_FIELD(None, default_value="/results")
+    results_dir: Optional[str] = STR_FIELD(value=None)
 
 
 @dataclass
@@ -190,7 +190,7 @@ class ExportConfig:
 
     checkpoint: str = STR_FIELD(value=MISSING)
     onnx_file: str = STR_FIELD(value=MISSING)
-    results_dir: Optional[str] = STR_FIELD(None)
+    results_dir: Optional[str] = STR_FIELD(value=None)
 
 
 @dataclass
@@ -220,7 +220,7 @@ class TrtConfig:
 class GenTrtEngineConfig:
     """Gen TRT Engine experiment config."""
 
-    results_dir: Optional[str] = STR_FIELD(None)
+    results_dir: Optional[str] = STR_FIELD(value=None)
     onnx_file: str = STR_FIELD(value=MISSING)
     trt_engine: Optional[str] = STR_FIELD(None)
     tensorrt: TrtConfig = DATACLASS_FIELD(TrtConfig())
@@ -234,7 +234,7 @@ class InferConfig:
     trt_engine: Optional[str] = STR_FIELD(None)
     image_dir: str = STR_FIELD(value=MISSING)
     classmap: str = STR_FIELD(value=MISSING)
-    results_dir: Optional[str] = STR_FIELD(None, default_value="/results")
+    results_dir: Optional[str] = STR_FIELD(value=None)
 
 
 @dataclass
@@ -244,7 +244,7 @@ class PruneConfig:
     checkpoint: str = STR_FIELD(value=MISSING)
     byom_model_path: Optional[str] = STR_FIELD(None)
     normalizer: str = STR_FIELD(value="max", valid_options="max,L2")
-    results_dir: Optional[str] = STR_FIELD(None)
+    results_dir: Optional[str] = STR_FIELD(value=None)
     equalization_criterion: str = STR_FIELD(
         value="union",
         required="no",
