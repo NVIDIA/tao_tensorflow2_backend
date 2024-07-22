@@ -269,6 +269,7 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
         with dual_output(log_file) as (stdout_target, log_target):
             with subprocess.Popen(
                 shlex.split(run_command),
+                env=os.environ.copy(),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 bufsize=1,  # Line-buffered
