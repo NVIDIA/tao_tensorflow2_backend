@@ -13,11 +13,8 @@ RUN pip install nvidia-pyindex
 RUN pip install -r requirements.txt && \
     rm -rf requirements.txt
 
-# Installing TAO-Core
-COPY tao-core tao-core
-RUN cd tao-core && bash release/python/build_wheel.sh && \
-    find dist/ -name "nvidia_tao_core*.whl" -type f | xargs -n 1 pip install && \
-    rm -rf *
+COPY internal/nvidia_tao_core-5.3.0.0-py3-none-any.whl  nvidia_tao_core-5.3.0.0-py3-none-any.whl
+RUN pip install nvidia_tao_core-5.3.0.0-py3-none-any.whl
 
 # Install public version of Nvidia QAT Toolkit. Due to issues with the public version, reverting the problematic commit
 RUN git clone https://github.com/NVIDIA/TensorRT.git
