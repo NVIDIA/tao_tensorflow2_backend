@@ -37,7 +37,7 @@ spec:
         - name: DOCKER_TLS_CERTDIR
           value: ""
     - name: cuda
-      image: nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:38b844bddd09518f3cb62ff813f58d528312efcb530b1be7cc18353fbaf51cd6
+      image: nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:a4f2958d6f1ea723917af3e9a9805557994766368e7c3cbcfebf5eff67596bfc
       securityContext:
         privileged: true
       command:
