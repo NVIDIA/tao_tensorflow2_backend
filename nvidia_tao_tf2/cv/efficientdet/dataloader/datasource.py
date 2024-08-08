@@ -28,7 +28,7 @@ class DataSource:
             image_dirs = ['/'] * len(tfrecord_patterns)
         for i in range(len(tfrecord_patterns)):
             if os.path.isdir(tfrecord_patterns[i]):
-                tfrecord_patterns[i] = os.path.join(tfrecord_patterns[i], "*")
+                tfrecord_patterns[i] = os.path.join(tfrecord_patterns[i], "*.tfrecord")
         self.tfrecord_patterns = list(tfrecord_patterns)
         self.image_dirs = list(image_dirs)
 

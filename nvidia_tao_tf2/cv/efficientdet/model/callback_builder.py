@@ -51,16 +51,6 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
                 is_qat=hparams['qat'])
         callbacks.append(ckpt_callback)
 
-        model_callback = EffCheckpoint(
-            eff_dir=hparams['results_dir'],
-            encryption_key=hparams['encryption_key'],
-            graph_only=True,
-            verbose=0,
-            save_freq='epoch',
-            save_weights_only=True,
-            period=hparams['checkpoint_interval'])
-        callbacks.append(model_callback)
-
         # log LR in tensorboard
         callbacks.append(
             LRTensorBoard(

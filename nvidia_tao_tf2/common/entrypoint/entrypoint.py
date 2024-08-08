@@ -14,6 +14,7 @@
 
 """TAO Toolkit Entrypoint Helper Modules."""
 
+import re
 import ast
 import importlib
 import os
@@ -190,42 +191,41 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
     multi_node = False
     np = -1
 
-    if args["subtask"] in multigpu_support:
-        # Parsing cmdline override
-        if any(arg in unknown_args_as_str for arg in overrides):
-            if "num_gpus" in unknown_args_as_str:
-                num_gpus = int(unknown_args_as_str.split('num_gpus=')[1].split()[0])
-            if "gpu_ids" in unknown_args_as_str:
-                gpu_ids = ast.literal_eval(unknown_args_as_str.split('gpu_ids=')[1].split()[0])
-            if "cuda_blocking" in unknown_args_as_str:
-                launch_cuda_blocking = ast.literal_eval(unknown_args_as_str.split('cuda_blocking=')[1].split()[0])
-            if "mpi_args" in unknown_args_as_str:
+    # Parsing cmdline override
+    if any(arg in unknown_args_as_str for arg in overrides):
+        if "num_gpus" in unknown_args_as_str:
+            num_gpus = int(unknown_args_as_str.split('num_gpus=')[1].split()[0])
+        if "gpu_ids" in unknown_args_as_str:
+            gpu_ids = ast.literal_eval(unknown_args_as_str.split('gpu_ids=')[1].split()[0])
+        if "cuda_blocking" in unknown_args_as_str:
+            launch_cuda_blocking = ast.literal_eval(unknown_args_as_str.split('cuda_blocking=')[1].split()[0])
+        if "mpi_args" in unknown_args_as_str:
+            mpi_args = ""
+            mpi_arg_list = unknown_args_as_str.split('mpi_args.')[1:]
+            for mpi_arg in mpi_arg_list:
+                var, val = mpi_arg.strip().split("=")
+                mpi_args += f"-x {var.upper()}={val} "
+        if "multi_node" in unknown_args_as_str:
+            multi_node = ast.literal_eval(unknown_args_as_str.split('multi_node=')[1].split()[0])
+        if "num_processes" in unknown_args_as_str:
+            np = int(unknown_args_as_str.split('num_processes=')[1].split()[0])
+    # If no cmdline override, look at specfile
+    else:
+        with open(args["experiment_spec"], 'r') as spec:  # pylint: disable=W1514
+            exp_config = yaml.safe_load(spec)
+            if 'num_gpus' in exp_config:
+                num_gpus = exp_config['num_gpus']
+            if 'gpu_ids' in exp_config:
+                gpu_ids = exp_config['gpu_ids']
+            if "cuda_blocking" in exp_config:
+                launch_cuda_blocking = exp_config['cuda_blocking']
+            if "mpi_args" in exp_config:
                 mpi_args = ""
-                mpi_arg_list = unknown_args_as_str.split('mpi_args.')[1:]
-                for mpi_arg in mpi_arg_list:
-                    var, val = mpi_arg.strip().split("=")
+                mpi_arg_dict = exp_config['mpi_args']
+                for var, val in mpi_arg_dict.items():
                     mpi_args += f"-x {var.upper()}={val} "
             if "multi_node" in unknown_args_as_str:
-                multi_node = ast.literal_eval(unknown_args_as_str.split('multi_node=')[1].split()[0])
-            if "num_processes" in unknown_args_as_str:
-                np = int(unknown_args_as_str.split('num_processes=')[1].split()[0])
-        # If no cmdline override, look at specfile
-        else:
-            with open(args["experiment_spec"], 'r') as spec:  # pylint: disable=W1514
-                exp_config = yaml.safe_load(spec)
-                if 'num_gpus' in exp_config:
-                    num_gpus = exp_config['num_gpus']
-                if 'gpu_ids' in exp_config:
-                    gpu_ids = exp_config['gpu_ids']
-                if "cuda_blocking" in exp_config:
-                    launch_cuda_blocking = exp_config['cuda_blocking']
-                if "mpi_args" in exp_config:
-                    mpi_args = ""
-                    mpi_arg_dict = exp_config['mpi_args']
-                    for var, val in mpi_arg_dict.items():
-                        mpi_args += f"-x {var.upper()}={val} "
-                if "multi_node" in unknown_args_as_str:
-                    multi_node = exp_config['multi_node']
+                multi_node = exp_config['multi_node']
 
     if num_gpus != len(gpu_ids):
         logging.info(f"The number of GPUs ({num_gpus}) must be the same as the number of GPU indices ({gpu_ids}) provided.")
@@ -233,7 +233,6 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
         gpu_ids = list(range(num_gpus)) if len(gpu_ids) != num_gpus else gpu_ids
         logging.info(f"Using GPUs {gpu_ids} (total {num_gpus})")
 
-    print("2. got GPUs")
     mpi_command = ""
     # np defaults to num_gpus if < 0
     if np < 0:
@@ -261,28 +260,58 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
         task_command = f"CUDA_LAUNCH_BLOCKING=1 {task_command}"
     run_command = f"{mpi_command} bash -c \'{env_variables} {task_command}\'"
 
-    process_passed = True
+    process_passed = False
     start = time()
+    progress_bar_pattern = re.compile(r"^(?!.*(Average Precision|Average Recall)).*\[.*\].*")
+
     try:
         # Run the script.
         with dual_output(log_file) as (stdout_target, log_target):
-            proc = subprocess.Popen(  # pylint: disable=R1732
+            with subprocess.Popen(
                 shlex.split(run_command),
+                env=os.environ.copy(),
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT
-            )
-            for line in iter(proc.stdout.readline, b''):
-                stdout_target.buffer.write(line)
-                if log_target:
-                    log_target.write(line.decode('utf-8'))
-            proc.wait()  # Wait for the process to complete
+                stderr=subprocess.STDOUT,
+                bufsize=1,  # Line-buffered
+                universal_newlines=True  # Text mode
+            ) as proc:
+                last_progress_bar_line = None
 
-    except (KeyboardInterrupt, SystemExit):
-        logging.info("Command was interrupted.")
+                for line in proc.stdout:
+                    # Check if the line contains \r or matches the progress bar pattern
+                    if '\r' in line or progress_bar_pattern.search(line):
+                        last_progress_bar_line = line.strip()
+                        # Print the progress bar line to the terminal
+                        stdout_target.write('\r' + last_progress_bar_line)
+                        stdout_target.flush()
+                    else:
+                        # Write the final progress bar line to the log file before a new log line
+                        if last_progress_bar_line:
+                            if log_target:
+                                log_target.write(last_progress_bar_line + '\n')
+                                log_target.flush()
+                            last_progress_bar_line = None
+                        stdout_target.write(line)
+                        stdout_target.flush()
+                        if log_target:
+                            log_target.write(line)
+                            log_target.flush()
+
+                proc.wait()  # Wait for the process to complete
+                # Write the final progress bar line after process completion
+                if last_progress_bar_line and log_target:
+                    log_target.write(last_progress_bar_line + '\n')
+                    log_target.flush()
+                if proc.returncode == 0:
+                    process_passed = True
+    except (KeyboardInterrupt, SystemExit) as e:
+        logging.info("Command was interrupted due to ", e)
+        process_passed = True
     except subprocess.CalledProcessError as e:
         process_passed = False
         if e.output is not None:
-            logging.info(f"TAO Toolkit task: {args['subtask']} failed with error:\n{e.output}")
+            logging.info(e.output)
+
     end = time()
     time_lapsed = end - start
 

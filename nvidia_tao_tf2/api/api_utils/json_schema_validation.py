@@ -15,8 +15,22 @@
 # limitations under the License.
 
 """Utility module to validate json-schema from the api."""
-    
+
+import sys
+
+
 def validate_schema(_value, _properties, hierarchy):
+    """
+    Recursively validates a JSON schema against a set of properties.
+
+    Args:
+        _value (dict): The JSON object to validate.
+        _properties (dict): The schema properties to validate against.
+        hierarchy (list): A list to keep track of the current hierarchy in the JSON structure.
+
+    Returns:
+        str: An error message if the schema is invalid, otherwise None.
+    """
     if isinstance(_value, dict):
         for _value_key, _value_obj in _value.items():
             if _value_key == 'automl_default_parameters' or "properties" not in _properties:
@@ -70,8 +84,16 @@ def validate_schema(_value, _properties, hierarchy):
 
 # json schema validation script
 def validate_jsonschema(json_schema, json_metadata):
-    """ JSON schema validation function """
+    """
+    Validates a JSON schema against a given metadata schema.
 
+    Args:
+        json_schema (dict): The JSON schema to validate.
+        json_metadata (dict): The metadata schema to validate against.
+
+    Returns:
+        str: An error message if the schema is invalid, otherwise None.
+    """
     hierarchy = []
     
     try:
@@ -89,5 +111,5 @@ def validate_jsonschema(json_schema, json_metadata):
                 return status
         return None
     except Exception as err:
-        return f"Invalid schema : {err.with_traceback()}"
-    
+        tb = sys.exception().__traceback__
+        return f"Invalid schema : {err.with_traceback(tb)}"

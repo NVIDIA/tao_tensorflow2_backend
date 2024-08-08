@@ -23,6 +23,7 @@ dataset:
   train_dirs: []
   val_dirs: []
 train:
+  resume_training_checkpoint_path: ""
   init_epoch: 0
   optimizer:
     name: 'sgd'
