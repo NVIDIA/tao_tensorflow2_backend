@@ -114,6 +114,8 @@ There will be situations where developers would be required to update the third 
 The base dev docker is defined in `$NV_TAO_TF2_TOP/docker/Dockerfile`. The python packages required for the TAO dev is defined in `$NV_TAO_TF2_TOP/docker/requirements.txt`. Once you have made the required change, please update the base docker using the build script in the same directory.
 
 ```sh
+git submodule update --init --recursive
+git submodule foreach git pull origin main
 cd $NV_TAO_TF2_TOP/docker
 ./build.sh --build
 ```
