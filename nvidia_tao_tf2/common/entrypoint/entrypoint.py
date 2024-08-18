@@ -29,7 +29,7 @@ import yaml
 
 from nvidia_tao_tf2.common.entrypoint import download_specs
 from nvidia_tao_tf2.common.telemetry.nvml_utils import get_device_details
-from nvidia_tao_tf2.common.telemetry.telemetry import send_telemetry_data
+from nvidia_tao_core.telemetry.telemetry import send_telemetry_data
 import logging as _logging
 
 _logging.basicConfig(

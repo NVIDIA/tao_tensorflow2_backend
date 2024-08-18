@@ -33,7 +33,7 @@ RUN source "$NVM_DIR/nvm.sh" \
 ENV NVIDIA_PRODUCT_NAME "TAO Toolkit"
 ENV TAO_TOOLKIT_VERSION="4.0.0"
 ENV NVIDIA_TAO_TOOLKIT_VERSION="${TAO_TOOLKIT_VERSION}-TF2"
-ENV TAO_TELEMETRY_SERVER="https://sqa-telemetry.metropolis.nvidia.com:443/api/v1/telemetry"
+ENV TAO_TELEMETRY_SERVER="https://api.tao.ngc.nvidia.com"
 
 # Microservices entrypoint
 ENV FLASK_APP=/usr/local/lib/python3.10/dist-packages/nvidia_tao_tf2/api/app.py
