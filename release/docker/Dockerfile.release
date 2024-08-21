@@ -1,4 +1,4 @@
-FROM nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:55aa08abc2bcdb6e7f4f621e542d3cd00af99ce0f1455fd5364d5611cd1596c1
+FROM nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:15e595779a4b110daee012d1a69f59932213b3b9d1cdd3159e9b66f6f58e0da8
 
 # Installing the TAO Toolkit source code packages.
 WORKDIR /opt/nvidia
