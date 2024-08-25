@@ -1,0 +1,21 @@
+results_dir: '/home/binz/tao-tf2/results_enb0'
+dataset:
+  train_dataset_path: '/home/binz/tao-tf2/dataset/flower_17/train'
+  val_dataset_path: '/home/binz/tao-tf2/dataset/flower_17/validation'
+train:
+  checkpoint: ''
+  batch_size_per_gpu: 16
+  num_epochs: 3
+
+evaluate:
+  dataset_path: '/home/binz/tao-tf2/dataset/flower_17/validation'
+  # checkpoint: '/home/binz/Tao/tao-tf2/results/weights/resnet18_bn_001.tlt'
+  checkpoint: '/home/binz/tao-tf2/results_enb0/weights/efficientnet-b0_010.tlt'
+  top_k: 1
+  batch_size: 16
+  n_workers: 0
+model:
+  backbone: 'efficientnet-b0'
+  input_image_depth: 8
+encryption_key: 'nvidia_tlt'
+data_format: 'channels_last'

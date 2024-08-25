@@ -1,0 +1,17 @@
+dataset:
+  train_tfrecords:
+    - '/home/scratch.p3/yuw/datasets/coco/train-*'
+  val_tfrecords:
+    - '/home/scratch.p3/yuw/datasets/coco/val-*'
+  val_json_file: '/home/scratch.p3/yuw/datasets/coco/annotations/instances_val2017.json'
+train:
+  amp: True
+  num_examples_per_epoch: 120000
+  batch_size: 16
+  checkpoint_interval: 1
+evaluate:
+  batch_size: 16
+  num_samples: 5000
+  checkpoint: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0-amp/weights/efficientdet-d0_245.tlt'
+results_dir: '/home/scratch.p3/yuw/tlt3_experiments/tf2-effdet-d0'
+encryption_key: 'nvidia_tlt'
