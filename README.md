@@ -27,7 +27,7 @@ TAO Toolkit is a Python package hosted on the NVIDIA Python Package Index. It in
 
 This repository contains the required implementation for the all the deep learning components and networks using the TensorFlow backend. These routines are packaged as part of the TAO Toolkit TensorFlow container in the Toolkit package. These source code here is compatible with TensorFlow version == 2.11.0
 
-> TAO Toolkit will be deprecating this backend after 5.0.0. No more fixes, and newer releases will be supported.
+> TAO Toolkit will be deprecating this backend after 5.0.0.
 
 ## <a name='GettingStarted'></a>Getting Started
 
@@ -80,7 +80,7 @@ We recommend adding this command to your local `~/.bashrc` file, so that every n
 In order to maintain a uniform development environment across all users, TAO Toolkit provides a base environment docker that has been built and uploaded to NGC for the developers. For instantiating the docker, simply run the `tao_tf2` CLI. The usage for the command line launcher is mentioned below.
 
 ```sh
-usage: tao_tf2 [-h] [--gpus GPUS] [--volume VOLUME] [--env ENV] [--mounts_file MOUNTS_FILE] [--shm_size SHM_SIZE] [--run_as_user] [--tag TAG] [--ulimit ULIMIT] [--port PORT]
+usage: tao_tf2 [-h] [--gpus GPUS] [--volume VOLUME] [--env ENV] [--mounts_file MOUNTS_FILE] [--shm_size SHM_SIZE] [--run_as_user] [--ulimit ULIMIT] [--port PORT]
 
 Tool to run the TAO Toolkit Tensorflow2 container.
 
@@ -93,7 +93,6 @@ optional arguments:
                         Path to the mounts file.
   --shm_size SHM_SIZE   Shared memory size for docker
   --run_as_user         Flag to run as user
-  --tag TAG             The tag value for the local dev docker.
   --ulimit ULIMIT       Docker ulimits for the host machine.
   --port PORT           Port mapping (e.g. 8889:8889).
 
@@ -114,18 +113,16 @@ There will be situations where developers would be required to update the third 
 The base dev docker is defined in `$NV_TAO_TF2_TOP/docker/Dockerfile`. The python packages required for the TAO dev is defined in `$NV_TAO_TF2_TOP/docker/requirements.txt`. Once you have made the required change, please update the base docker using the build script in the same directory.
 
 ```sh
-git submodule update --init --recursive
-git submodule foreach git pull origin main
 cd $NV_TAO_TF2_TOP/docker
 ./build.sh --build
 ```
 
 #### <a name='Testthenewlybuiltbasedocker'></a>Test the newly built base docker
 
-The build script tags the newly built base docker with the username of the account in the user's local machine. Therefore, the developers may tests their new docker by using the `tao_tf2` command with the `--tag` option.
+Developers may tests their new docker by using the `tao_tf2` command.
 
 ```sh
-tao_tf2 --tag $USER -- script args
+tao_tf2 -- script args
 ```
 
 #### <a name='Updatethenewdocker'></a>Update the new docker
@@ -164,7 +161,4 @@ In order to build a new docker, please edit the `deploy.sh` file in `$NV_TAO_TF2
 TAO Toolkit Tensorflow backend is not accepting contributions as part of the TAO 5.0 release, but will be open in the future.
 
 ## <a name='License'></a>License
-
-<!-- TODO: @yuw (to be updated once license is approved.) -->
-
 This project is licensed under the [Apache 2.0](./LICENSE) License.
