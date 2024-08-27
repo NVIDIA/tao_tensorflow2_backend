@@ -5,7 +5,7 @@ set -eo pipefail
 
 registry="nvcr.io"
 tensorflow_version="2.9.1"
-tao_version="4.0.0"
+tao_version="5.5.0"
 repository="nvidia/tao-toolkit-tf"
 build_id="01"
 tag="v${tao_version}-tf${tensorflow_version}-py3-${build_id}"
@@ -31,10 +31,6 @@ while [[ $# -gt 0 ]]
         -w|--wheel)
         BUILD_WHEEL="1"
         RUN_DOCKER="0"
-        shift # past argument
-        ;;
-        -p|--push)
-        PUSH_DOCKER="1"
         shift # past argument
         ;;
         -f|--force)
@@ -78,13 +74,6 @@ if [ $BUILD_DOCKER = "1" ]; then
     fi
     
     docker build --pull -f $NV_TAO_TF2_TOP/release/docker/Dockerfile.release -t $registry/$repository:$tag $NO_CACHE --network=host $NV_TAO_TF2_TOP/.
-
-    if [ $PUSH_DOCKER = "1" ]; then
-        echo "Pusing docker ..."
-        docker push $registry/$repository:$tag
-    else
-        echo "Skip pushing docker ..."
-    fi
 
     if [ $BUILD_WHEEL = "1" ]; then
         echo "Cleaning wheels ..."
