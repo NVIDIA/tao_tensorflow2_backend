@@ -1,5 +1,4 @@
-FROM nvcr.io/nvstaging/tao/tao_tf2_base_image@sha256:15e595779a4b110daee012d1a69f59932213b3b9d1cdd3159e9b66f6f58e0da8
-
+FROM nvcr.io/nvidia/tao/tao-toolkit:5.5.0-tf2-base
 # Installing the TAO Toolkit source code packages.
 WORKDIR /opt/nvidia
 COPY dist/*.whl /opt/nvidia/wheels/
