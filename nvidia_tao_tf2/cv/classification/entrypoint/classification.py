@@ -17,7 +17,16 @@
 import argparse
 from nvidia_tao_tf2.cv.classification import scripts
 
-from nvidia_tao_tf2.common.entrypoint.entrypoint import get_subtasks, launch
+from nvidia_tao_tf2.common.entrypoint.entrypoint import (
+    get_subtasks,
+    launch,
+    command_line_parser,
+)
+
+
+def get_subtask_list():
+    """Return the list of subtasks by inspecting the scripts package."""
+    return get_subtasks(scripts)
 
 
 def main():
@@ -26,15 +35,17 @@ def main():
     parser = argparse.ArgumentParser(
         "classification",
         add_help=True,
-        description="Train Adapt Optimize Toolkit entrypoint for classification"
+        description="Train Adapt Optimize Toolkit entrypoint for classification",
     )
 
     # Build list of subtasks by inspecting the scripts package.
-    subtasks = get_subtasks(scripts)
+    subtasks = get_subtask_list()
+
+    args, unknown_args = command_line_parser(parser, subtasks)
 
     # Parse the arguments and launch the subtask.
-    launch(parser, subtasks, task="classification_tf2")
+    launch(vars(args), unknown_args, subtasks, task="classification_tf2")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

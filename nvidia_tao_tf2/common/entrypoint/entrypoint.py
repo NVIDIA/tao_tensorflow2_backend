@@ -14,6 +14,8 @@
 
 """TAO Toolkit Entrypoint Helper Modules."""
 
+import re
+import ast
 import importlib
 import os
 import pkgutil
@@ -21,10 +23,20 @@ import subprocess
 import shlex
 import sys
 from time import time
+from contextlib import contextmanager
+
+import yaml
 
 from nvidia_tao_tf2.common.entrypoint import download_specs
 from nvidia_tao_tf2.common.telemetry.nvml_utils import get_device_details
-from nvidia_tao_tf2.common.telemetry.telemetry import send_telemetry_data
+from nvidia_tao_core.telemetry.telemetry import send_telemetry_data
+import logging as _logging
+
+_logging.basicConfig(
+    format='[%(asctime)s - TAO Toolkit - %(name)s - %(levelname)s] %(message)s',
+    level='INFO'
+)
+logging = _logging
 
 
 def get_subtasks(package):
@@ -81,10 +93,6 @@ def check_valid_gpus(num_gpus, gpu_ids):
     assert min(gpu_ids) >= 0, (
         "GPU ids cannot be negative."
     )
-    assert len(gpu_ids) == num_gpus, (
-        f"The number of GPUs ({gpu_ids}) must be the same as the number of GPU indices"
-        f" ({num_gpus}) provided."
-    )
     assert max_id < num_gpus_available and num_gpus <= num_gpus_available, (
         "Checking for valid GPU ids and num_gpus."
     )
@@ -117,129 +125,134 @@ def command_line_parser(parser, subtasks):
         help="Path to the experiment spec file.",
         default=None
     )
-    parser.add_argument(
-        "-g",
-        "--gpus",
-        type=int,
-        help="Number of GPUs to use. The default value is 1.",
-        default=1
-    )
-    parser.add_argument(
-        "-m",
-        "--model_path",
-        default=None,
-        help="Path to a pre-trained model or model to continue training."
-    )
-    parser.add_argument(
-        "-o",
-        "--output_dir",
-        default=None,
-        help="Path to where the output collaterals from this task is dropped."
-    )
-    parser.add_argument(
-        '--gpu_index',
-        type=int,
-        nargs="+",
-        help="The indices of the GPU's to be used.",
-        default=None
-    )
-    parser.add_argument(
-        "--num_processes",
-        "-np",
-        type=int,
-        default=-1,
-        help=("The number of horovod child processes to be spawned. "
-              "Default is -1(equal to --gpus)."),
-        required=False
-    )
-    parser.add_argument(
-        "--mpirun-arg",
-        type=str,
-        default="-x NCCL_IB_HCA=mlx5_4,mlx5_6,mlx5_8,mlx5_10 -x NCCL_SOCKET_IFNAME=^lo,docker",
-        help="Arguments for the mpirun command to run multi-node."
-    )
-    parser.add_argument(
-        '--multi-node',
-        action='store_true',
-        default=False,
-        help="Flag to enable to run multi-node training."
-    )
-    parser.add_argument(
-        "--launch_cuda_blocking",
-        action="store_true",
-        default=False,
-        help="Debug flag to add CUDA_LAUNCH_BLOCKING=1 to the command calls."
-    )
 
-    # Parse the arguments.
-    return parser
+    args, unknown_args = parser.parse_known_args()
+    return args, unknown_args
 
 
-def launch(parser, subtasks, multigpu_support=['train'], task="tao_tf2"):
+@contextmanager
+def dual_output(log_file=None):
+    """Context manager to handle dual output redirection for subprocess.
+
+    Args:
+    - log_file (str, optional): Path to the log file. If provided, output will be
+      redirected to both sys.stdout and the specified log file. If not provided,
+      output will only go to sys.stdout.
+
+    Yields:
+    - stdout_target (file object): Target for stdout output (sys.stdout or log file).
+    - log_target (file object or None): Target for log file output, or None if log_file
+      is not provided.
+    """
+    if log_file:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            yield sys.stdout, f
+    else:
+        yield sys.stdout, None
+
+
+def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_tf2"):
     """Parse the command line and kick off the entrypoint.
 
     Args:
-
-        parser (argparse.ArgumentParser): Parser object to define the command line args.
+        args: Known command line arguments dictionary.
+        unknown_args: Unknown command line arguments string.
         subtasks (list): List of subtasks.
         multigpu_support (list): List of tasks that support --gpus > 1.
         task (str): Task entrypoint being called.
     """
     # Subtasks for a given model.
-    parser = command_line_parser(parser, subtasks)
-
-    cli_args = sys.argv[1:]
-    args, unknown_args = parser.parse_known_args(cli_args)
-    args = vars(args)
-
     scripts_args = ""
-    if args["subtask"] not in ["download_specs"]:
-        assert args["experiment_spec"], (
-            f"Experiment spec file needs to be provided for this task: {args['subtask']}"
+    if args['subtask'] not in ["download_specs"]:
+        assert args['experiment_spec'], (
+            f"Experiment spec file needs to be provided for this task:{args['subtask']}"
         )
-        if not os.path.exists(args["experiment_spec"]):
+        if not os.path.exists(args['experiment_spec']):
             raise FileNotFoundError(f"Experiment spec file doesn't exist at {args['experiment_spec']}")
-        path, name = os.path.split(args["experiment_spec"])
+        path, name = os.path.split(args['experiment_spec'])
         if path != "":
             scripts_args += f" --config-path {path}"
         scripts_args += f" --config-name {name}"
 
+    # This enables a results_dir arg to be passed from the microservice side,
+    # but there is no --results_dir cmdline arg. Instead, the spec field must be used
+    if "results_dir" in args:
+        scripts_args += " results_dir=" + args["results_dir"]
+
+    # Pass unknown args to call
+    unknown_args_as_str = " " + " ".join(unknown_args)
+
+    # Precedence these settings: cmdline > specfile > default
+    overrides = ["num_gpus", "gpu_ids", "cuda_blocking", "mpi_args", "multi_node", "num_processes"]
+    num_gpus = 1
+    gpu_ids = [0]
+    launch_cuda_blocking = False
+    mpi_args = "-x NCCL_IB_HCA=mlx5_4,mlx5_6,mlx5_8,mlx5_10 -x NCCL_SOCKET_IFNAME=^lo,docker"
+    multi_node = False
+    np = -1
+
+    # Parsing cmdline override
+    if any(arg in unknown_args_as_str for arg in overrides):
+        if "num_gpus" in unknown_args_as_str:
+            num_gpus = int(unknown_args_as_str.split('num_gpus=')[1].split()[0])
+        if "gpu_ids" in unknown_args_as_str:
+            gpu_ids = ast.literal_eval(unknown_args_as_str.split('gpu_ids=')[1].split()[0])
+        if "cuda_blocking" in unknown_args_as_str:
+            launch_cuda_blocking = ast.literal_eval(unknown_args_as_str.split('cuda_blocking=')[1].split()[0])
+        if "mpi_args" in unknown_args_as_str:
+            mpi_args = ""
+            mpi_arg_list = unknown_args_as_str.split('mpi_args.')[1:]
+            for mpi_arg in mpi_arg_list:
+                var, val = mpi_arg.strip().split("=")
+                mpi_args += f"-x {var.upper()}={val} "
+        if "multi_node" in unknown_args_as_str:
+            multi_node = ast.literal_eval(unknown_args_as_str.split('multi_node=')[1].split()[0])
+        if "num_processes" in unknown_args_as_str:
+            np = int(unknown_args_as_str.split('num_processes=')[1].split()[0])
+    # If no cmdline override, look at specfile
+    else:
+        with open(args["experiment_spec"], 'r') as spec:  # pylint: disable=W1514
+            exp_config = yaml.safe_load(spec)
+            if 'num_gpus' in exp_config:
+                num_gpus = exp_config['num_gpus']
+            if 'gpu_ids' in exp_config:
+                gpu_ids = exp_config['gpu_ids']
+            if "cuda_blocking" in exp_config:
+                launch_cuda_blocking = exp_config['cuda_blocking']
+            if "mpi_args" in exp_config:
+                mpi_args = ""
+                mpi_arg_dict = exp_config['mpi_args']
+                for var, val in mpi_arg_dict.items():
+                    mpi_args += f"-x {var.upper()}={val} "
+            if "multi_node" in unknown_args_as_str:
+                multi_node = exp_config['multi_node']
+
+    if num_gpus != len(gpu_ids):
+        logging.info(f"The number of GPUs ({num_gpus}) must be the same as the number of GPU indices ({gpu_ids}) provided.")
+        num_gpus = max(num_gpus, len(gpu_ids))
+        gpu_ids = list(range(num_gpus)) if len(gpu_ids) != num_gpus else gpu_ids
+        logging.info(f"Using GPUs {gpu_ids} (total {num_gpus})")
+
     mpi_command = ""
-    gpu_ids = args["gpu_index"]
-    multi_node = args['multi_node']
-    mpirun_arg = args['mpirun_arg']
-    num_gpus = args["gpus"]
-    if gpu_ids is None:
-        gpu_ids = range(num_gpus)
-    launch_cuda_blocking = args['launch_cuda_blocking']
-    assert num_gpus > 0, "At least 1 GPU required to run any task."
-    np = args["num_processes"]
     # np defaults to num_gpus if < 0
     if np < 0:
         np = num_gpus
     if num_gpus > 1:
-        if not args["subtask"] in multigpu_support:
+        if not args['subtask'] in multigpu_support:
             raise NotImplementedError(
-                f"This {args['subtask']} doesn't support multiGPU. Please set --gpus 1"
+                f"This {args['subtask']} doesn't support multiGPU."
             )
         mpi_command = f'mpirun -np {np} --oversubscribe --bind-to none --allow-run-as-root -mca pml ob1 -mca btl ^openib'
         if multi_node:
-            mpi_command += " " + mpirun_arg
-
-    if args['subtask'] == "download_specs":
-        if not args['output_dir']:
-            raise RuntimeError(
-                f"--output_dir is a mandatory arg for this subtask {args['subtask']}. "
-                "Please set the output dir to a valid unix path."
-            )
-        scripts_args += f"target_data_dir={args['output_dir']}"
-        scripts_args += f" source_data_dir={subtasks[args['subtask']]['source_data_dir']}"
-        scripts_args += f" workflow={subtasks[args['subtask']]['workflow']}"
+            mpi_command += " " + mpi_args
 
     script = subtasks[args['subtask']]["runner_path"]
 
-    unknown_args_string = " ".join(unknown_args)
-    task_command = f"python {script} {scripts_args} {unknown_args_string}"
+    log_file = ""
+    if os.getenv('JOB_ID'):
+        log_file = f"/{os.getenv('JOB_ID')}.txt"
+
+    task_command = f"python {script} {scripts_args} {unknown_args_as_str}"
     env_variables = ""
     if not multi_node:
         env_variables += set_gpu_info_single_node(num_gpus, gpu_ids)
@@ -247,23 +260,58 @@ def launch(parser, subtasks, multigpu_support=['train'], task="tao_tf2"):
         task_command = f"CUDA_LAUNCH_BLOCKING=1 {task_command}"
     run_command = f"{mpi_command} bash -c \'{env_variables} {task_command}\'"
 
-    process_passed = True
+    process_passed = False
     start = time()
+    progress_bar_pattern = re.compile(r"^(?!.*(Average Precision|Average Recall)).*\[.*\].*")
+
     try:
-        subprocess.run(
-            shlex.split(run_command),
-            env=os.environ,
-            shell=False,
-            check=True,
-            stdout=sys.stdout,
-            stderr=sys.stderr
-        )
-    except (KeyboardInterrupt, SystemExit):
-        print("Command was interrupted.")
+        # Run the script.
+        with dual_output(log_file) as (stdout_target, log_target):
+            with subprocess.Popen(
+                shlex.split(run_command),
+                env=os.environ.copy(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                bufsize=1,  # Line-buffered
+                universal_newlines=True  # Text mode
+            ) as proc:
+                last_progress_bar_line = None
+
+                for line in proc.stdout:
+                    # Check if the line contains \r or matches the progress bar pattern
+                    if '\r' in line or progress_bar_pattern.search(line):
+                        last_progress_bar_line = line.strip()
+                        # Print the progress bar line to the terminal
+                        stdout_target.write('\r' + last_progress_bar_line)
+                        stdout_target.flush()
+                    else:
+                        # Write the final progress bar line to the log file before a new log line
+                        if last_progress_bar_line:
+                            if log_target:
+                                log_target.write(last_progress_bar_line + '\n')
+                                log_target.flush()
+                            last_progress_bar_line = None
+                        stdout_target.write(line)
+                        stdout_target.flush()
+                        if log_target:
+                            log_target.write(line)
+                            log_target.flush()
+
+                proc.wait()  # Wait for the process to complete
+                # Write the final progress bar line after process completion
+                if last_progress_bar_line and log_target:
+                    log_target.write(last_progress_bar_line + '\n')
+                    log_target.flush()
+                if proc.returncode == 0:
+                    process_passed = True
+    except (KeyboardInterrupt, SystemExit) as e:
+        logging.info("Command was interrupted due to ", e)
+        process_passed = True
     except subprocess.CalledProcessError as e:
         process_passed = False
         if e.output is not None:
-            print(f"TAO Toolkit task: {args['subtask']} failed with error:\n{e.output}")
+            logging.info(e.output)
+
     end = time()
     time_lapsed = end - start
 
@@ -272,21 +320,22 @@ def launch(parser, subtasks, multigpu_support=['train'], task="tao_tf2"):
         gpu_data = []
         for device in get_device_details():
             gpu_data.append(device.get_config())
-        print("Sending telemetry data.")
+        logging.info("Sending telemetry data.")
         send_telemetry_data(
             task,
-            args["subtask"],
+            args['subtask'],
             gpu_data,
             num_gpus=num_gpus,
             time_lapsed=time_lapsed,
             pass_status=process_passed
         )
     except Exception as e:
-        print("Telemetry data couldn't be sent, but the command ran successfully.")
-        print(f"[Error]: {e}")
+        logging.warning("Telemetry data couldn't be sent, but the command ran successfully.")
+        logging.warning(f"[Error]: {e}")
 
     if not process_passed:
-        print("Execution status: FAIL")
-        sys.exit(-1)  # returning non zero return code from the process.
+        logging.warning("Execution status: FAIL")
+        return False
 
-    print("Execution status: PASS")
+    logging.info("Execution status: PASS")
+    return True

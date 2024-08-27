@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
 set -eo pipefail
-cd "$( dirname "${BASH_SOURCE[0]}" )"
+# cd "$( dirname "${BASH_SOURCE[0]}" )"
 
-# Read parameters from manifest.json
-registry=`jq -r '.registry' $NV_TAO_TF2_TOP/docker/manifest.json`
-repository=`jq -r '.repository' $NV_TAO_TF2_TOP/docker/manifest.json`
-tag=`jq -r '.tag' $NV_TAO_TF2_TOP/docker/manifest.json`
+registry="nvcr.io"
+repository="nvstaging/tao/tao_tf2_base_image"
+
+tag="$USER-$(date +%Y%m%d%H%M)"
+local_tag="$USER"
 
 # Build parameters.
 BUILD_DOCKER="0"
@@ -55,14 +56,16 @@ if [ $BUILD_DOCKER = "1" ]; then
         NO_CACHE=""
     fi
 
-    docker build --pull -f $NV_TAO_TF2_TOP/docker/Dockerfile -t $registry/$repository:$tag $NO_CACHE \
+    docker build --pull -f $NV_TAO_TF2_TOP/docker/Dockerfile -t $registry/$repository:$local_tag $NO_CACHE \
             --network=host $NV_TAO_TF2_TOP/. \
             --build-arg EFF_TOKEN_NAME="$EFF_TOKEN_NAME" \
             --build-arg EFF_TOKEN_PASSWORD="$EFF_TOKEN_PASSWORD"
 
     if [ $PUSH_DOCKER = "1" ]; then
         echo "Pusing docker ..."
+        docker tag $registry/$repository:$local_tag $registry/$repository:$tag
         docker push $registry/$repository:$tag
+        echo $registry/$repository:$tag
         digest=$(docker inspect --format='{{index .RepoDigests 0}}' $registry/$repository:$tag)
         echo -e "\033[1;33mUpdate the digest in the manifest.json file to:\033[0m"
         echo $digest

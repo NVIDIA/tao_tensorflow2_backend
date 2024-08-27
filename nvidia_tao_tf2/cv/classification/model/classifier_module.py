@@ -41,8 +41,12 @@ class ClassifierModule(TAOModule):
         self.pretrained_model = None
         self.model = self._build_models(cfg)
 
-        self.initial_epoch, ckpt_path = self._get_latest_checkpoint(
-            cfg.results_dir, self.model.name)
+        if cfg.train.resume_training_checkpoint_path:
+            self.initial_epoch = int(cfg.train.resume_training_checkpoint_path[:-4].split('_')[-1])
+            ckpt_path = cfg.train.resume_training_checkpoint_path
+        else:
+            self.initial_epoch, ckpt_path = self._get_latest_checkpoint(
+                cfg.results_dir, self.model.name)
 
         self._load_pretrained_weights(ckpt_path, cfg)
 

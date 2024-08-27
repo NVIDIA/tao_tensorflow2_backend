@@ -181,4 +181,4 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
 
 
 # Monkey patch for TF2
-keras.utils.image_utils.load_img = load_and_crop_img
+keras.src.utils.image_utils.load_img = load_and_crop_img

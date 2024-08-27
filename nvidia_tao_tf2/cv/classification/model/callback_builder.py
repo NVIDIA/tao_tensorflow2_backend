@@ -66,6 +66,7 @@ def setup_callbacks(ckpt_freq, results_dir, lr_config,
         # Set up the CSV logger, logging statistics after every epoch.
         csvfilename = os.path.join(results_dir, 'training.csv')
         csvlogger = CSVLoggerWithStatus(
+            max_epoch,
             csvfilename,
             separator=',',
             append=True)

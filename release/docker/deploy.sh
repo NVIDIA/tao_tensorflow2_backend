@@ -4,11 +4,11 @@ set -eo pipefail
 # cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 registry="nvcr.io"
-tensorflow_version="2.11.0"
-tao_version="5.0.0"
-repository="nvidia/tao/tao-toolkit"
-build_id=${USER}
-tag="${tao_version}-tf${tensorflow_version}-py3-${build_id}"
+tensorflow_version="2.9.1"
+tao_version="4.0.0"
+repository="nvidia/tao-toolkit-tf"
+build_id="01"
+tag="v${tao_version}-tf${tensorflow_version}-py3-${build_id}"
 
 # Build parameters.
 BUILD_DOCKER="0"
@@ -31,6 +31,10 @@ while [[ $# -gt 0 ]]
         -w|--wheel)
         BUILD_WHEEL="1"
         RUN_DOCKER="0"
+        shift # past argument
+        ;;
+        -p|--push)
+        PUSH_DOCKER="1"
         shift # past argument
         ;;
         -f|--force)
@@ -67,12 +71,20 @@ if [ $BUILD_DOCKER = "1" ]; then
     fi
     if [ $BUILD_WHEEL = "1" ]; then
         echo "Building source code wheel ..."
-       tao_tf2 -- make build
+    #    tao_tf2 -- make build
+       tao_tf2 -- python3 setup.py bdist_wheel
     else
         echo "Skipping wheel builds ..."
     fi
     
-    docker build -f $NV_TAO_TF2_TOP/release/docker/Dockerfile.release -t $registry/$repository:$tag $NO_CACHE --network=host $NV_TAO_TF2_TOP/.
+    docker build --pull -f $NV_TAO_TF2_TOP/release/docker/Dockerfile.release -t $registry/$repository:$tag $NO_CACHE --network=host $NV_TAO_TF2_TOP/.
+
+    if [ $PUSH_DOCKER = "1" ]; then
+        echo "Pusing docker ..."
+        docker push $registry/$repository:$tag
+    else
+        echo "Skip pushing docker ..."
+    fi
 
     if [ $BUILD_WHEEL = "1" ]; then
         echo "Cleaning wheels ..."
@@ -80,8 +92,6 @@ if [ $BUILD_DOCKER = "1" ]; then
     else
         echo "Skipping wheel cleaning ..."
     fi
-    echo "The final release container was build at ${registry}/${repository}:${tag}"
-
 elif [ $RUN_DOCKER = "1" ]; then
     echo "Running docker interactively..."
     docker run --gpus all -v /home/$USER/tlt-experiments:/workspace/tlt-experiments \

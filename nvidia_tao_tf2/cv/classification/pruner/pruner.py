@@ -63,7 +63,7 @@ class ClassificationPruner(Pruner):
                 byom_custom_layer.add(type(layer))
 
             # Lambda layers in BYOM models are automatically excluded.
-            if type(layer) == keras.layers.Lambda:
+            if isinstance(layer, keras.layers.Lambda):
                 excluded_layers.append(layer.name)
         byom_custom_layer = list(byom_custom_layer)
         return byom_custom_layer, excluded_layers
