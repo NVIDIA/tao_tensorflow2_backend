@@ -200,18 +200,18 @@ class PruneMinWeight(Prune):
         # function returns ``None``.
         if hasattr(layer, "data_format"):
             return layer.data_format
-        if type(layer) == keras.layers.TimeDistributed and hasattr(layer.layer, 'data_format'):
+        if isinstance(layer, keras.layers.TimeDistributed) and hasattr(layer.layer, 'data_format'):
             return layer.layer.data_format
         if type(layer) in [keras.layers.Reshape,
                            keras.layers.Permute] or \
-            (type(layer) == keras.layers.TimeDistributed and
+            (isinstance(layer, keras.layers.TimeDistributed) and
              type(layer.layer) in [keras.layers.Reshape,
                                    keras.layers.Permute]):
             # Reshape and Permute layers make it impossible to retrieve the data format.
             return None
-        if type(layer) == keras.layers.Flatten or \
-           (type(layer) == keras.layers.TimeDistributed and
-           type(layer.layer) == keras.layers.Flatten):
+        if isinstance(layer, keras.layers.Flatten) or \
+           (isinstance(layer, keras.layers.TimeDistributed) and
+           isinstance(layer.layer, keras.layers.Flatten)):
             # Flatten layers yield (N, K) tensors and can be considered
             # either "channels_first" or "channels_last" indifferently.
             # Let's pick "channels_first" (N, C, H, W) arbitrarily.
@@ -268,7 +268,7 @@ class PruneMinWeight(Prune):
         Returns:
             merged_stats (1-d array): Merged pruning stats.
         """
-        if type(layerwise_stats) == list:
+        if isinstance(layerwise_stats, list):
             layerwise_stats = np.stack(layerwise_stats)
         assert (
             layerwise_stats.ndim == 2
@@ -346,7 +346,7 @@ class PruneMinWeight(Prune):
 
     def _equalize_retained_indices(self, eltwise_prunable_inputs):
         """Equalize retained indices of all inputs to the element wise layer."""
-        if type(eltwise_prunable_inputs[0]) != keras.layers.TimeDistributed:
+        if not isinstance(eltwise_prunable_inputs[0], keras.layers.TimeDistributed):
             output_depth = eltwise_prunable_inputs[0].filters
         else:
             output_depth = eltwise_prunable_inputs[0].layer.filters
@@ -377,7 +377,7 @@ class PruneMinWeight(Prune):
                                       criterion):
         """Equalize the depth-wise conv. and its previous layer's retained indexes."""
         dw_layers = [previous_layer, this_layer]
-        if type(dw_layers[0]) == keras.layers.TimeDistributed:
+        if isinstance(dw_layers[0], keras.layers.TimeDistributed):
             output_depth = dw_layers[0].layer.filters
         else:
             output_depth = dw_layers[0].filters
@@ -533,12 +533,12 @@ class PruneMinWeight(Prune):
         for l in eltwise_prunable_inputs:  # noqa pylint: disable=E741
             logger.debug("Prunable_parents {}".format(l.name))  # noqa pylint: disable=C0209
             # If any of the parents are broadcast layers, pop them out of prunable input list.
-            if type(l) != keras.layers.TimeDistributed and l.filters == 1:
+            if not isinstance(l, keras.layers.TimeDistributed) and l.filters == 1:
                 # Set retained indices for this layer as 0.
                 self._explored_layers[l.name].retained_idx = range(l.filters)
                 self._explored_layers[l.name].is_pruned = False
                 eltwise_prunable_inputs.pop(eltwise_prunable_inputs.index(l))
-            elif type(l) == keras.layers.TimeDistributed and l.layer.filters == 1:
+            elif isinstance(l, keras.layers.TimeDistributed) and l.layer.filters == 1:
                 # Set retained indices for this layer as 0.
                 self._explored_layers[l.name].retained_idx = range(l.layer.filters)
                 self._explored_layers[l.name].is_pruned = False
@@ -546,7 +546,7 @@ class PruneMinWeight(Prune):
         # If newly updated eltwise true inputs have more than one branch, then
         # equalize the retained indices.
         if len(eltwise_prunable_inputs) > 1:
-            if type(layer) == WeightedFusion:
+            if isinstance(layer, WeightedFusion):
                 fixed_retained_idx = range(eltwise_prunable_inputs[0].filters)
             else:
                 eltwise_prunable_inputs = self._update_equalization_groups(
@@ -573,7 +573,7 @@ class PruneMinWeight(Prune):
             pruned_state = len(retained_idx) < initial_neuron_count
             self._explored_layers[i.name].is_pruned = pruned_state
         # if the layer is a shared conv
-        if type(layer) == keras.layers.Conv2D:
+        if isinstance(layer, keras.layers.Conv2D):
             logger.debug("Conv2D layer '{}' is shared.".format(layer.name))  # noqa pylint: disable=C0209
             retained_idx, _, _ = self._explore_conv_or_fc_layer(layer)
 
@@ -663,7 +663,7 @@ class PruneMinWeight(Prune):
             assert previous_retained_idx is not None, ''
             'Previous retrained index of Flatten layer cannot be None if data format'
             ' is known.'
-        if len(previous_layer_shape) != 4 and type(layer) != keras.layers.TimeDistributed:
+        if len(previous_layer_shape) != 4 and not isinstance(layer, keras.layers.TimeDistributed):
             raise ValueError(f"Expecting 4-dimensional activations got shape={repr(previous_layer_shape)}")
         # Take the spatial size into account and create a mask of activations to
         # retain from previous layer.
@@ -711,7 +711,7 @@ class PruneMinWeight(Prune):
         is_conv2d = False
         if type(layer) in [keras.layers.Conv2D]:
             is_conv2d = True
-        elif (type(layer) == keras.layers.TimeDistributed and
+        elif (isinstance(layer, keras.layers.TimeDistributed) and
               type(layer.layer) in [keras.layers.Conv2D]):
             is_conv2d = True
         if previous_retained_idx is not None:
@@ -863,9 +863,9 @@ class PruneMinWeight(Prune):
             weights = self._prune_explored_conv_dw_layer(layer)
         elif type(layer.layer) in [keras.layers.BatchNormalization]:
             weights = self._prune_explored_batch_norm_layer(layer)
-        elif type(layer.layer) == keras.layers.Flatten:
+        elif isinstance(layer.layer, keras.layers.Flatten):
             retained_idx = self._prune_explored_flatten_layer(layer)
-        elif type(layer.layer) == keras.layers.Concatenate:
+        elif isinstance(layer.layer, keras.layers.Concatenate):
             retained_idx = self._prune_explored_concat_layer(layer)
         else:
             retained_idx = self._get_previous_retained_idx(layer)
@@ -971,7 +971,7 @@ class PruneMinWeight(Prune):
             ]:
                 # Explore conv2d traspose layer for retainable indices.
                 retained_idx = self._explore_conv_transpose_layer(layer)
-            elif 'helper' in str(type(layer)) or type(layer) == keras.layers.Lambda:
+            elif 'helper' in str(type(layer)) or isinstance(layer, keras.layers.Lambda):
                 # @scha: BYOM custom layers are in format of <class 'helper.CustomLayer'>
                 # Make sure that the previous layer was unpruned.
                 pass
@@ -1014,7 +1014,7 @@ class PruneMinWeight(Prune):
                 # Make sure that the previous layer was unpruned.
                 if self._is_layer_pruned(layer):
                     if (
-                        type(layer) == keras.layers.Reshape and
+                        isinstance(layer, keras.layers.Reshape) and
                         -1 in layer.target_shape
                     ):
                         retained_idx = None
@@ -1043,9 +1043,9 @@ class PruneMinWeight(Prune):
                     retained_idx = self._explore_elmtwise_layer(layer)
                 else:
                     continue
-            elif type(layer) == keras.layers.TimeDistributed:
+            elif isinstance(layer, keras.layers.TimeDistributed):
                 retained_idx, explored_stat, is_pruned = self._explore_td_layer(layer)
-            elif type(layer) == keras.layers.Lambda:
+            elif isinstance(layer, keras.layers.Lambda):
                 if layer.name not in self._excluded_layers:
                     raise ValueError(
                         "Lambda layers must be explicitly excluded from pruning. "  # noqa pylint: disable=C0209
@@ -1193,27 +1193,27 @@ class PruneMinWeight(Prune):
                         keras.layers.Conv2DTranspose
                 ]:
                     weights = self._prune_explored_conv_transpose_layer(layer)
-                elif type(layer) == keras.models.Model:
+                elif isinstance(layer, keras.models.Model):
                     sub_model_layer = self.prune(layer)
                     weights = sub_model_layer.get_weights()
-                elif (type(layer) == keras.layers.Concatenate):
+                elif (isinstance(layer, keras.layers.Concatenate)):
                     retained_idx = self._prune_explored_concat_layer(layer)
                     self._explored_layers[layer.name].retained_idx = retained_idx
-                elif type(layer) == keras.layers.Flatten:
+                elif isinstance(layer, keras.layers.Flatten):
                     retained_idx = self._prune_explored_flatten_layer(layer)
                     self._explored_layers[layer.name].retained_idx = retained_idx
                 elif type(layer) in [keras.layers.Reshape, keras.layers.Permute]:
                     # Make sure that the previous layer was unpruned.
                     if self._is_layer_pruned(layer):
                         if not (
-                            type(layer) == keras.layers.Reshape and
+                            isinstance(layer, keras.layers.Reshape) and
                             -1 in layer.target_shape
                         ):
                             raise NotImplementedError(
                                 "Reshape is not supported after a pruned layer."
                             )
                     if (
-                        type(layer) == keras.layers.Reshape and
+                        isinstance(layer, keras.layers.Reshape) and
                         -1 in layer.target_shape
                     ):
                         retained_idx = self._get_previous_retained_idx(layer)
@@ -1258,13 +1258,13 @@ class PruneMinWeight(Prune):
                     #            pw_k[:, :, prev_retained_idx, :][..., retained_idx],
                     #            b[retained_idx]]
                     # raise NotImplementedError("Pruning doesn't support SeparableConv2D layer.")
-                elif 'helper' in str(type(layer)) or type(layer) == keras.layers.Lambda:
+                elif 'helper' in str(type(layer)) or isinstance(layer, keras.layers.Lambda):
                     # @scha: BYOM custom layers are in format of <class 'helper.CustomLayer'>
                     retained_idx = self._get_previous_retained_idx(layer)
                     self._explored_layers[layer.name].retained_idx = retained_idx
                 elif type(layer) in [keras.layers.InputLayer]:
                     pass
-                elif type(layer) == keras.layers.TimeDistributed:
+                elif isinstance(layer, keras.layers.TimeDistributed):
                     weights, retained_idx = self._prune_explored_td_layer(layer)
                     if retained_idx is not None:
                         self._explored_layers[layer.name].retained_idx = retained_idx
@@ -1510,7 +1510,7 @@ def get_L2_norm(kernels, layer):
         A vector of L2 norms, one for each kernel.
     """
     if type(layer) in [keras.layers.DepthwiseConv2D] or \
-        (type(layer) == keras.layers.TimeDistributed and
+        (isinstance(layer, keras.layers.TimeDistributed) and
          type(layer.layer) in [keras.layers.DepthwiseConv2D]):
         # For DepthwiseConv2D, currently we only support depthwise_multiplier = 1.
         # I.e., axis 3 is always of size 1, kernel shape = (K_h, K_w, C_in, 1)
@@ -1550,7 +1550,7 @@ def find_prunable_parent(prunable_parents,
                         keras.layers.Dense,
                         keras.layers.DepthwiseConv2D] and
         len(layer._inbound_nodes) == 1) or \
-        (type(layer) == keras.layers.TimeDistributed and
+        (isinstance(layer, keras.layers.TimeDistributed) and
          type(layer.layer) in [keras.layers.Conv2D,
                                keras.layers.Dense,
                                keras.layers.DepthwiseConv2D]):

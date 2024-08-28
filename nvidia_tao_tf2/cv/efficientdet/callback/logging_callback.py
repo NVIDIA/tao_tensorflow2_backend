@@ -85,7 +85,7 @@ class MetricLogging(tf.keras.callbacks.Callback):
             "epoch": current_epoch,
             "max_epoch": self.num_epochs,
             "time_per_epoch": str(timedelta(seconds=self.time_per_epoch)),
-            # "eta": str(timedelta(seconds=(self.num_epochs - current_epoch) * self.time_per_epoch)),
+            "eta": str(timedelta(seconds=(self.num_epochs - current_epoch) * self.time_per_epoch)),
             "loss": loss,
             "learning_rate": float(lr)
         }

@@ -219,7 +219,7 @@ def check_tf_oom(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            if type(e) == tf.errors.ResourceExhaustedError:
+            if isinstance(e, tf.errors.ResourceExhaustedError):
                 logger = logging.getLogger(__name__)
                 logger.error(
                     "Ran out of GPU memory, please lower the batch size, use a smaller input "

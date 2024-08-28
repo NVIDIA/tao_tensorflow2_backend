@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def experimental(fn):
     """Simple function to define the keras decorator.
-
+    
     This decorator clears any previously existing sessions
     and sets up a new session.
     """

@@ -59,9 +59,14 @@ def monitor_status(name='efficientdet', mode='training'):
                 )
                 runner(cfg, **kwargs)
                 s_logger.write(
-                    status_level=status_logging.Status.SUCCESS,
+                    status_level=status_logging.Status.RUNNING,
                     message=f"{mode.capitalize()} finished successfully."
                 )
+                if os.getenv("CLOUD_BASED") == "True":
+                    s_logger.write(
+                        status_level=status_logging.Status.RUNNING,
+                        message="Job artifacts in results dir are being uploaded to the cloud"
+                    )
             except (KeyboardInterrupt, SystemError):
                 status_logging.get_status_logger().write(
                     message=f"{mode.capitalize()} was interrupted",

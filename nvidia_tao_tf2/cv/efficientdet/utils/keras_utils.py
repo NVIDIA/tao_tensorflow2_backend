@@ -108,6 +108,7 @@ def restore_ckpt(model,
     if ckpt_path_or_file == '_':
         logging.info('Running test: do not load any ckpt.')
         return 0
+
     if tf.io.gfile.isdir(ckpt_path_or_file):
         ckpt_path_or_file = tf.train.latest_checkpoint(ckpt_path_or_file)
         if not ckpt_path_or_file:

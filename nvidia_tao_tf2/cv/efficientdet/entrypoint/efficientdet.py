@@ -17,7 +17,16 @@
 import argparse
 from nvidia_tao_tf2.cv.efficientdet import scripts
 
-from nvidia_tao_tf2.common.entrypoint.entrypoint import get_subtasks, launch
+from nvidia_tao_tf2.common.entrypoint.entrypoint import (
+    get_subtasks,
+    launch,
+    command_line_parser,
+)
+
+
+def get_subtask_list():
+    """Return the list of subtasks by inspecting the scripts package."""
+    return get_subtasks(scripts)
 
 
 def main():
@@ -26,19 +35,23 @@ def main():
     parser = argparse.ArgumentParser(
         "efficientdet_tf2",
         add_help=True,
-        description="TAO Toolkit entrypoint for EfficientDet (TF2)"
+        description="TAO Toolkit entrypoint for EfficientDet (TF2)",
     )
 
     # Build list of subtasks by inspecting the scripts package.
-    subtasks = get_subtasks(scripts)
+    subtasks = get_subtask_list()
+
+    args, unknown_args = command_line_parser(parser, subtasks)
 
     # Parse the arguments and launch the subtask.
     launch(
-        parser, subtasks,
-        multigpu_support=['train', 'evaluate'],
-        task="efficientdet_tf2"
+        vars(args),
+        unknown_args,
+        subtasks,
+        multigpu_support=["train", "evaluate"],
+        task="efficientdet_tf2",
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

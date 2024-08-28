@@ -47,8 +47,12 @@ class EfficientDetModule(TAOModule):
         self.num_samples = (num_samples + hparams.eval_batch_size - 1) // hparams.eval_batch_size
         self.hparams.eval_samples = self.num_samples
 
-        self.resume_ckpt_path = os.path.join(hparams.results_dir, f'{hparams.name}.resume')
-        self.resume = os.path.exists(self.resume_ckpt_path)
+        self.resume_ckpt_path = None
+        if hparams.resume_training_checkpoint_path:
+            self.initial_epoch = int(hparams.resume_training_checkpoint_path[:-4].split('_')[-1])
+            self.resume_ckpt_path = hparams.resume_training_checkpoint_path
+        else:
+            self.initial_epoch, self.resume_ckpt_path = self._get_latest_checkpoint(hparams.results_dir)
 
         self.model, self.eval_model = self._build_models(hparams)
         self._load_pretrained_weights(hparams)
@@ -95,7 +99,7 @@ class EfficientDetModule(TAOModule):
 
     def _resume(self, hparams, steps_per_epoch):
         """Resume from checkpoint."""
-        if self.resume:
+        if self.resume_ckpt_path:
             ckpt_path, _ = decode_eff(self.resume_ckpt_path, hparams.encryption_key)
             train_from_epoch = keras_utils.restore_ckpt(
                 self.model,
@@ -108,7 +112,7 @@ class EfficientDetModule(TAOModule):
 
     def _load_pretrained_weights(self, hparams):
         """Load pretrained weights."""
-        if is_main_process() and not self.resume:
+        if is_main_process() and not self.resume_ckpt_path:
             if str(hparams.checkpoint).endswith(".tlt"):
                 ckpt_path, ckpt_name = decode_eff(
                     str(hparams.checkpoint), hparams.encryption_key)
@@ -427,3 +431,18 @@ class EfficientDetModule(TAOModule):
         loss_vals['cls_loss'] = cls_loss
         loss_vals['box_loss'] = box_loss
         return total_loss
+
+    def _get_latest_checkpoint(self, model_dir, model_name='efficientdet-d'):
+        """Get the last tlt checkpoint."""
+        if not os.path.exists(model_dir):
+            return 0, None
+        last_checkpoint = ''
+        for f in os.listdir(model_dir):
+            if f.startswith(model_name) and f.endswith('.tlt'):
+                last_checkpoint = last_checkpoint if last_checkpoint > f else f
+        if not last_checkpoint:
+            return 0, None
+        initial_epoch = int(last_checkpoint[:-4].split('_')[-1])
+        if hvd.rank() == 0:
+            logger.info('Resume training from #%d epoch', initial_epoch)
+        return initial_epoch, os.path.join(model_dir, last_checkpoint)
