@@ -17,13 +17,13 @@ onnxruntime==1.17.0
 onnx-graphsurgeon==0.3.27
 git+https://github.com/onnx/tensorflow-onnx
 opencv-python==4.8.0.74
-pillow==9.5.0
+pillow==10.3.0
 pyarmor==7.7.4
 pyarrow==14.0.1
 pycocotools==2.0.7
 pycuda==2024.1
 opencv-python==4.8.0.74
-pillow==9.5.0
+pillow==10.3.0
 pyarmor==7.7.4
 pyarrow==14.0.1
 pycocotools==2.0.7
