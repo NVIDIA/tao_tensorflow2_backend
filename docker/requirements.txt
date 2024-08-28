@@ -36,7 +36,7 @@ pynvml==11.4.1
 pytest==8.0.2
 PyYAML==6.0.1
 scikit-image==0.22.0
-scikit-learn==1.2.0
+scikit-learn==1.5.0
 scipy==1.12.0
 seaborn==0.13.2
 setuptools==69.1.0
