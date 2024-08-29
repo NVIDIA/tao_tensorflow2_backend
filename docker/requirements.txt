@@ -4,7 +4,7 @@ flake8==7.0.0
 graphviz==0.20.1
 grpcio==1.55.3
 hydra-core==1.2.0
-jupyterlab==3.6.7
+jupyterlab==3.6.8
 matplotlib==3.8.2
 mpi4py==3.1.5
 numba==0.57.1
