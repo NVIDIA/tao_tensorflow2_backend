@@ -12,7 +12,7 @@ numpy==1.24.4
 nvidia-eff==0.6.5
 nvidia-eff-tao-encryption==0.1.8
 omegaconf==2.3.0
-onnx==1.15.0
+onnx==1.17.0
 onnxruntime==1.17.0
 onnx-graphsurgeon==0.3.27
 git+https://github.com/onnx/tensorflow-onnx
