@@ -15,7 +15,7 @@
 """Classification callback builder."""
 import os
 import horovod.tensorflow.keras as hvd
-from wandb.keras import WandbCallback
+from wandb.integration.keras import WandbCallback
 
 from tensorflow.keras.callbacks import TensorBoard
 

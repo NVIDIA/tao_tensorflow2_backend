@@ -47,11 +47,14 @@ def cfg():
     default_cfg.train.num_examples_per_epoch = 128
     default_cfg.train.checkpoint = ''
     default_cfg.train.checkpoint_interval = 1
+    default_cfg.train.validation_interval = 1
 
     default_cfg.evaluate.num_samples = 10
     return default_cfg
 
 
+@pytest.mark.efficientdet
+@pytest.mark.train
 @pytest.mark.parametrize("amp, qat, batch_size, num_epochs",
                          [(True, False, 2, 2)])
 def test_train(amp, qat, batch_size, num_epochs, cfg):
@@ -72,6 +75,8 @@ def test_train(amp, qat, batch_size, num_epochs, cfg):
     tf.compat.v1.reset_default_graph()
 
 
+@pytest.mark.efficientdet
+@pytest.mark.evaluate
 @pytest.mark.parametrize("amp, qat, batch_size, num_epochs",
                          [(True, False, 2, 2)])
 def test_eval(amp, qat, batch_size, num_epochs, cfg):
@@ -93,6 +98,8 @@ def test_eval(amp, qat, batch_size, num_epochs, cfg):
     tf.compat.v1.reset_default_graph()
 
 
+@pytest.mark.efficientdet
+@pytest.mark.export
 @pytest.mark.parametrize("amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type",
                          [(True, False, 2, 2, 1, True, 'int8')])
 def test_export(amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type, cfg):
@@ -120,6 +127,8 @@ def test_export(amp, qat, batch_size, num_epochs, max_bs, dynamic_bs, data_type,
     tf.compat.v1.reset_default_graph()
 
 
+@pytest.mark.efficientdet
+@pytest.mark.inference
 @pytest.mark.parametrize("amp, qat, batch_size, num_epochs",
                          [(True, False, 2, 2)])
 def test_infer(amp, qat, batch_size, num_epochs, cfg):
@@ -140,6 +149,8 @@ def test_infer(amp, qat, batch_size, num_epochs, cfg):
     infer_tlt(cfg)
 
 
+@pytest.mark.efficientdet
+@pytest.mark.prune
 @pytest.mark.parametrize("amp, qat, batch_size, num_epochs, threshold",
                          [(True, False, 2, 2, 0.5),
                           (True, False, 2, 2, 0.7),

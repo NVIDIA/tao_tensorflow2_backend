@@ -44,7 +44,11 @@ class CSVLoggerWithStatus(CSVLogger):
         epoch = epoch + 1
         super().on_epoch_end(epoch, logs)
         for key in self.keys:
-            self.s_logger.kpi[key] = float(logs[key])
+            if key in logs.keys():
+                # Val keys are manually added to self.keys even when validation doesn't happen in first epoch
+                # https://github.com/keras-team/keras/blob/v3.3.3/keras/src/callbacks/csv_logger.py#L68
+                # This block catches that edge case so it doesn't try to write a non-existent value
+                self.s_logger.kpi[key] = float(logs[key])
         time_per_epoch = time.time() - self._epoch_start_time
         monitored_data = {
             "epoch": epoch,

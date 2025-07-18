@@ -13,6 +13,12 @@
 # limitations under the License.
 """Patch keras.utils.image_utils.load_img() with cropping support."""
 import random
+
+import tf_keras
+from tf_keras.src.utils.image_utils import load_img
+
+from nvidia_tao_tf2.cv.classification.utils.helper import color_augmentation
+
 try:
     from PIL import Image as pil_image
 
@@ -24,7 +30,7 @@ except ImportError:
     pil_image = None
     pil_image_resampling = None
 
-
+_PIL_INTERPOLATION_METHODS = {}
 if pil_image_resampling is not None:
     _PIL_INTERPOLATION_METHODS = {
         "nearest": pil_image_resampling.NEAREST,
@@ -34,11 +40,6 @@ if pil_image_resampling is not None:
         "box": pil_image_resampling.BOX,
         "lanczos": pil_image_resampling.LANCZOS,
     }
-
-import keras
-import tensorflow as tf
-
-from nvidia_tao_tf2.cv.classification.utils.helper import color_augmentation
 
 # padding size.
 # We firstly resize to (target_width + CROP_PADDING, target_height + CROP_PADDING)
@@ -86,7 +87,7 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
         if ":" in interpolation else (interpolation, "none")
 
     if crop == "none":
-        return tf.keras.preprocessing.image.load_img(
+        return load_img(
             path,
             grayscale=grayscale,
             color_mode=color_mode,
@@ -94,7 +95,7 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
             interpolation=interpolation)
 
     # Load original size image using Keras
-    img = tf.keras.preprocessing.image.load_img(
+    img = load_img(
         path,
         grayscale=grayscale,
         color_mode=color_mode,
@@ -181,4 +182,4 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
 
 
 # Monkey patch for TF2
-keras.src.utils.image_utils.load_img = load_and_crop_img
+tf_keras.src.utils.image_utils.load_img = load_and_crop_img

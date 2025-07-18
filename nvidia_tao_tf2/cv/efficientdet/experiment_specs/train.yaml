@@ -17,6 +17,7 @@ train:
   num_examples_per_epoch: 120000
   batch_size: 20
   checkpoint_interval: 5
+  validation_interval: 5
   l2_weight_decay: 0.00004
   wandb:
     entity: "metropolis"

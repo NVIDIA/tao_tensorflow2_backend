@@ -1,9 +1,9 @@
 all: build install
 
 build:
-	bash release/docker/obfuscate_source_code.sh
+	# bash release/docker/obfuscate_source_code.sh
 	python3 setup.py bdist_wheel
-	bash release/docker/revert_obfuscation.sh
+	# bash release/docker/revert_obfuscation.sh
 
 clean:
 	rm -rf dist

@@ -24,12 +24,13 @@ from sklearn.metrics import classification_report, confusion_matrix
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
+from nvidia_tao_core.config.classification_tf2.default_config import ExperimentConfig
+
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 import nvidia_tao_tf2.common.logging.logging as status_logging
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.utils import update_results_dir
 
-from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.classification.utils import preprocess_crop  # noqa pylint: disable=unused-import
 from nvidia_tao_tf2.cv.classification.utils.preprocess_input import preprocess_input
 from nvidia_tao_tf2.cv.classification.utils.helper import get_input_shape, load_model
@@ -47,6 +48,11 @@ def run_evaluate(cfg):
     """
     # Set up logger verbosity.
     logger.setLevel(logging.INFO)
+    # Deprecated: DLFW 25.01 doesn't support tensorflow_quantization
+    if sys.version_info >= (3, 12):
+        logger.warning("DeprecationWarning: QAT is not supported after DLFW 25.01. Using normal training.")
+        cfg.train.qat = False
+
     if not os.path.exists(cfg.results_dir):
         os.makedirs(cfg.results_dir, exist_ok=True)
     # Decrypt EFF

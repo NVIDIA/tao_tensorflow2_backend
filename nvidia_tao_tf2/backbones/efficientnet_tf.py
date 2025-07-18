@@ -181,7 +181,7 @@ def EfficientNet(width_coefficient,
                 kernel_regularizer=kernel_regularizer,
                 bias_regularizer=bias_regularizer,
                 data_format=data_format,
-                name=f'block{i+1}{chr(j + 97)}_',
+                name=f'block{i + 1}{chr(j + 97)}_',
                 **args)
             b += 1
 

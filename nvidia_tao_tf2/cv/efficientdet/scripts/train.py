@@ -14,6 +14,9 @@
 """The main training script."""
 import logging
 import os
+import sys
+
+from nvidia_tao_core.config.efficientdet_tf2.default_config import ExperimentConfig
 
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
@@ -21,7 +24,6 @@ from nvidia_tao_tf2.common.mlops.utils import init_mlops
 import nvidia_tao_tf2.common.no_warning # noqa pylint: disable=W0611
 from nvidia_tao_tf2.common.utils import update_results_dir
 
-from nvidia_tao_tf2.cv.efficientdet.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.efficientdet.dataloader import dataloader, datasource
 from nvidia_tao_tf2.cv.efficientdet.model.efficientdet_module import EfficientDetModule
 from nvidia_tao_tf2.cv.efficientdet.model import callback_builder
@@ -37,6 +39,11 @@ logger = logging.getLogger(__name__)
 @monitor_status(name='efficientdet', mode='training')
 def run_experiment(cfg):
     """Run training experiment."""
+    # Deprecated: DLFW 25.01 doesn't support tensorflow_quantization
+    if sys.version_info >= (3, 12):
+        logger.warning("DeprecationWarning: QAT is not supported after DLFW 25.01. Using normal training.")
+        cfg.train.qat = False
+
     # Parse and update hparams
     config = hparams_config.get_detection_config(cfg.model.name)
     config.update(generate_params_from_cfg(config, cfg, mode='train'))

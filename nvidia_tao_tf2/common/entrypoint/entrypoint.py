@@ -121,7 +121,7 @@ def command_line_parser(parser, subtasks):
     )
     parser.add_argument(
         "-e",
-        "--experiment_spec",
+        "--experiment_spec_file",
         help="Path to the experiment spec file.",
         default=None
     )
@@ -151,7 +151,7 @@ def dual_output(log_file=None):
         yield sys.stdout, None
 
 
-def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_tf2"):
+def launch(args, unknown_args, subtasks, multigpu_support=['train'], network="tao_tf2"):
     """Parse the command line and kick off the entrypoint.
 
     Args:
@@ -159,17 +159,17 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
         unknown_args: Unknown command line arguments string.
         subtasks (list): List of subtasks.
         multigpu_support (list): List of tasks that support --gpus > 1.
-        task (str): Task entrypoint being called.
+        network (str): network entrypoint being called.
     """
     # Subtasks for a given model.
     scripts_args = ""
     if args['subtask'] not in ["download_specs"]:
-        assert args['experiment_spec'], (
-            f"Experiment spec file needs to be provided for this task:{args['subtask']}"
+        assert args['experiment_spec_file'], (
+            f"Experiment spec file needs to be provided for this network:{args['subtask']}"
         )
-        if not os.path.exists(args['experiment_spec']):
-            raise FileNotFoundError(f"Experiment spec file doesn't exist at {args['experiment_spec']}")
-        path, name = os.path.split(args['experiment_spec'])
+        if not os.path.exists(args['experiment_spec_file']):
+            raise FileNotFoundError(f"Experiment spec file doesn't exist at {args['experiment_spec_file']}")
+        path, name = os.path.split(args['experiment_spec_file'])
         if path != "":
             scripts_args += f" --config-path {path}"
         scripts_args += f" --config-name {name}"
@@ -211,7 +211,7 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
             np = int(unknown_args_as_str.split('num_processes=')[1].split()[0])
     # If no cmdline override, look at specfile
     else:
-        with open(args["experiment_spec"], 'r') as spec:  # pylint: disable=W1514
+        with open(args["experiment_spec_file"], 'r') as spec:  # pylint: disable=W1514
             exp_config = yaml.safe_load(spec)
             if 'num_gpus' in exp_config:
                 num_gpus = exp_config['num_gpus']
@@ -250,10 +250,11 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
 
     log_file = ""
     if os.getenv('JOB_ID'):
-        log_file = f"/{os.getenv('JOB_ID')}.txt"
+        logs_dir = os.getenv('TAO_MICROSERVICES_TTY_LOG', '/results')
+        log_file = f"{logs_dir}/{os.getenv('JOB_ID')}/microservices_log.txt"
 
     task_command = f"python {script} {scripts_args} {unknown_args_as_str}"
-    env_variables = ""
+    env_variables = "TF_USE_LEGACY_KERAS=1"
     if not multi_node:
         env_variables += set_gpu_info_single_node(num_gpus, gpu_ids)
     if launch_cuda_blocking:
@@ -322,7 +323,7 @@ def launch(args, unknown_args, subtasks, multigpu_support=['train'], task="tao_t
             gpu_data.append(device.get_config())
         logging.info("Sending telemetry data.")
         send_telemetry_data(
-            task,
+            network,
             args['subtask'],
             gpu_data,
             num_gpus=num_gpus,

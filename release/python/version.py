@@ -14,9 +14,9 @@
 
 """Version string for the TAO Toolkit TF2 AI models/tasks."""
 
-MAJOR = "4"
-MINOR = "0.0"
-PATCH = "01"
+MAJOR = "6"
+MINOR = "0"
+PATCH = "0"
 PRE_RELEASE = ''
 
 

@@ -11,8 +11,10 @@ fi
 
 export NV_TAO_TF2_TOP="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
+# In the release image, tao-core is pip installed
+# For local testing, we add tao-core to the pythonpath (from pov of inside container) so imports will work
 function tao_tf2 {
-   python $NV_TAO_TF2_TOP/runner/tao_tf.py "$@"
+   PYTHONPATH=/workspace/tao-tf2/tao-core:$PYTHONPATH python $NV_TAO_TF2_TOP/runner/tao_tf.py "$@"
 }
 export -f tao_tf2
 

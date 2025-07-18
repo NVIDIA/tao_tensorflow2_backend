@@ -56,6 +56,11 @@ def update_results_dir(cfg, task):
     Return:
         Updated cfg
     """
+    # Deprecated: DLFW 25.01 doesn't support tensorflow_quantization
+    if sys.version_info >= (3, 12):
+        logger.warning("DeprecationWarning: QAT is not supported after DLFW 25.01. Using normal training.")
+        cfg.train.qat = False
+
     if cfg[task]['results_dir']:
         cfg.results_dir = cfg[task]['results_dir']
     else:

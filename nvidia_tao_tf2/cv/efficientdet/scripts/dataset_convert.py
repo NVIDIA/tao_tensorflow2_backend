@@ -26,14 +26,14 @@ from skimage import measure
 
 import tensorflow as tf
 
+from nvidia_tao_core.config.efficientdet_tf2.default_config import ExperimentConfig
+
 from nvidia_tao_tf2.common.dataset import dataset_util
 from nvidia_tao_tf2.common.dataset import label_map_util
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 import nvidia_tao_tf2.common.logging.logging as status_logging
 from nvidia_tao_tf2.common.utils import update_results_dir
-
-from nvidia_tao_tf2.cv.efficientdet.config.default_config import ExperimentConfig
 
 
 def create_tf_example(image,

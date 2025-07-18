@@ -4,11 +4,14 @@ set -eo pipefail
 # cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 registry="nvcr.io"
-tensorflow_version="2.9.1"
-tao_version="5.5.0"
-repository="nvidia/tao-toolkit-tf"
+tensorflow_version="2.17.0"
+tao_version="4.0.0"
+repository="nvstaging/tao/tao-toolkit-tf2"
 build_id="01"
-tag="v${tao_version}-tf${tensorflow_version}-py3-${build_id}"
+tag="v${tao_version}-tf2${tensorflow_version}-py3-${build_id}"
+
+# Required for tao-core since it's a submodule.
+git submodule update --init --recursive
 
 # Build parameters.
 BUILD_DOCKER="0"
@@ -31,6 +34,10 @@ while [[ $# -gt 0 ]]
         -w|--wheel)
         BUILD_WHEEL="1"
         RUN_DOCKER="0"
+        shift # past argument
+        ;;
+        -p|--push)
+        PUSH_DOCKER="1"
         shift # past argument
         ;;
         -f|--force)
@@ -67,13 +74,19 @@ if [ $BUILD_DOCKER = "1" ]; then
     fi
     if [ $BUILD_WHEEL = "1" ]; then
         echo "Building source code wheel ..."
-    #    tao_tf2 -- make build
-       tao_tf2 -- python3 setup.py bdist_wheel
+       tao_tf2 -- make build
     else
         echo "Skipping wheel builds ..."
     fi
     
     docker build --pull -f $NV_TAO_TF2_TOP/release/docker/Dockerfile.release -t $registry/$repository:$tag $NO_CACHE --network=host $NV_TAO_TF2_TOP/.
+
+    if [ $PUSH_DOCKER = "1" ]; then
+        echo "Pusing docker ..."
+        docker push $registry/$repository:$tag
+    else
+        echo "Skip pushing docker ..."
+    fi
 
     if [ $BUILD_WHEEL = "1" ]; then
         echo "Cleaning wheels ..."

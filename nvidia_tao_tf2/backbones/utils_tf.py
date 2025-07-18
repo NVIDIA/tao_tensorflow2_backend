@@ -1105,20 +1105,20 @@ class CNNBlock(object):
                 use_bias=self.use_bias,
                 kernel_regularizer=self.kernel_regularizer,
                 bias_regularizer=self.bias_regularizer,
-                name=f'{name_prefix}conv_{i+1}',
+                name=f'{name_prefix}conv_{i + 1}',
                 trainable=not freeze)(x)
             if self.use_batch_norm:
                 if self.freeze_bn:
                     x = keras.layers.BatchNormalization(
                         axis=bn_axis,
                         trainable=False,
-                        name=f'{name_prefix}bn_{i+1}')(x)
+                        name=f'{name_prefix}bn_{i + 1}')(x)
                 else:
                     x = keras.layers.BatchNormalization(
-                        axis=bn_axis, name=f'{name_prefix}bn_{i+1}')(x)
+                        axis=bn_axis, name=f'{name_prefix}bn_{i + 1}')(x)
             if i != nblocks - 1:  # All except last conv in block.
                 x = add_activation(self.activation_type,
-                                   name=f'{name_prefix}{self.activation_type}_{i+1}')(x)
+                                   name=f'{name_prefix}{self.activation_type}_{i + 1}')(x)
 
         if self.use_shortcuts:
             if self.all_projections:

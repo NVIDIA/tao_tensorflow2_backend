@@ -139,13 +139,6 @@ def get_input_shape(model, data_format):
     return image_height, image_width, nchannels
 
 
-@njit
-def randu(low, high):
-    """standard uniform distribution."""
-    return np.random.random() * (high - low) + low
-
-
-@jit
 def random_hue(img, max_delta=10.0):
     """Rotates the hue channel.
 
@@ -154,7 +147,7 @@ def random_hue(img, max_delta=10.0):
         max_delta: Max number of degrees to rotate the hue channel
     """
     # Rotates the hue channel by delta degrees
-    delta = randu(-max_delta, max_delta)
+    delta = np.random.random() * (2 * max_delta) - max_delta
     hsv = cv2.cvtColor(img.astype(np.float32), cv2.COLOR_BGR2HSV)
     hchannel = hsv[:, :, 0]
     hchannel = delta + hchannel
@@ -167,14 +160,19 @@ def random_hue(img, max_delta=10.0):
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
 
-@jit
 def random_saturation(img, max_shift):
     """random saturation data augmentation."""
     hsv = cv2.cvtColor(img.astype(np.float32), cv2.COLOR_BGR2HSV)
-    shift = randu(-max_shift, max_shift)
+    shift = np.random.random() * (2 * max_shift) - max_shift
     # saturation should always be within [0,1.0]
     hsv[:, :, 1] = np.clip(hsv[:, :, 1] + shift, 0.0, 1.0)
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+
+
+@njit
+def randu(low, high):
+    """standard uniform distribution."""
+    return np.random.random() * (high - low) + low
 
 
 @jit

@@ -15,6 +15,7 @@
 """Collection of helper functions."""
 import os
 import json
+import logging
 import tensorflow as tf
 import tempfile
 import zipfile
@@ -28,6 +29,8 @@ from tensorflow_quantization.quantize import quantize_model
 from nvidia_tao_tf2.cv.efficientdet.layers.image_resize_layer import ImageResizeLayer
 from nvidia_tao_tf2.cv.efficientdet.layers.weighted_fusion_layer import WeightedFusion
 from nvidia_tao_tf2.cv.efficientdet.utils import keras_utils
+
+logger = logging.getLogger(__name__)
 
 CUSTOM_OBJS = {
     'ImageResizeLayer': ImageResizeLayer,

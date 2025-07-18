@@ -17,9 +17,10 @@ import tensorflow as tf
 import horovod.tensorflow.keras as hvd
 from PIL import Image
 
+from nvidia_tao_core.config.efficientdet_tf2.default_config import ExperimentConfig
+
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 
-from nvidia_tao_tf2.cv.efficientdet.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.efficientdet.dataloader import dataloader, datasource
 from nvidia_tao_tf2.cv.efficientdet.utils import hparams_config
 from nvidia_tao_tf2.cv.efficientdet.utils.config_utils import generate_params_from_cfg

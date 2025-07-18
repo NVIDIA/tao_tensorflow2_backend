@@ -28,8 +28,8 @@ setuptools_packages = []
 for package_name in PACKAGE_LIST:
     setuptools_packages.extend(utils.find_packages(package_name))
 
-if(os.path.exists("pytransform_vax_001219")):
-    pyarmor_packages = ["pytransform_vax_001219"]
+if(os.path.exists("pyarmor_runtime_001219")):
+    pyarmor_packages = ["pyarmor_runtime_001219"]
     setuptools_packages += pyarmor_packages
 
 setuptools.setup(

@@ -17,17 +17,19 @@
 import json
 import logging
 import os
+import sys
 import tqdm
 
 import numpy as np
 import pandas as pd
+
+from nvidia_tao_core.config.classification_tf2.default_config import ExperimentConfig
 
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.utils import update_results_dir
 
 from nvidia_tao_tf2.cv.classification.inferencer.keras_inferencer import KerasInferencer
-from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s', level='INFO')
 logger = logging.getLogger(__name__)
 SUPPORTED_IMAGE_FORMAT = ['.jpg', '.png', '.jpeg']
@@ -44,6 +46,11 @@ def run_inference(cfg):
             write out a .csv file to store all the predictions
     """
     logger.setLevel(logging.INFO)
+    # Deprecated: DLFW 25.01 doesn't support tensorflow_quantization
+    if sys.version_info >= (3, 12):
+        logger.warning("DeprecationWarning: QAT is not supported after DLFW 25.01. Using normal training.")
+        cfg.train.qat = False
+
     if not os.path.exists(cfg.results_dir):
         os.makedirs(cfg.results_dir, exist_ok=True)
     result_csv_path = os.path.join(cfg.results_dir, 'result.csv')

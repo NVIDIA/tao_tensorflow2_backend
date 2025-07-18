@@ -15,17 +15,19 @@
 """Export EfficientDet model to etlt and TRT engine."""
 import logging
 import os
+import sys
 import tempfile
 
 import tensorflow as tf
 from tensorflow.python.util import deprecation
+
+from nvidia_tao_core.config.efficientdet_tf2.default_config import ExperimentConfig
 
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 import nvidia_tao_tf2.common.no_warning # noqa pylint: disable=W0611
 from nvidia_tao_tf2.common.utils import update_results_dir
 
-from nvidia_tao_tf2.cv.efficientdet.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.efficientdet.exporter.onnx_exporter import EfficientDetGraphSurgeon
 from nvidia_tao_tf2.cv.efficientdet.inferencer import inference
 from nvidia_tao_tf2.cv.efficientdet.utils import helper, hparams_config
@@ -42,6 +44,11 @@ logger = logging.getLogger(__name__)
 @monitor_status(name='efficientdet', mode='export')
 def run_export(cfg):
     """Launch EfficientDet export."""
+    # Deprecated: DLFW 25.01 doesn't support tensorflow_quantization
+    if sys.version_info >= (3, 12):
+        logger.warning("DeprecationWarning: QAT is not supported after DLFW 25.01. Using normal training.")
+        cfg.train.qat = False
+
     # Parse and update hparams
     MODE = 'export'
     config = hparams_config.get_detection_config(cfg.model.name)
