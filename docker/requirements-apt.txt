@@ -1,0 +1,8 @@
+wget
+curl
+unzip
+ffmpeg
+libsm6
+libxext6
+gnupg
+nginx

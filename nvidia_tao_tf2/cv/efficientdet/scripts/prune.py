@@ -19,12 +19,13 @@ import os
 import tempfile
 import tensorflow as tf
 
+from nvidia_tao_core.config.efficientdet_tf2.default_config import ExperimentConfig
+
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 import nvidia_tao_tf2.common.logging.logging as status_logging
 from nvidia_tao_tf2.common.utils import get_model_file_size, update_results_dir
 
-from nvidia_tao_tf2.cv.efficientdet.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.efficientdet.pruner.pruner import EfficientDetPruner
 from nvidia_tao_tf2.cv.efficientdet.utils.helper import dump_eval_json, dump_json, encode_eff
 from nvidia_tao_tf2.cv.efficientdet.utils.horovod_utils import initialize

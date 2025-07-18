@@ -21,6 +21,7 @@ class TestPruning(object):
     def check_weights(self, pruned_model, granularity, min_num_filters, filter_counts):
         for layer in pruned_model.layers:
             weights = layer.get_weights()
+            kernels, biases = None, None
             if type(layer) in [
                     keras.layers.Conv2D,
                     keras.layers.DepthwiseConv2D,
@@ -218,7 +219,7 @@ class TestPruning(object):
         # Pass 1 : Visit only prunable layers
         for layer in model.layers:
             weights = layer.get_weights()
-            norms = []
+            norms, kernels, biases = [], [], []
             prune_indices = []
             keep_indices = []
             if type(layer) in [

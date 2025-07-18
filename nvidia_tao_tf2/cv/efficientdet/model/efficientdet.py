@@ -704,6 +704,7 @@ def efficientdet(input_shape, inputs=None, training=True, model_name=None, confi
     # class/box output prediction network.
     num_anchors = len(config.aspect_ratios) * config.num_scales
     num_filters = config.fpn_num_filters
+    class_net, box_net = None, None
     for head in config.heads:
         if head == 'object_detection':
             class_net = ClassNet(

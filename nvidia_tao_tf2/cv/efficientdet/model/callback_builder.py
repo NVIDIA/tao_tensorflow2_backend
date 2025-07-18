@@ -4,7 +4,7 @@ import os
 import tensorflow as tf
 import horovod.tensorflow.keras.callbacks as hvd_callbacks
 
-from wandb.keras import WandbCallback
+from wandb.integration.keras import WandbCallback
 
 from nvidia_tao_tf2.common.mlops.wandb import is_wandb_initialized
 from nvidia_tao_tf2.cv.efficientdet.callback.eff_ema_checkpoint import EffEmaCheckpoint
@@ -68,7 +68,7 @@ def get_callbacks(hparams, eval_dataset, steps_per_epoch,
     cocoeval = COCOEvalCallback(
         eval_dataset,
         eval_model=eval_model,
-        eval_freq=hparams['checkpoint_interval'],
+        eval_freq=hparams['validation_interval'],
         start_eval_epoch=hparams['eval_start'],
         hparams=hparams)
     callbacks.append(cocoeval)

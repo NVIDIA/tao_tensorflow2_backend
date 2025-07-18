@@ -28,6 +28,7 @@ def monitor_status(name='efficientdet', mode='training'):
     def inner(runner):
         @wraps(runner)
         def _func(cfg, **kwargs):
+            is_master = True
             try:
                 if hvd.size() > 0:
                     is_master = hvd.rank() == 0

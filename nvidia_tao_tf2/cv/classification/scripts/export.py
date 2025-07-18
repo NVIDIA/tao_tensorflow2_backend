@@ -15,12 +15,14 @@
 """Export a classification model."""
 import os
 import logging
+import sys
+
+from nvidia_tao_core.config.classification_tf2.default_config import ExperimentConfig
 
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.utils import update_results_dir
 
-from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
 from nvidia_tao_tf2.cv.classification.export.classification_exporter import Exporter
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s', level='INFO')
 logger = logging.getLogger(__name__)
@@ -30,6 +32,11 @@ logger = logging.getLogger(__name__)
 def run_export(cfg=None):
     """Export classification model to etlt."""
     logger.setLevel(logging.INFO)
+    # Deprecated: DLFW 25.01 doesn't support tensorflow_quantization
+    if sys.version_info >= (3, 12):
+        logger.warning("DeprecationWarning: QAT is not supported after DLFW 25.01. Using normal training.")
+        cfg.train.qat = False
+
     if not os.path.exists(cfg.results_dir):
         os.makedirs(cfg.results_dir, exist_ok=True)
     exporter = Exporter(config=cfg)

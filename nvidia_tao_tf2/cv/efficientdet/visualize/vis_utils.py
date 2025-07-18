@@ -207,7 +207,7 @@ def draw_bounding_box_on_image(image,
     # If the total height of the display strings added to the top of the bounding
     # box exceeds the top of the image, stack the strings below the bounding box
     # instead of above.
-    display_str_heights = [font.getsize(ds)[1] for ds in display_str_list]
+    display_str_heights = [font.getbbox(ds)[3] - font.getbbox(ds)[1] for ds in display_str_list]
     # Each display_str has a top and bottom margin of 0.05x.
     total_display_str_height = (1 + 2 * 0.05) * sum(display_str_heights)
 
@@ -217,7 +217,8 @@ def draw_bounding_box_on_image(image,
         text_bottom = bottom + total_display_str_height
     # Reverse list and print from bottom to top.
     for display_str in display_str_list[::-1]:
-        text_width, text_height = font.getsize(display_str)
+        text_width = font.getbbox(display_str)[2] - font.getbbox(display_str)[0]
+        text_height = font.getbbox(display_str)[3] - font.getbbox(display_str)[1]
         margin = np.ceil(0.05 * text_height)
         draw.rectangle([(left, text_bottom - text_height - 2 * margin), (left + text_width, text_bottom)],
                        fill=color)
@@ -483,6 +484,7 @@ def draw_bounding_boxes_on_image_tensors(images,
         """Draws boxes on image."""
         true_shape = image_and_detections[0]
         original_shape = image_and_detections[1]
+        image = None
         if true_image_shape is not None:
             image = shape_utils.pad_or_clip_nd(image_and_detections[2],
                                                [true_shape[0], true_shape[1], 3])
@@ -1007,7 +1009,8 @@ def visualize_detections(image_path, output_path, detections, labels):
         text = f"{label}: {int(100 * score)}%"
         if score < 0:
             text = label
-        text_width, text_height = font.getsize(text)
+        text_width = font.getbbox(text)[2] - font.getbbox(text)[0]
+        text_height = font.getbbox(text)[3] - font.getbbox(text)[1]
         text_bottom = max(text_height, d['ymin'])
         text_left = d['xmin']
         margin = np.ceil(0.05 * text_height)

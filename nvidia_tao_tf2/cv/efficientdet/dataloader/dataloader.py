@@ -446,6 +446,7 @@ class CocoDataset(Dataset):
 
             # Prefetch data from files.
             def _prefetch_dataset(filename):
+                dataset = []
                 if params.get('dataset_type', None) == 'sstable':
                     pass
                 else:

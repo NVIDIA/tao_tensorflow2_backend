@@ -15,14 +15,16 @@
 
 import os
 import logging
+import sys
 
 import numpy as np
 from PIL import ImageFile
 
+from nvidia_tao_core.config.classification_tf2.default_config import ExperimentConfig
+
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 
 from nvidia_tao_tf2.cv.classification.inferencer.trt_inferencer import TRTInferencer
-from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 SUPPORTED_IMAGE_FORMAT = ['.jpg', '.png', '.jpeg']
@@ -40,6 +42,11 @@ def run_inference(cfg):
     logging.basicConfig(
         format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
         level=verbosity)
+    # Deprecated: DLFW 25.01 doesn't support tensorflow_quantization
+    if sys.version_info >= (3, 12):
+        logger.warning("DeprecationWarning: QAT is not supported after DLFW 25.01. Using normal training.")
+        cfg.train.qat = False
+
     # set backend
     # initialize()
     predictions = []

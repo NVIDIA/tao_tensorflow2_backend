@@ -49,7 +49,7 @@ def main():
         unknown_args,
         subtasks,
         multigpu_support=["train", "evaluate"],
-        task="efficientdet_tf2",
+        network="efficientdet_tf2",
     )
 
 

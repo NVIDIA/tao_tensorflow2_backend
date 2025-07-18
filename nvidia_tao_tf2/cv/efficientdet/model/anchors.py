@@ -687,3 +687,5 @@ def soft_nms(dets):
         dets = dets[retained_idx + 1, :]
 
         return np.vstack(retained_box)
+
+    return np.array(retained_box)

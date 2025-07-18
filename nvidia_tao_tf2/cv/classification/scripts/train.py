@@ -13,31 +13,37 @@
 # limitations under the License.
 
 """Classification training script with protobuf configuration."""
-from functools import partial
 import json
 import logging
 import os
+import sys
+from functools import partial
 
 import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from PIL import Image, ImageFile
 
 import horovod.tensorflow.keras as hvd
-
+from nvidia_tao_core.config.classification_tf2.default_config import \
+    ExperimentConfig
 from nvidia_tao_tf2.common.decorators import monitor_status
 from nvidia_tao_tf2.common.hydra.hydra_runner import hydra_runner
 from nvidia_tao_tf2.common.mlops.utils import init_mlops
 from nvidia_tao_tf2.common.utils import set_random_seed, update_results_dir
-
-from nvidia_tao_tf2.cv.classification.config.default_config import ExperimentConfig
-from nvidia_tao_tf2.cv.classification.model.classifier_module import ClassifierModule
-from nvidia_tao_tf2.cv.classification.model.callback_builder import setup_callbacks
-from nvidia_tao_tf2.cv.classification.trainer.classifier_trainer import ClassifierTrainer
-
+from nvidia_tao_tf2.cv.classification.model.callback_builder import \
+    setup_callbacks
+from nvidia_tao_tf2.cv.classification.model.classifier_module import \
+    ClassifierModule
+from nvidia_tao_tf2.cv.classification.trainer.classifier_trainer import \
+    ClassifierTrainer
+from nvidia_tao_tf2.cv.classification.utils import \
+    preprocess_crop  # noqa pylint: disable=unused-import
 from nvidia_tao_tf2.cv.classification.utils.config_utils import spec_checker
-from nvidia_tao_tf2.cv.classification.utils.mixup_generator import MixupImageDataGenerator
-from nvidia_tao_tf2.cv.classification.utils.preprocess_input import preprocess_input
-from nvidia_tao_tf2.cv.classification.utils import preprocess_crop  # noqa pylint: disable=unused-import
+from nvidia_tao_tf2.cv.classification.utils.mixup_generator import \
+    MixupImageDataGenerator
+from nvidia_tao_tf2.cv.classification.utils.preprocess_input import \
+    preprocess_input
+from tf_keras.preprocessing.image import ImageDataGenerator
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 Image.MAX_IMAGE_PIXELS = 9000000000
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s', level='INFO')
@@ -157,7 +163,15 @@ def load_data(train_data,
 @monitor_status(name='classification', mode='training')
 def run_experiment(cfg):
     """Launch training experiment."""
+    # Deprecated: DLFW 25.01 doesn't support tensorflow_quantization
+    if sys.version_info >= (3, 12):
+        logger.warning("DeprecationWarning: QAT is not supported after DLFW 25.01. Using normal training.")
+        cfg.train.qat = False
+
     spec_checker(cfg)
+    logger.info("Validating checkpoint and validation interval against number of epochs.")
+    cfg.train.checkpoint_interval = min(cfg.train.checkpoint_interval, cfg.train.num_epochs)
+    cfg.train.validation_interval = min(cfg.train.validation_interval, cfg.train.num_epochs)
     # Load augmented data
     train_iterator, val_iterator = load_data(
         cfg.dataset.train_dataset_path,
@@ -199,7 +213,8 @@ def run_experiment(cfg):
         module=classifier,
         train_dataset=train_iterator,
         eval_dataset=val_iterator,
-        verbose=1 if hvd.rank() == 0 else 0
+        verbose=1 if hvd.rank() == 0 else 0,
+        validation_freq=cfg.train.validation_interval
     )
 
 

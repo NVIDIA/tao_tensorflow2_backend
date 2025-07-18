@@ -203,6 +203,7 @@ class EfficientDetModule(TAOModule):
         """
         images, labels = data
         with tf.GradientTape() as tape:
+            cls_outputs, box_outputs, seg_outputs = [], [], []
             if len(self.hparams.heads) == 2:
                 cls_outputs, box_outputs, seg_outputs = self.model(images, training=True)
             elif 'object_detection' in self.hparams.heads:
@@ -282,6 +283,7 @@ class EfficientDetModule(TAOModule):
         A dict record loss info.
         """
         images, labels = data
+        cls_outputs, box_outputs, seg_outputs = [], [], []
         if len(self.hparams.heads) == 2:
             cls_outputs, box_outputs, seg_outputs = self.model(images, training=False)
         elif 'object_detection' in self.hparams.heads:

@@ -31,7 +31,8 @@ class ClassifierTrainer(Trainer):
             module,
             train_dataset,
             eval_dataset,
-            verbose) -> None:
+            verbose,
+            validation_freq: int = 1) -> None:
         """Run model.fit with custom steps."""
         if module.initial_epoch < self.num_epochs:
             module.model.fit(
@@ -44,6 +45,6 @@ class ClassifierTrainer(Trainer):
                 workers=self.cfg['train']['n_workers'],
                 validation_data=eval_dataset,
                 validation_steps=len(eval_dataset),
-                validation_freq=1)
+                validation_freq=validation_freq)
         else:
             logger.info("Training (%d epochs) has finished.", self.num_epochs)

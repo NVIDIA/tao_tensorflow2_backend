@@ -44,7 +44,7 @@ def main():
     args, unknown_args = command_line_parser(parser, subtasks)
 
     # Parse the arguments and launch the subtask.
-    launch(vars(args), unknown_args, subtasks, task="classification_tf2")
+    launch(vars(args), unknown_args, subtasks, network="classification_tf2")
 
 
 if __name__ == "__main__":

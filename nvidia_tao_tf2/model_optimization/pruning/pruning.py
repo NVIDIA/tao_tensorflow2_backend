@@ -683,6 +683,7 @@ class PruneMinWeight(Prune):
             retained_activation_mask = np.tile(retained_filter_mask, inp_spatial_size)
         elif previous_data_format is None:
             # The data format is unknown, make sure the previous layer was not pruned.
+            retained_activation_mask = None
             if self._is_layer_pruned(layer):
                 raise ValueError(
                     "Cannot process a pruned flatten layer if the "
